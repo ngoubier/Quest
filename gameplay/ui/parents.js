@@ -2,12 +2,16 @@ import { Scene, MenuScene, TextField, wrapText } from '../../engine/index.js';
 import { buildReport, formatPlayTime } from '../quiz/report.js';
 import { GameState } from '../state/GameState.js';
 import { parentSettings, setParentSettings } from '../profiles.js';
+import { SUBJECTS } from '../quiz/QuestionBank.js';
+import { PromptScene } from './PromptScene.js';
+import { openExport, openImport } from './transfer.js';
 
 // ESPACE PARENTS : protégé par un code à 4 chiffres choisi par le parent.
 // Pour chaque enfant (profil) : bilan (à la fin du jeu, ou toujours selon la config),
 // âge, suppression. Réglages communs : délai d'attente après un échec, code.
 
 const CLASSES = { 6: 'CP', 7: 'CE1', 8: 'CE2', 9: 'CM1', 10: 'CM2' };
+export { CLASSES };
 const DELAYS = [1, 2, 5, 10, 15, 30]; // minutes
 
 /**
@@ -18,8 +22,9 @@ const DELAYS = [1, 2, 5, 10, 15, 30]; // minutes
  * @param {object[]} [o.questDefs]
  * @param {'end'|'always'} [o.reportWhen='end']
  * @param {{ profileId: string, state: GameState }} [o.live]  partie en cours (si ouvert depuis le jeu)
+ * @param {() => void} [o.saveLive]  sauvegarde la partie en cours (avant un export)
  */
-export function openParentSpace({ game, saves, profiles, questDefs = [], reportWhen = 'end', live = null, defaultCooldown = 600 }) {
+export function openParentSpace({ game, saves, profiles, questDefs = [], reportWhen = 'end', live = null, defaultCooldown = 600, saveLive = null }) {
   const settings = () => parentSettings(saves);
 
   // État d'un profil : la partie en cours, ou celle sauvegardée.
@@ -65,6 +70,17 @@ export function openParentSpace({ game, saves, profiles, questDefs = [], reportW
               }
             },
           },
+          { label: 'Questions personnelles', onSelect: () => customMenu(p) },
+          {
+            label: 'Exporter la partie (vers un autre appareil)',
+            onSelect: () => {
+              if (live && live.profileId === p.id) saveLive?.();
+              const save = saves.load(profiles.slot(p.id))?.data;
+              if (!save) return game.scenes.push(new MessageScene('Aucune partie à exporter pour ce profil.'));
+              const cur = profiles.get(p.id) ?? p;
+              openExport(game, { app: 'quest', v: 1, profile: { name: cur.name, age: cur.age }, save, custom: saves.load(`custom-${p.id}`)?.data ?? [] }, { name: cur.name });
+            },
+          },
           {
             label: 'Supprimer ce profil',
             enabled: () => !(live && live.profileId === p.id),
@@ -85,6 +101,91 @@ export function openParentSpace({ game, saves, profiles, questDefs = [], reportW
       }),
     );
 
+  // ---------------------------------------------------------------- questions des parents
+  const customKey = (p) => `custom-${p.id}`;
+  const customList = (p) => saves.load(customKey(p))?.data ?? [];
+  const saveCustom = (p, list) => saves.save(customKey(p), list);
+  const shorten = (t, n = 28) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+  const addCustom = (p, q) => saveCustom(p, [...customList(p), { id: `c-${Date.now().toString(36)}`, ages: [6, 10], custom: true, ...q }]);
+
+  const customMenu = (p) => {
+    const menu = new MenuScene({ title: `Questions de ${p.name}`, width: 230, items: [] });
+    const refresh = () => {
+      menu.items = [
+        ...customList(p).map((q) => ({
+          label: shorten(q.type === 'dictation' ? `🔊 ${q.answer}` : `${q.prompt} → ${q.answer}`),
+          onSelect: () =>
+            game.scenes.push(
+              new MenuScene({
+                title: 'Supprimer cette question ?',
+                width: 210,
+                items: [
+                  { label: 'Non', onSelect: (m) => m.close() },
+                  { label: 'Oui, supprimer', onSelect: (m) => (saveCustom(p, customList(p).filter((x) => x.id !== q.id)), m.close(), refresh()) },
+                ],
+              }),
+            ),
+        })),
+        { label: '+ Ajouter une dictée (mot prononcé)', onSelect: () => addDictation(p, refresh) },
+        { label: '+ Ajouter une question écrite', onSelect: () => addWritten(p, refresh) },
+        { label: 'Retour', onSelect: (m) => m.close() },
+      ];
+      menu.index = Math.min(menu.index, menu.items.length - 1);
+    };
+    refresh();
+    game.scenes.push(menu);
+  };
+
+  const addDictation = (p, done) =>
+    game.scenes.push(
+      new PromptScene({
+        title: 'Mot à dicter',
+        message: 'Le jeu le prononcera ; l’enfant devra l’écrire.',
+        placeholder: 'ex. : chien',
+        maxLength: 40,
+        fieldWidth: 200,
+        onOk: (word) => {
+          addCustom(p, { subject: 'francais', type: 'dictation', prompt: 'Écoute l’énigme, puis écris le mot.', say: `Écris le mot : ${word}.`, answer: word });
+          done();
+        },
+      }),
+    );
+
+  const addWritten = (p, done) =>
+    game.scenes.push(
+      new MenuScene({
+        title: 'Matière',
+        width: 170,
+        items: Object.entries(SUBJECTS).map(([id, label]) => ({
+          label,
+          onSelect: (m) => {
+            m.close();
+            game.scenes.push(
+              new PromptScene({
+                title: 'La question',
+                message: 'ex. : Comment s’appelle la capitale de l’Italie ?',
+                maxLength: 90,
+                fieldWidth: 230,
+                onOk: (prompt) =>
+                  game.scenes.push(
+                    new PromptScene({
+                      title: 'La bonne réponse',
+                      message: 'Majuscules et accents oubliés seront tolérés.',
+                      maxLength: 40,
+                      fieldWidth: 200,
+                      onOk: (answer) => {
+                        addCustom(p, { subject: id, type: 'text', prompt, answer });
+                        done();
+                      },
+                    }),
+                  ),
+              }),
+            );
+          },
+        })),
+      }),
+    );
+
   const mainMenu = new MenuScene({ title: 'ESPACE PARENTS', width: 220, items: [] });
   mainMenu.refresh = () => {
     mainMenu.items = [
@@ -96,6 +197,24 @@ export function openParentSpace({ game, saves, profiles, questDefs = [], reportW
           const next = DELAYS[(DELAYS.indexOf(cur) + 1) % DELAYS.length] ?? 10;
           setParentSettings(saves, { cooldown: next * 60 });
         },
+      },
+      {
+        label: 'Importer une partie',
+        onSelect: () =>
+          openImport(game, (obj) => {
+            if (profiles.isFull) return 'Il y a déjà 4 profils : supprimez-en un d’abord.';
+            const names = profiles.list().map((x) => x.name);
+            let name = obj.profile.name;
+            for (let i = 2; names.includes(name); i++) name = `${obj.profile.name} ${i}`;
+            const np = profiles.add({ name, age: obj.profile.age });
+            const save = obj.save;
+            if (save.state?.profile) save.state.profile = { ...save.state.profile, id: np.id, name: np.name };
+            saves.save(profiles.slot(np.id), save);
+            if (obj.custom?.length) saves.save(`custom-${np.id}`, obj.custom);
+            mainMenu.refresh();
+            game.scenes.push(new MessageScene(`Partie de ${np.name} importée !`));
+            return null;
+          }),
       },
       { label: 'Changer le code', onSelect: () => game.scenes.push(new CodeScene({ mode: 'create', onOk: (code) => setParentSettings(saves, { code }) })) },
       { label: 'Retour', onSelect: (m) => m.close() },
@@ -132,7 +251,7 @@ export class CodeScene extends Scene {
 
   enter() {
     this.field = new TextField(this.game);
-    this.field.open({ x: 88, y: 112, w: 80, h: 20 }, { onSubmit: (v) => this._submit(v), inputMode: 'numeric', maxLength: 4, placeholder: '····' });
+    this.field.open({ x: Math.round((this.game.width - 80) / 2), y: 112, w: 80, h: 20 }, { onSubmit: (v) => this._submit(v), inputMode: 'numeric', maxLength: 4, placeholder: '····' });
   }
 
   exit() {
@@ -166,9 +285,9 @@ export class CodeScene extends Scene {
     const s = this.game.style;
     this.field.place();
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
-    const x = 24;
+    const x = 12;
     const y = 36;
-    const w = r.width - 48;
+    const w = r.width - 24;
     const h = 120;
     r.rect(x, y, w, h, s.box);
     r.strokeRect(x, y, w, h, s.border);
@@ -245,7 +364,7 @@ export class ReportScene extends Scene {
     r.text(`BILAN ${this.name ? `de ${this.name} ` : ''}· ${titles[Math.min(this.page, 2)]}`, 10, 9, { color: s.accent, size: 9, font: s.font, bold: true });
     r.text(`${this.page + 1}/${this.pages}`, W - 10, 10, { color: s.dim, size: 7, font: s.font, align: 'right' });
     r.rect(8, 24, W - 16, 1, s.border);
-    const line = (t, y, opts = {}) => r.text(t, 14, y, { color: s.text, size: 8, font: s.font, ...opts });
+    const line = (t, y, opts = {}) => r.text(t, 12, y, { color: s.text, size: r.width < 240 ? 6 : 8, font: s.font, ...opts });
     const pct = (x) => `${Math.round(x * 100)} %`;
 
     if (this.page === 0) {
@@ -255,6 +374,7 @@ export class ReportScene extends Scene {
       line(`Quêtes terminées : ${rep.questsDone} / ${rep.questsTotal}`, (y += 16));
       line(`Indices utilisés : ${rep.hintsUsed}`, (y += 16));
       line(`Erreurs corrigées ensuite : ${rep.fixed}`, (y += 16));
+      line(`Questions à réviser plus tard : ${rep.reviewsPending}`, (y += 16));
       if (rep.strongest) line(`Point fort : ${rep.strongest.name} (${pct(rep.strongest.rate)})`, (y += 22), { color: '#5adc5a' });
       if (rep.weakest) line(`À travailler : ${rep.weakest.name} (${pct(rep.weakest.rate)})`, (y += 16), { color: '#ffb05a' });
       if (!rep.total) line('Aucune question posée pour le moment.', (y += 22), { color: s.dim });
@@ -262,13 +382,15 @@ export class ReportScene extends Scene {
       let y = 36;
       if (!rep.subjects.length) line('Aucune donnée.', y, { color: s.dim });
       for (const sub of rep.subjects) {
-        line(sub.name, y, { size: 8 });
-        const bx = 104;
-        const bw = 90;
+        const lvl = sub.level > 0 ? ' ↑' : sub.level < 0 ? ' ↓' : '';
+        line(`${sub.name}`, y);
+        r.text(`niveau ${CLASSES[sub.effectiveAge] ?? ''}${lvl}`, 12, y + 9, { color: s.dim, size: 6, font: s.font });
+        const bx = Math.round(r.width * 0.4);
+        const bw = Math.round(r.width * 0.35);
         r.rect(bx, y + 1, bw, 7, s.dim);
         r.rect(bx, y + 1, Math.round(bw * sub.rate), 7, sub.rate >= 0.75 ? '#5adc5a' : sub.rate >= 0.5 ? '#ffd35a' : '#ff7a6a');
         r.text(`${sub.ok}/${sub.total}`, W - 12, y, { color: s.text, size: 7, font: s.font, align: 'right' });
-        y += 20;
+        y += 22;
       }
     } else {
       const start = (this.page - 2) * this.perPage;

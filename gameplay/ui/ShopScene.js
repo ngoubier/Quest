@@ -121,7 +121,6 @@ export class ShopScene extends Scene {
       if (sel) r.text('▶', x + 6, ty + 4, { color: s.accent, size: 8, font: s.font });
       th.objects.draw(r, adv.itemIcon(o.item), x + 14, ty);
       r.text(cap(adv.itemName(o.item)), x + 34, ty + 4, { color, size: 8, font: s.font });
-      if (sel && !out) r.text(`◀ ${this.qty} ▶`, x + 146, ty + 4, { color: s.accent, size: 8, font: s.font });
       r.text(out ? 'épuisé' : `${o.price} €`, x + w - 10, ty + 4, { color, size: 8, font: s.font, align: 'right' });
       ty += ROW;
     });
@@ -131,7 +130,7 @@ export class ShopScene extends Scene {
     if (o) {
       const d = adv.itemDef(o.item);
       r.text(d.description ?? '', x + 10, by + 4, { color: s.dim, size: 7, font: s.font });
-      if (!this.soldOut(o)) r.text(`Total : ${this.qty} × ${o.price} € = ${this.qty * o.price} €`, x + 10, by + 14, { color: s.text, size: 7, font: s.font });
+      if (!this.soldOut(o)) r.text(`Quantité ◀ ${this.qty} ▶  ·  ${this.qty} × ${o.price} € = ${this.qty * o.price} €`, x + 10, by + 14, { color: s.accent, size: 7, font: s.font });
     }
     r.text(this.msg, x + 10, by + 25, { color: s.text, size: 7, font: s.font });
     r.text(`Tu as ${adv.state.count(this.currency)} €`, x + w - 10, by + 25, { color: s.accent, size: 7, font: s.font, align: 'right' });

@@ -1,4 +1,4 @@
-import { Scene, TextField, wrapText, createRng } from '../../engine/index.js';
+import { Scene, TextField, wrapText, createRng, Speech } from '../../engine/index.js';
 import { checkAnswer } from './answers.js';
 import { SUBJECTS } from './QuestionBank.js';
 
@@ -27,6 +27,7 @@ export class QuizScene extends Scene {
 
   exit() {
     this.field.close();
+    Speech.stop();
   }
 
   get q() {
@@ -42,16 +43,32 @@ export class QuizScene extends Scene {
       this.options = [...q.choices].sort(() => this.rng() - 0.5);
       this.sel = 0;
     } else {
-      const numeric = /^[\d\s.,]+$/.test(String(q.answer));
-      this.field.open({ x: 48, y: 142, w: 160, h: 18 }, { onSubmit: (v) => this._answer(v), placeholder: 'Ta réponse', inputMode: numeric ? 'decimal' : 'text' });
+      const numeric = q.type !== 'dictation' && /^[\d\s.,]+$/.test(String(q.answer));
+      // Dictée : Tab (ou le bouton à l'écran) fait réécouter le mot.
+      const onKey = (e) => (q.type === 'dictation' && e.key === 'Tab' ? (this._speak(), true) : false);
+      this.field.open({ x: Math.round((this.game.width - 160) / 2), y: 142, w: 160, h: 18 }, { onSubmit: (v) => this._answer(v), onKey, placeholder: 'Ta réponse', inputMode: numeric ? 'decimal' : 'text' });
     }
+  }
+
+  /** Texte prononcé pour une dictée. */
+  _speak() {
+    const q = this.q;
+    if (q.type !== 'dictation') return;
+    this.spoke = Speech.speak(q.say ?? `Écris le mot : ${q.answer}.`);
+    if (!this.spoke) this.noVoice = true;
+  }
+
+  /** Bouton « Écouter l'énigme » (zone tactile, en pixels logiques). */
+  get listenButton() {
+    const W = this.game.width;
+    return { x: Math.round(W / 2 - 64), y: 62, w: 128, h: 20 };
   }
 
   _answer(value) {
     if (this.phase !== 'ask') return;
     const q = this.q;
     const ok = checkAnswer(q, value);
-    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: describe(q), answer: q.answer });
+    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: describe(q), answer: q.answer, question: JSON.parse(JSON.stringify(q)) });
     this.field.close();
     this.phase = 'feedback';
     this.t = 0;
@@ -63,6 +80,10 @@ export class QuizScene extends Scene {
     this.t += dt;
     const input = this.input;
     if (this.phase === 'ask') {
+      if (this.q.type === 'dictation' && input.tappedIn(this.listenButton)) {
+        input.consumeTaps();
+        this._speak();
+      }
       if (this.q.type === 'choice') {
         const n = this.options.length;
         if (input.pressed('up') || input.pressed('left')) (this.sel = (this.sel - 1 + n) % n), this.game.audio.play('menu_move');
@@ -140,6 +161,18 @@ export class QuizScene extends Scene {
       r.text(q.image, W / 2, ty, { size, font: EMOJI_FONT, align: 'center', color: s.text });
       ty += size + 8;
     }
+    if (q.type === 'dictation') {
+      const b = this.listenButton;
+      const pulse = this.phase === 'ask' && !this.spoke && Math.floor(this.game.time * 2) % 2 === 0;
+      r.rect(b.x, b.y, b.w, b.h, pulse ? s.accent : s.border);
+      r.rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, pulse ? s.box : s.box);
+      r.text('🔊 Écouter l’énigme', W / 2, b.y + 6, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
+      ty = b.y + b.h + 10;
+      if (this.noVoice) {
+        r.text('Ton appareil ne sait pas lire à voix haute.', W / 2, ty, { color: '#ff7a6a', size: 7, font: s.font, align: 'center' });
+        ty += 12;
+      }
+    }
     for (const line of this._wrapped(r, q.prompt, w - 24, 9)) {
       r.text(line, W / 2, ty, { color: s.text, size: 9, font: s.font, align: 'center' });
       ty += 12;
@@ -159,7 +192,8 @@ export class QuizScene extends Scene {
         r.text('Haut/Bas : choisir · Action : valider · B : je ne sais pas', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
       } else {
         this.field.place();
-        r.text('Écris ta réponse puis Entrée (ou A) · B : je ne sais pas', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+        const hint = q.type === 'dictation' ? 'Touche le bouton (ou Tab) pour écouter · Entrée : valider' : 'Écris ta réponse puis Entrée (ou A) · B : je ne sais pas';
+        r.text(hint, W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
       }
       return;
     }
@@ -187,6 +221,7 @@ export class QuizScene extends Scene {
 /** Texte de la question pour le bilan des parents (image décrite). */
 function describe(q) {
   const img = q.image;
+  if (q.type === 'dictation') return `Dictée : « ${q.answer} »`;
   if (!img) return q.prompt;
   if (typeof img === 'string') return `${img} ${q.prompt}`;
   if (img.clock) return `[horloge ${img.clock[0]} h ${String(img.clock[1]).padStart(2, '0')}] ${q.prompt}`;

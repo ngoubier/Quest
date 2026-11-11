@@ -25,10 +25,27 @@ export class GameState {
     this.hp = maxHp;
     this.quests = {};
     this.profile = this.profile ?? { age: 8 };
-    this.quiz = { seen: [], stats: {}, missed: {} };
+    this.quiz = { seen: [], stats: {}, missed: {}, recent: {}, level: {}, review: {} };
     this.playTime = 0;
     this.cooldowns = {};
     this.bagSize = 10;
+    this.petTime = 0;
+  }
+
+  // --- difficulté automatique : décalage d'âge par matière (-2 à +2)
+  /** Âge utilisé pour choisir les questions d'une matière. */
+  effectiveAge(subject) {
+    const age = this.profile?.age ?? 8;
+    return Math.max(6, Math.min(10, age + (this.quiz.level?.[subject] ?? 0)));
+  }
+
+  // --- révision des erreurs (répétition espacée)
+  /** Questions ratées dont la date de révision est arrivée. */
+  dueReviews(subject = null, now = Date.now()) {
+    return Object.values(this.quiz.review ?? {})
+      .filter((r) => r.due <= now && (!subject || r.q.subject === subject))
+      .sort((a, b) => a.due - b.due)
+      .map((r) => r.q);
   }
 
   // --- délais (ex. attendre avant de retenter des questions)
@@ -41,7 +58,43 @@ export class GameState {
   }
 
   // --- questions scolaires
-  recordQuiz(results) {
+  /**
+   * Enregistre une série de réponses.
+   * - statistiques par matière, erreurs à retravailler (bilan) ;
+   * - difficulté automatique : ≥ 85 % de réussite sur 6 réponses → un niveau au-dessus,
+   *   ≤ 40 % → un niveau en dessous ;
+   * - révision : une question ratée revient après `reviewDays[0]` jours, puis de plus en plus tard.
+   */
+  recordQuiz(results, { now = Date.now(), reviewDays = [1, 3, 7] } = {}) {
+    const DAY = 86400000;
+    const q = this.quiz;
+    q.recent ??= {};
+    q.level ??= {};
+    q.review ??= {};
+    for (const r of results) {
+      // Difficulté automatique
+      const rec = (q.recent[r.subject] ??= []);
+      rec.push(!!r.ok);
+      if (rec.length > 8) rec.shift();
+      if (rec.length >= 6) {
+        const rate = rec.filter(Boolean).length / rec.length;
+        const lvl = q.level[r.subject] ?? 0;
+        const age = this.profile?.age ?? 8;
+        if (rate >= 0.85 && lvl < 2 && age + lvl < 10) (q.level[r.subject] = lvl + 1), (q.recent[r.subject] = []);
+        else if (rate <= 0.4 && lvl > -2 && age + lvl > 6) (q.level[r.subject] = lvl - 1), (q.recent[r.subject] = []);
+      }
+      // Révision espacée
+      const key = r.id ?? r.prompt;
+      if (r.question) {
+        const rv = q.review[key];
+        if (!r.ok) q.review[key] = { q: r.question, step: 0, due: now + reviewDays[0] * DAY };
+        else if (rv && rv.due <= now) {
+          rv.step++;
+          if (rv.step >= reviewDays.length) delete q.review[key];
+          else rv.due = now + reviewDays[rv.step] * DAY;
+        }
+      }
+    }
     for (const r of results) {
       if (r.id && !r.id.startsWith('gen:')) {
         this.quiz.seen = this.quiz.seen.filter((id) => id !== r.id);
@@ -141,13 +194,13 @@ export class GameState {
 
   // --- sauvegarde
   toJSON() {
-    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns, bagSize: this.bagSize });
+    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns, bagSize: this.bagSize, petTime: this.petTime });
   }
 
   load(data) {
     this.reset(data.maxHp);
     const d = structuredClone(data);
-    d.quiz = { seen: [], stats: {}, missed: {}, ...d.quiz };
+    d.quiz = { seen: [], stats: {}, missed: {}, recent: {}, level: {}, review: {}, ...d.quiz };
     Object.assign(this, d);
     this._changed('load');
   }

@@ -26,10 +26,20 @@ screen.id = 'screen';
 root.appendChild(screen);
 document.body.appendChild(root);
 
-const game = new Game({ width: 16 * TS, height: 11 * TS + HUD_H, parent: screen });
-if (TouchControls.isTouchDevice() || new URLSearchParams(location.search).has('touch')) {
-  new TouchControls(game.input, { parent: root });
-  game.resize();
+// Sur téléphone en portrait, on affiche 12 tuiles de large au lieu de 16 :
+// l'image est ~35 % plus grande, et la caméra suit le héros dans la salle.
+const touch = TouchControls.isTouchDevice() || new URLSearchParams(location.search).has('touch');
+const logicalWidth = () => (touch && innerHeight > innerWidth ? 12 : 16) * TS;
+const game = new Game({ width: logicalWidth(), height: 11 * TS + HUD_H, parent: screen });
+if (touch) {
+  new TouchControls(game.input, {
+    parent: root,
+    screen,
+    onLayout: () => {
+      game.setLogicalSize(logicalWidth(), 11 * TS + HUD_H);
+      game.resize();
+    },
+  });
 }
 
 // ------------------------------------------------------------------ bruitages
@@ -61,6 +71,9 @@ const sfx = {
   quest_done: { type: 'triangle', notes: [[523, 0.1], [659, 0.1], [784, 0.1], [1047, 0.3]], vol: 0.25 },
   quiz_ok: { type: 'square', notes: [[784, 0.08], [1047, 0.16]], vol: 0.18 },
   quiz_ko: { type: 'triangle', notes: [[330, 0.12], [262, 0.2]], vol: 0.2 },
+  boss_dash: { type: 'sawtooth', notes: [[90, 0.25]], vol: 0.2, slide: 60 },
+  boss_shield: { type: 'triangle', notes: [[880, 0.05], [660, 0.08]], vol: 0.2 },
+  boss_open: { type: 'square', notes: [[523, 0.06], [659, 0.06], [784, 0.12]], vol: 0.2 },
   gameover: { type: 'triangle', notes: [[392, 0.2], [330, 0.2], [262, 0.4]], vol: 0.25 },
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
@@ -187,7 +200,9 @@ class TitleScene extends Scene {
     r.withAlpha(0.72, () => r.rect(0, 0, r.width, r.height, '#000'));
     r.text('QUEST', r.width / 2, 14, { color: s.accent, size: 22, font: s.font, bold: true, align: 'center', shadow: '#000' });
     r.text('Essai n°2 — le gameplay', r.width / 2, 42, { color: s.text, size: 9, font: s.font, align: 'center' });
-    const lines = ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · I : sac · Tab : ambiance'];
+    const lines = touch
+      ? ['Croix : bouger · A : parler, frapper', 'Start : menu · Select : ambiance']
+      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · I : sac · Tab : ambiance'];
     lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
     r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
     this.options.forEach((o, i) => {

@@ -2,16 +2,17 @@ import { Scene, TextField } from '../../engine/index.js';
 
 // Demande un texte court (prénom...) dans une petite fenêtre.
 export class PromptScene extends Scene {
-  constructor({ title, message = '', placeholder = '', maxLength = 12, inputMode = 'text', validate = (v) => (v.trim() ? null : 'Écris quelque chose !'), onOk }) {
+  constructor({ title, message = '', placeholder = '', maxLength = 12, inputMode = 'text', fieldWidth = 140, validate = (v) => (v.trim() ? null : 'Écris quelque chose !'), onOk }) {
     super();
     this.transparent = true;
-    Object.assign(this, { title, message, placeholder, maxLength, inputMode, validate, onOk });
+    Object.assign(this, { title, message, placeholder, maxLength, inputMode, fieldWidth, validate, onOk });
     this.error = '';
   }
 
   enter() {
     this.field = new TextField(this.game);
-    this.field.open({ x: 58, y: 108, w: 140, h: 20 }, { onSubmit: (v) => this._submit(v), placeholder: this.placeholder, maxLength: this.maxLength, inputMode: this.inputMode });
+    const fw = Math.min(this.fieldWidth, this.game.width - 24);
+    this.field.open({ x: Math.round((this.game.width - fw) / 2), y: 108, w: fw, h: 20 }, { onSubmit: (v) => this._submit(v), placeholder: this.placeholder, maxLength: this.maxLength, inputMode: this.inputMode });
   }
 
   exit() {
@@ -43,9 +44,9 @@ export class PromptScene extends Scene {
     const s = this.game.style;
     this.field.place();
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
-    const x = 24;
+    const x = 10;
     const y = 50;
-    const w = r.width - 48;
+    const w = r.width - 20;
     const h = 100;
     r.rect(x, y, w, h, s.box);
     r.strokeRect(x, y, w, h, s.border);

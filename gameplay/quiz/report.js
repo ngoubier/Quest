@@ -4,7 +4,7 @@ import { SUBJECTS } from './QuestionBank.js';
 export function buildReport(state, { questDefs = [] } = {}) {
   const stats = state.quiz?.stats ?? {};
   const subjects = Object.entries(stats)
-    .map(([id, s]) => ({ id, name: SUBJECTS[id] ?? id, ok: s.ok, total: s.total, rate: s.total ? s.ok / s.total : 0 }))
+    .map(([id, s]) => ({ id, name: SUBJECTS[id] ?? id, ok: s.ok, total: s.total, rate: s.total ? s.ok / s.total : 0, level: state.quiz?.level?.[id] ?? 0, effectiveAge: state.effectiveAge?.(id) ?? state.profile?.age }))
     .sort((a, b) => b.total - a.total);
   const total = subjects.reduce((n, s) => n + s.total, 0);
   const ok = subjects.reduce((n, s) => n + s.ok, 0);
@@ -28,6 +28,7 @@ export function buildReport(state, { questDefs = [] } = {}) {
     missed,
     fixed,
     hintsUsed: state.counter('hints_used'),
+    reviewsPending: Object.keys(state.quiz?.review ?? {}).length,
     questsDone: quests.filter((q) => q.status === 'done').length,
     questsTotal: quests.length,
   };

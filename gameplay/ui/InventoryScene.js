@@ -78,7 +78,7 @@ export class InventoryScene extends Scene {
     const rows = Math.ceil(n / COLS);
     const items = this.items;
     r.withAlpha(0.55, () => r.rect(0, 0, r.width, r.height, '#000'));
-    const w = 224;
+    const w = Math.min(224, r.width - 8);
     const gx = Math.round((w - COLS * CELL) / 2) + 2;
     const h = rows * CELL + 74;
     const x = Math.round((r.width - w) / 2);

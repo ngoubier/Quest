@@ -26,3 +26,6 @@ export { buildReport, formatPlayTime } from './quiz/report.js';
 export { formatDuration } from './script/actions.js';
 export { ProfileStore, parentSettings, setParentSettings } from './profiles.js';
 export { PromptScene } from './ui/PromptScene.js';
+export { Boss } from './actors/Boss.js';
+export { Companion } from './actors/Companion.js';
+export { openExport, openImport, encodeTransfer, decodeTransfer } from './ui/transfer.js';

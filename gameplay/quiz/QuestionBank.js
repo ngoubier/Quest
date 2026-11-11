@@ -56,10 +56,11 @@ export class QuestionBank {
    * Choisit `count` questions adaptées à l'âge (repli sur l'âge inférieur si besoin),
    * en évitant celles déjà vues (`seen`).
    */
-  pick({ age, subject = null, count = 3, seen = [], rng = createRng(Date.now() % 1e9) }) {
+  pick({ age, subject = null, count = 3, seen = [], excludeTypes = [], rng = createRng(Date.now() % 1e9) }) {
     const seenSet = new Set(seen);
     const out = [];
     const subj = (s) => !subject || s === subject;
+    const typeOk = (q) => !excludeTypes.includes(q.type);
     const shuffle = (arr) => {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) {
@@ -69,8 +70,8 @@ export class QuestionBank {
       return a;
     };
     // Questions fixes : âge exact d'abord, puis un an de moins ; les jamais vues avant les autres.
-    const exact = this.questions.filter((q) => subj(q.subject) && age >= q.ages[0] && age <= q.ages[1]);
-    const younger = this.questions.filter((q) => subj(q.subject) && age > q.ages[1] && age - q.ages[1] <= 1);
+    const exact = this.questions.filter((q) => subj(q.subject) && typeOk(q) && age >= q.ages[0] && age <= q.ages[1]);
+    const younger = this.questions.filter((q) => subj(q.subject) && typeOk(q) && age > q.ages[1] && age - q.ages[1] <= 1);
     const fresh = (arr) => shuffle(arr.filter((q) => !seenSet.has(q.id)));
     const stale = (arr) => shuffle(arr.filter((q) => seenSet.has(q.id)));
     const pool = [...fresh(exact), ...fresh(younger), ...stale(exact), ...stale(younger)];

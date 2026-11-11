@@ -40,6 +40,8 @@ export function parseNumber(str) {
 export function checkAnswer(q, given) {
   if (given == null) return false;
   if (q.type === 'choice') return String(given) === String(q.answer);
+  // Dictée : l'orthographe compte, accents compris (sauf mention contraire).
+  if (q.type === 'dictation') q = { ...q, strictAccents: q.strictAccents ?? true, articles: false };
   const expected = [q.answer, ...(q.accept ?? [])];
   // Réponse numérique : comparaison par valeur (3,7 = 3,70 = 3.7 €).
   const g = parseNumber(given);

@@ -52,7 +52,7 @@ function key(c, x, y, col, s = 1) {
 const OBJECT_FRAMES = [
   'chest', 'chest_open', 'block', 'plate', 'plate_down', 'gate', 'locked', 'lever_off', 'lever_on',
   'coin', 'key', 'amulet', 'mushroom', 'heart', 'sword_down', 'sword_up', 'sword_side', 'poof_0', 'poof_1',
-  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container', 'planks', 'nails', 'tarte', 'hint', 'apple', 'cake', 'big_bag',
+  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container', 'planks', 'nails', 'tarte', 'hint', 'apple', 'cake', 'big_bag', 'pet_0', 'pet_1',
 ];
 
 function objectsSheet(p) {
@@ -219,6 +219,9 @@ function objectsSheet(p) {
           P(c, 9, 7, 2, 1, '#8a4a2a');
           P(c, 1, 12, 14, 1, '#8a5a2a');
           return;
+        case 'pet_0':
+        case 'pet_1':
+          return paintPet(c, p.pet, name === 'pet_1');
         case 'apple':
           P(c, 7, 1, 2, 3, '#6a4220');
           P(c, 9, 2, 3, 2, '#3a8a2a');
@@ -441,16 +444,222 @@ const PLAYERS = {
   city: { skin: '#d9a07a', hair: '#1a1a1a', eye: '#111', body: '#ff6aa8', bodyDark: '#c84a80', legs: '#2a3a6a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
 };
 
+// ------------------------------------------------------------ compagnon (chiot / drone / chaton)
+function paintPet(c, pet, step) {
+  P(c, 4, 15, 9, 1, 'rgba(0,0,0,.3)');
+  if (pet.kind === 'drone') {
+    const y = step ? 1 : 0;
+    P(c, 4, 6 + y, 8, 6, pet.body);
+    P(c, 5, 5 + y, 6, 1, pet.light);
+    P(c, 6, 8 + y, 4, 2, pet.eye);
+    P(c, 2, 4 + y, 3, 1, pet.light);
+    P(c, 11, 4 + y, 3, 1, pet.light);
+    P(c, 7, 12 + y, 2, 1, '#4ff0ff');
+    return;
+  }
+  // quadrupède : chiot ou chaton
+  P(c, 3, 9, 9, 4, pet.body);
+  P(c, 10, 5, 5, 5, pet.body);
+  P(c, 10, 9, 5, 1, pet.dark);
+  if (pet.kind === 'cat') {
+    P(c, 10, 4, 1, 1, pet.body);
+    P(c, 14, 4, 1, 1, pet.body);
+  } else {
+    P(c, 10, 5, 1, 3, pet.dark);
+    P(c, 14, 5, 1, 3, pet.dark);
+  }
+  P(c, 12, 6, 1, 1, '#111');
+  P(c, 14, 7, 1, 1, pet.kind === 'cat' ? '#ff8aa8' : '#111');
+  P(c, 1, step ? 7 : 8, 2, 2, pet.body); // queue
+  P(c, 4, 13, 2, step ? 2 : 1, pet.dark);
+  P(c, 9, 13, 2, step ? 1 : 2, pet.dark);
+  P(c, 4, 10, 4, 1, pet.light);
+}
+
+// ------------------------------------------------------------ boss 32x32
+function bossSheet(kind, b) {
+  return {
+    frameW: 32,
+    frameH: 32,
+    frames: ['boss_0', 'boss_1', 'boss_shield'],
+    outline: '#141414',
+    paint(c, name) {
+      if (name === 'boss_shield') {
+        for (let a = 0; a < 64; a++) {
+          const ang = (a / 64) * Math.PI * 2;
+          P(c, Math.round(16 + Math.cos(ang) * 14), Math.round(17 + Math.sin(ang) * 13), 1, 1, '#9ad8ff');
+        }
+        P(c, 9, 7, 3, 1, '#e8f8ff');
+        P(c, 7, 9, 1, 3, '#e8f8ff');
+        return;
+      }
+      const sq = name === 'boss_1' ? 1 : 0;
+      P(c, 5, 29, 22, 2, 'rgba(0,0,0,.3)');
+      if (kind === 'robot') {
+        P(c, 6, 8 + sq, 20, 18 - sq, b.body);
+        P(c, 6, 8 + sq, 20, 2, b.light);
+        P(c, 9, 13 + sq, 14, 4, '#111');
+        P(c, 10, 14 + sq, 12, 2, b.eye);
+        P(c, 15, 3 + sq, 2, 5, b.dark);
+        P(c, 14, 1 + sq, 4, 2, b.eye);
+        P(c, 3, 14, 3, 8, b.dark);
+        P(c, 26, 14, 3, 8, b.dark);
+        P(c, 8, 26, 5, 3, b.dark);
+        P(c, 19, 26, 5, 3, b.dark);
+        P(c, 10, 20 + sq, 12, 2, b.dark);
+        return;
+      }
+      if (kind === 'rat') {
+        P(c, 4, 12 + sq, 22, 14 - sq, b.body);
+        P(c, 18, 7 + sq, 11, 11, b.body);
+        P(c, 18, 4 + sq, 4, 4, b.light);
+        P(c, 25, 4 + sq, 4, 4, b.light);
+        P(c, 22, 10 + sq, 2, 2, b.eye);
+        P(c, 27, 10 + sq, 2, 2, b.eye);
+        P(c, 28, 14 + sq, 3, 2, '#ff8aa8');
+        P(c, 1, 22, 4, 2, '#d8a0a8');
+        P(c, 0, 18, 2, 4, '#d8a0a8');
+        P(c, 6, 26, 4, 3, b.dark);
+        P(c, 18, 26, 4, 3, b.dark);
+        P(c, 6, 14 + sq, 10, 3, b.light);
+        return;
+      }
+      // roi gluant
+      P(c, 4, 12 + sq * 2, 24, 16 - sq * 2, b.dark);
+      P(c, 6, 9 + sq * 2, 20, 4, b.body);
+      P(c, 4, 13 + sq * 2, 24, 14 - sq * 2, b.body);
+      P(c, 7, 14 + sq * 2, 5, 3, b.light);
+      P(c, 10, 17, 4, 4, '#fff');
+      P(c, 19, 17, 4, 4, '#fff');
+      P(c, 11, 18, 2, 2, '#111');
+      P(c, 20, 18, 2, 2, '#111');
+      P(c, 13, 23, 6, 1, b.dark);
+      // couronne
+      P(c, 9, 4 + sq * 2, 14, 5, b.eye);
+      P(c, 9, 1 + sq * 2, 2, 3, b.eye);
+      P(c, 15, 0 + sq * 2, 2, 4, b.eye);
+      P(c, 21, 1 + sq * 2, 2, 3, b.eye);
+      P(c, 15, 5 + sq * 2, 2, 2, '#e8303a');
+    },
+  };
+}
+
+// ------------------------------------------------------------ tuiles améliorées
+const tuft = (c, x, y, col) => (P(c, x, y + 1, 1, 1, col), P(c, x + 1, y, 1, 1, col), P(c, x + 2, y + 1, 1, 1, col));
+const BETTER_TILES = {
+  medieval: {
+    floor: {
+      variants: 3,
+      paint: (c, { rng, variant }) => {
+        P(c, 0, 0, 16, 16, '#4c9a3c');
+        for (let i = 0; i < 10; i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick(['#3d8530', '#5fb04c']));
+        for (let i = 0; i < 2 + variant; i++) tuft(c, rng.int(0, 13), rng.int(1, 13), i % 2 ? '#3a7f2c' : '#6bbf4e');
+        if (variant === 2) (P(c, rng.int(2, 13), rng.int(2, 13), 1, 1, '#ffe066'), P(c, rng.int(2, 13), rng.int(2, 13), 1, 1, '#ffffff'));
+      },
+    },
+    path: {
+      variants: 2,
+      paint: (c, { rng }) => {
+        P(c, 0, 0, 16, 16, '#c9a266');
+        for (let i = 0; i < 9; i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick(['#b08950', '#dcb97f']));
+        for (let i = 0; i < 2; i++) {
+          const x = rng.int(1, 12);
+          const y = rng.int(1, 12);
+          P(c, x, y, 3, 2, '#9a7a4a');
+          P(c, x, y, 2, 1, '#e4c690');
+        }
+      },
+    },
+    bush: {
+      paint: (c) => {
+        P(c, 0, 0, 16, 16, '#4c9a3c');
+        P(c, 2, 4, 12, 10, '#2b6a26');
+        P(c, 1, 6, 14, 6, '#2b6a26');
+        P(c, 3, 3, 10, 9, '#3f8a36');
+        P(c, 2, 6, 12, 5, '#3f8a36');
+        P(c, 4, 4, 3, 2, '#6bc458');
+        P(c, 9, 6, 3, 2, '#6bc458');
+        P(c, 6, 9, 2, 1, '#6bc458');
+        P(c, 3, 13, 10, 2, '#1d4a1a');
+      },
+    },
+    water: {
+      frames: 2,
+      fps: 2,
+      variants: 2,
+      paint: (c, { frame, variant }) => {
+        P(c, 0, 0, 16, 16, '#2f63c9');
+        P(c, 0, 8, 16, 8, '#2a58b8');
+        const o = frame * 4 + variant * 6;
+        P(c, (2 + o) % 14, 4, 4, 1, '#79a6f2');
+        P(c, (9 + o) % 14, 11, 4, 1, '#79a6f2');
+        if (frame) P(c, (5 + variant * 7) % 15, 7, 1, 1, '#ffffff');
+      },
+    },
+  },
+  space: {
+    floor: {
+      variants: 3,
+      paint: (c, { variant }) => {
+        P(c, 0, 0, 16, 16, '#3a4254');
+        P(c, 0, 0, 16, 1, '#4c566c');
+        P(c, 0, 15, 16, 1, '#272d3a');
+        P(c, 15, 0, 1, 16, '#272d3a');
+        for (const [x, y] of [[2, 2], [13, 2], [2, 13], [13, 13]]) P(c, x, y, 1, 1, '#6a7590');
+        if (variant === 1) for (let x = 4; x < 12; x += 2) P(c, x, 6, 1, 4, '#2a303d');
+        if (variant === 2) (P(c, 5, 5, 6, 6, '#333b4c'), P(c, 7, 7, 2, 2, '#4ff0ff'));
+      },
+    },
+  },
+  city: {
+    floor: {
+      variants: 3,
+      paint: (c, { variant, rng }) => {
+        P(c, 0, 0, 16, 16, '#b9b4aa');
+        P(c, 0, 0, 16, 1, '#9e998f');
+        P(c, 0, 8, 16, 1, '#9e998f');
+        P(c, 0, 0, 1, 8, '#9e998f');
+        P(c, 8, 8, 1, 8, '#9e998f');
+        if (variant === 1) (P(c, rng.int(2, 6), 3, 3, 1, '#a8a398'), P(c, rng.int(9, 12), 11, 1, 3, '#a8a398'));
+        if (variant === 2) P(c, rng.int(2, 12), rng.int(2, 12), 2, 2, '#8a857c');
+      },
+    },
+  },
+};
+const EDGES = { medieval: '#a8c8f8', space: '#3a4a8a', city: '#d8f0f4' };
+const PETS = {
+  medieval: { kind: 'dog', body: '#b07a40', dark: '#6a4220', light: '#d8a060', eye: '#111' },
+  space: { kind: 'drone', body: '#8b93a7', dark: '#3a4254', light: '#c0c7d6', eye: '#3aff8a' },
+  city: { kind: 'cat', body: '#e8903a', dark: '#a85a1a', light: '#ffc078', eye: '#111' },
+};
+const BOSSES = {
+  medieval: ['slime', { body: '#5ac83a', dark: '#2a7a1a', light: '#9af07a', eye: '#ffd35a' }],
+  space: ['robot', { body: '#8b93a7', dark: '#4a5266', light: '#c0c7d6', eye: '#ff3a3a' }],
+  city: ['rat', { body: '#7a7a8a', dark: '#4a4a5a', light: '#9a9aa8', eye: '#ff3a3a' }],
+};
+const MORE_WORDS = {
+  medieval: { boss: 'le Roi Gluant', pet: 'le chiot' },
+  space: { boss: 'le Robot Géant', pet: 'le petit drone' },
+  city: { boss: 'le Rat Géant', pet: 'le chaton' },
+};
+
 export const THEMES = BASE.map((t) => {
   const x = EXTRA[t.id];
+  const pal = { ...x.pal, pet: PETS[t.id] };
+  const tiles = { ...t.tiles, bush: { solid: true, props: { cuttable: true, cutTo: 'floor' }, paint: x.bush } };
+  for (const [k, v] of Object.entries(BETTER_TILES[t.id] ?? {})) tiles[k] = { ...tiles[k], ...v };
+  // Ombres portées sous les murs, obstacles et buissons ; écume au bord de l'eau.
+  for (const k of ['wall', 'obstacle', 'bush']) tiles[k] = { ...tiles[k], props: { ...(tiles[k].props ?? {}), shadow: true } };
+  tiles.water = { ...tiles.water, props: { ...(tiles.water.props ?? {}), edge: EDGES[t.id] } };
   return {
     ...t,
-    words: x.words,
-    tiles: { ...t.tiles, bush: { solid: true, props: { cuttable: true, cutTo: 'floor' }, paint: x.bush } },
+    words: { ...x.words, ...MORE_WORDS[t.id] },
+    tiles,
     sprites: {
-      chars: chars({ player: PLAYERS[t.id], ...x.people }, SIGNS[t.id]),
-      objects: objectsSheet(x.pal),
+      chars: { ...chars({ player: PLAYERS[t.id], ...x.people }, SIGNS[t.id]), outline: '#141414' },
+      objects: { ...objectsSheet(pal), outline: '#141414' },
       icons: iconsSheet(x.pal),
+      boss: bossSheet(...BOSSES[t.id]),
     },
   };
 });

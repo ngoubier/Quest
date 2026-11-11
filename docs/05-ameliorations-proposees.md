@@ -1,4 +1,6 @@
-# Améliorations proposées (à valider avant de concevoir le jeu)
+# Améliorations proposées
+
+> Statut : **décisions prises** — voir le tableau « Décisions » en bas de page.
 
 > Répondez simplement par **oui / non / plus tard** pour chaque numéro.
 > Effort : **S** = petit · **M** = moyen · **L** = gros. ★ = ma recommandation.
@@ -44,3 +46,29 @@
 | 20 | **Confort de lecture** : texte plus grand, police adaptée aux enfants dyslexiques | Accessibilité | S |
 
 **Ma sélection pour la suite** : 1, 2, 3, 7, 8, 9, 15, 18. Le reste peut venir plus tard, ou pas du tout.
+
+## Décisions et réalisation
+
+| # | Décision | Réalisé |
+|---|---|---|
+| 1 | Non pour tout lire à voix haute, **mais une énigme « dictée »** | ✓ bouton « 🔊 Écouter l’énigme » (ou Tab) : la voix dit « Écris le mot : chien », l’enfant écrit et valide |
+| 2 | Oui | ✓ par matière : ≥ 85 % de réussite sur 6 réponses → niveau au-dessus ; ≤ 40 % → en dessous (entre 6 et 10 ans) ; visible dans le bilan |
+| 3 | Oui | ✓ une question ratée revient 1 jour plus tard, puis 3, puis 7 ; maîtrisée après 3 révisions réussies |
+| 4 | Plus tard | — |
+| 5 | Oui, dans l’Espace parents | ✓ par enfant : dictées (mot prononcé) et questions écrites (matière, question, réponse) |
+| 6 | Oui | ✓ ~60 mots de dictée du CP au CM2 + ceux des parents |
+| 7 | Non | — |
+| 8–11, 13 | Plus tard | — |
+| 12 | Oui | ✓ boss des souterrains (Roi Gluant / Robot Géant / Rat Géant) : bouclier → question → bouclier baissé 6 s, 2 coups max ; vaincu, il libère la relique |
+| 14 | Oui | ✓ compagnon (chiot / petit drone / chaton) trouvé au village : il suit le héros et trouve un indice toutes les 8 min de jeu |
+| 15, 16, 20 | Non | — |
+| 17 | Oui, PC et mobile | ✓ Espace parents : « Exporter la partie » (code à copier ou fichier) / « Importer une partie » (coller le code ou ouvrir le fichier) |
+| 18, 19 | Plus tard | — |
+
+### Aussi demandé
+
+- **Graphismes améliorés** : contour sombre autour des personnages et objets, 3 variantes de sol (herbe, plaques, trottoir) pour casser la répétition,
+  ombre portée sous les murs, obstacles et buissons, écume au bord de l’eau, herbe, buissons et eau redessinés.
+- **Affichage plus grand sur mobile** :
+  - en **portrait**, l’écran montre 12 tuiles de large au lieu de 16 (image ~35 % plus grande) et la caméra suit le héros dans la salle ;
+  - en **paysage**, la croix et les boutons passent sur les côtés de l’écran de jeu.

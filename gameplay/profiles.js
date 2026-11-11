@@ -40,6 +40,7 @@ export class ProfileStore {
   remove(id) {
     this.saves.save('profiles', this.list().filter((p) => p.id !== id));
     this.saves.remove(this.slot(id));
+    this.saves.remove(`custom-${id}`);
   }
 }
 

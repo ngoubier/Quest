@@ -376,3 +376,33 @@ export class TileSwitch extends WorldObject {
     this.first = false;
   }
 }
+
+// ------------------------------------------------------------------ animal égaré (devient le compagnon)
+export class StrayPet extends WorldObject {
+  /** props : { name, text } — lui parler : il te suit (drapeau 'pet_joined') */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 3, y: y + 8, w: 10, h: 8, uid, props, solid: true, tags: ['pet'] });
+    this.t = 0;
+  }
+
+  added() {
+    if (this.state.flag('pet_joined')) this.kill();
+  }
+
+  update(dt) {
+    this.t += dt;
+  }
+
+  talk() {
+    runActions(
+      [{ say: this.props.text ?? 'Il a l’air perdu... Il veut te suivre !' }, { setFlag: 'pet_joined' }, { call: () => this.adv.spawnCompanion() }],
+      this.adv.actionContext({ speaker: this.props.name }),
+    );
+    this.kill();
+  }
+
+  draw(r) {
+    const hop = Math.floor(this.t * 2) % 4 === 0 ? -1 : 0;
+    objSheet(this).draw(r, Math.floor(this.t * 3) % 2 ? 'pet_1' : 'pet_0', this.x - 3, this.y - 8 + hop);
+  }
+}

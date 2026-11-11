@@ -10,12 +10,20 @@ export class TouchControls {
   /**
    * @param {import('./Input.js').Input} input
    * @param {object} opts
-   * @param {HTMLElement} opts.parent
+   * @param {HTMLElement} opts.parent  conteneur flex qui contient l'écran de jeu
+   * @param {HTMLElement} [opts.screen] l'élément de l'écran de jeu (pour la disposition paysage)
    * @param {{action:string,label:string}[]} [opts.buttons]
-   * @param {{action:string,label:string}[]} [opts.menu]
+   * @param {{action:string,label:string}[]} [opts.menu]  [gauche, droite]
+   * @param {(landscape:boolean)=>void} [opts.onLayout]
+   *
+   * Portrait : écran en haut, [croix + Select]  [B A + Start] en dessous.
+   * Paysage  : [croix + Select] | écran | [B A + Start] — l'écran est bien plus grand.
    */
-  constructor(input, { parent, buttons, menu } = {}) {
+  constructor(input, { parent, screen = null, buttons, menu, onLayout = null } = {}) {
     this.input = input;
+    this.parent = parent;
+    this.screen = screen;
+    this.onLayout = onLayout;
     buttons ??= [
       { action: 'secondary', label: 'B' },
       { action: 'action', label: 'A' },
@@ -24,36 +32,65 @@ export class TouchControls {
       { action: 'select', label: 'Select' },
       { action: 'start', label: 'Start' },
     ];
+    const col = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none;';
+    const small = (m) => {
+      const b = this._button(m.action, m.label);
+      b.style.cssText += 'border-radius:12px;width:70px;height:26px;font-size:12px;flex-shrink:0;';
+      return b;
+    };
 
-    // Disposition : [croix]  [B A] sur une ligne, [Select Start] centrés en dessous.
-    const root = document.createElement('div');
-    root.style.cssText =
-      'display:flex;flex-direction:column;gap:6px;padding:8px 16px 14px;box-sizing:border-box;width:100%;' +
-      'touch-action:none;user-select:none;-webkit-user-select:none;flex-shrink:0;';
-    this.root = root;
+    this.left = document.createElement('div');
+    this.left.style.cssText = col;
+    this.left.appendChild(this._dpad());
+    this.left.appendChild(small(menu[0]));
 
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
-    row.appendChild(this._dpad());
-    const right = document.createElement('div');
-    right.style.cssText = 'display:flex;gap:14px;align-items:center;';
+    this.right = document.createElement('div');
+    this.right.style.cssText = col;
+    const ab = document.createElement('div');
+    ab.style.cssText = 'display:flex;gap:14px;align-items:center;';
     buttons.forEach((m, i) => {
       const b = this._button(m.action, m.label);
       b.style.cssText += `width:60px;height:60px;flex-shrink:0;margin-top:${i % 2 ? -24 : 24}px;`;
-      right.appendChild(b);
+      ab.appendChild(b);
     });
-    row.appendChild(right);
-    root.appendChild(row);
+    this.right.appendChild(ab);
+    this.right.appendChild(small(menu[1]));
 
-    const mid = document.createElement('div');
-    mid.style.cssText = 'display:flex;gap:10px;justify-content:center;';
-    for (const m of menu) {
-      const b = this._button(m.action, m.label);
-      b.style.cssText += 'border-radius:12px;width:70px;height:26px;font-size:12px;flex-shrink:0;';
-      mid.appendChild(b);
+    this.bottom = document.createElement('div');
+    this.bottom.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 16px 14px;box-sizing:border-box;width:100%;flex-shrink:0;';
+    this.root = this.bottom;
+
+    this.layout();
+    addEventListener('resize', () => this.layout());
+  }
+
+  get landscape() {
+    return innerWidth > innerHeight;
+  }
+
+  /** Place les commandes selon l'orientation de l'écran. */
+  layout() {
+    const land = this.landscape && !!this.screen;
+    if (land === this._land) return;
+    this._land = land;
+    if (land) {
+      // Marge des bords arrondis / encoche uniquement du côté extérieur.
+      this.parent.style.flexDirection = 'row';
+      this.left.style.paddingLeft = 'max(10px, env(safe-area-inset-left, 0px))';
+      this.left.style.paddingRight = '8px';
+      this.right.style.paddingLeft = '8px';
+      this.right.style.paddingRight = 'max(10px, env(safe-area-inset-right, 0px))';
+      this.parent.insertBefore(this.left, this.screen);
+      this.parent.appendChild(this.right);
+      this.bottom.remove();
+    } else {
+      this.parent.style.flexDirection = 'column';
+      for (const el of [this.left, this.right]) el.style.paddingLeft = el.style.paddingRight = '0';
+      this.bottom.appendChild(this.left);
+      this.bottom.appendChild(this.right);
+      this.parent.appendChild(this.bottom);
     }
-    root.appendChild(mid);
-    parent.appendChild(root);
+    this.onLayout?.(land);
   }
 
   _button(action, label) {
@@ -79,7 +116,7 @@ export class TouchControls {
   }
 
   _dpad() {
-    const size = 124;
+    const size = 116;
     const el = document.createElement('div');
     el.style.cssText =
       `${BTN_CSS}width:${size}px;height:${size}px;flex-shrink:0;position:relative;font-size:14px;` +

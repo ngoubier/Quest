@@ -1,8 +1,9 @@
-import { Scene, World, Camera, Tilemap, MenuScene, DialogScene, SaveStore } from '../engine/index.js';
+import { Scene, World, Camera, Tilemap, MenuScene, DialogScene, SaveStore, Speech } from '../engine/index.js';
 import { GameState } from './state/GameState.js';
 import { QuestSystem } from './quests/QuestSystem.js';
 import { formatText } from './script/text.js';
 import { Hero } from './actors/Hero.js';
+import { Companion } from './actors/Companion.js';
 import { Pickup } from './objects/objects.js';
 import { standardFactory } from './objects/ObjectFactory.js';
 import { drawHud } from './ui/Hud.js';
@@ -67,6 +68,15 @@ export class AdventureScene extends Scene {
     this.quests = new QuestSystem(this.actionContext(), this.cfg.quests ?? []);
     this.offTheme = g.events.on('theme:change', (t) => this.world?.tilemap.setTileset(t.tileset));
     this.offDebug = g.debug.addInfo(() => this._debugLines());
+    // Changement de taille d'écran (téléphone tourné) : la caméra s'adapte.
+    this.offResize = g.events.on('logical-resize', () => {
+      if (!this.world) return;
+      const vp = this.viewport;
+      this.world.viewport = vp;
+      this.world.camera.width = vp.w;
+      this.world.camera.height = vp.h;
+      this.world.camera.snap();
+    });
     if (load && this.hasSave()) this._applySave(this.saves.load(this.slot).data);
     else {
       this.state.bagSize = this.cfg.bagSize ?? 10;
@@ -78,6 +88,7 @@ export class AdventureScene extends Scene {
   exit() {
     this.offTheme();
     this.offDebug();
+    this.offResize();
     this.quests.dispose();
   }
 
@@ -104,7 +115,16 @@ export class AdventureScene extends Scene {
 
     const { tilemap, markers } = Tilemap.fromAscii({ rows: def.rows, legend, tileset: this.game.themes.current.tileset });
     const vp = this.viewport;
-    const camera = new Camera({ width: vp.w, height: vp.h, mode: def.camera ?? 'rooms', bounds: { w: tilemap.pixelWidth, h: tilemap.pixelHeight } });
+    // Une salle = 16 x 11 tuiles, même si l'écran est plus étroit (téléphone en portrait).
+    const ts0 = this.cfg.tileSize;
+    const camera = new Camera({
+      width: vp.w,
+      height: vp.h,
+      mode: def.camera ?? 'rooms',
+      roomWidth: (this.cfg.roomTiles?.[0] ?? 16) * ts0,
+      roomHeight: (this.cfg.roomTiles?.[1] ?? 11) * ts0,
+      bounds: { w: tilemap.pixelWidth, h: tilemap.pixelHeight },
+    });
     const world = new World({ game: this.game, tilemap, camera, viewport: vp });
     world.adv = this;
     this.world = world;
@@ -127,6 +147,7 @@ export class AdventureScene extends Scene {
     else if (start) [px, py] = [start.x + 3, start.y + 6];
     else throw new Error(`Carte "${mapId}" : aucun point de départ`);
     this.hero = world.add(new (this.cfg.heroClass ?? Hero)(px, py, facing));
+    if (this.state.flag('pet_joined')) this.spawnCompanion();
     camera.follow(this.hero);
     camera.onRoomChange = (room) => this.game.events.emit('room:enter', { mapId, room });
     this.entry = { mapId, x: px, y: py, facing };
@@ -224,13 +245,20 @@ export class AdventureScene extends Scene {
     return formatText(text, { state: this.state, word: (k, p) => this.game.themes.word(k, p) });
   }
 
+  /** Nom affiché d'un personnage (vocabulaire du thème, majuscule). */
+  speakerName(speaker) {
+    if (!speaker) return speaker;
+    const t = this.format(speaker);
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
   say(text, { speaker, onClose } = {}) {
     const pages = [].concat(text).map((t) => this.format(t));
-    this.game.scenes.push(new DialogScene(pages, { speaker, onClose }));
+    this.game.scenes.push(new DialogScene(pages, { speaker: this.speakerName(speaker), onClose }));
   }
 
   ask(question, { speaker, choices }) {
-    this.game.scenes.push(new DialogScene(this.format(question), { speaker, choices: choices.map((c) => ({ ...c, label: this.format(c.label) })) }));
+    this.game.scenes.push(new DialogScene(this.format(question), { speaker: this.speakerName(speaker), choices: choices.map((c) => ({ ...c, label: this.format(c.label) })) }));
   }
 
   /** Message bref en haut de l'écran. File courte : les plus anciens sont abandonnés. */
@@ -258,22 +286,50 @@ export class AdventureScene extends Scene {
     return (plural ? def.plural : null) ?? def.name ?? item;
   }
 
-  /** Pose des questions scolaires adaptées à l'âge du joueur. */
+  /** Questions ajoutées par les parents pour ce joueur (Espace parents). */
+  customQuestions() {
+    const id = this.state.profile?.id;
+    return id ? (this.saves.load(`custom-${id}`)?.data ?? []) : [];
+  }
+
+  /**
+   * Pose des questions scolaires. Une série mélange :
+   *  1. les révisions dues (questions ratées il y a quelques jours) ;
+   *  2. au plus une question des parents ;
+   *  3. des questions de la banque, au niveau ajusté automatiquement (difficulté adaptative).
+   */
   quiz(spec, done, speaker) {
     const bank = this.cfg.questionBank;
     const st = this.state;
-    const age = st.profile?.age ?? 8;
+    const count = spec.count ?? 3;
+    const canSpeak = Speech.available;
+    const okType = (q) => canSpeak || q.type !== 'dictation';
     // Le jeu choisit la matière (sauf PNJ spécialisé) : variété + insistance sur les points faibles.
-    const subject = spec.subject ?? (bank ? chooseSubject({ subjects: bank.subjects(age), stats: st.quiz.stats, last: this._lastSubject }) : null);
+    const subject = spec.subject ?? (bank ? chooseSubject({ subjects: bank.subjects(st.profile?.age ?? 8), stats: st.quiz.stats, last: this._lastSubject }) : null);
     this._lastSubject = subject;
-    const questions = bank ? bank.pick({ age, subject, count: spec.count ?? 3, seen: st.quiz.seen }) : [];
+    const questions = [];
+    const ids = new Set();
+    const add = (q) => {
+      if (questions.length < count && okType(q) && !ids.has(q.id)) (questions.push(q), ids.add(q.id));
+    };
+    st.dueReviews(subject).slice(0, Math.max(0, count - 1)).forEach(add);
+    const seenOrder = new Map(st.quiz.seen.map((id, i) => [id, i]));
+    const custom = this.customQuestions()
+      .filter((q) => !subject || q.subject === subject)
+      .sort((a, b) => (seenOrder.get(a.id) ?? -1) - (seenOrder.get(b.id) ?? -1));
+    if (custom.length && Math.random() < 0.7) add(custom[0]);
+    if (bank) {
+      bank
+        .pick({ age: st.effectiveAge(subject), subject, count: count - questions.length + 1, seen: st.quiz.seen, excludeTypes: canSpeak ? [] : ['dictation'] })
+        .forEach(add);
+    }
     if (!questions.length) return this.say('Je n’ai pas de question pour toi aujourd’hui.', { speaker, onClose: () => done({ correct: 0, total: 0, results: [] }) });
     this.game.scenes.push(
       new QuizScene({
         questions,
         speaker,
         onDone: (res) => {
-          st.recordQuiz(res.results);
+          st.recordQuiz(res.results, { reviewDays: this.cfg.reviewDays ?? [1, 3, 7] });
           done(res);
         },
       }),
@@ -316,6 +372,12 @@ export class AdventureScene extends Scene {
     else this.state.give(item, n, def.max ?? Infinity);
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
     return true;
+  }
+
+  /** Fait apparaître le compagnon à côté du héros. */
+  spawnCompanion() {
+    if (this.world.entities.some((e) => e.has('companion') && !e.dead)) return;
+    this.world.add(new Companion(this.hero, { hintEvery: this.cfg.companionHintEvery ?? 480 }));
   }
 
   openBag() {
@@ -416,6 +478,7 @@ export class AdventureScene extends Scene {
       reportWhen: this.cfg.reportWhen ?? 'end',
       defaultCooldown: this.cfg.quizCooldown ?? 600,
       live: this.state.profile?.id ? { profileId: this.state.profile.id, state: this.state } : null,
+      saveLive: () => this.saveGame(),
     });
   }
 
