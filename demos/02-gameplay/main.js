@@ -11,7 +11,6 @@ const TS = 16;
 // Profil d'affichage : 'mobile' (lisible) ou 'pc' (haute définition, vue large).
 // Pour comparer : ?mobile, ?pc, ?classic dans l'adresse.
 const display = detectDisplay();
-const params = new URLSearchParams(location.search);
 // Bandeau : agrandi sur mobile quand l'écran est assez large (en portrait, l'image est
 // déjà très grande et la place manque).
 const hud = { height: 16, counters: ['coin', 'key', 'hint'], objective: display.id === 'pc' };
@@ -37,7 +36,7 @@ document.body.appendChild(root);
 //  - mobile en portrait : 12 tuiles de large (image ~35 % plus grande), la caméra suit le héros ;
 //  - mobile en paysage  : 10 tuiles de haut (tout est plus gros), largeur selon l'écran ;
 //  - PC : 11 tuiles de haut et jusqu'à 20 de large si la fenêtre est large (on voit plus loin).
-const touch = TouchControls.isTouchDevice() || params.has('touch') || params.has('mobile');
+const touch = TouchControls.isTouchDevice() || display.forced === 'mobile';
 function logicalSize() {
   const rect = screen.getBoundingClientRect();
   const aspect = (rect.width || innerWidth) / (rect.height || innerHeight);

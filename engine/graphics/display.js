@@ -9,8 +9,8 @@
 // Un profil ne change JAMAIS la logique du jeu (collisions, tailles, vitesses) :
 // seulement l'apparence et la quantité de carte visible.
 //
-// Forcer un profil dans l'adresse : ?mobile, ?pc, ?classic ; ?hd=0 coupe la haute définition.
-// (?touch, plus ancien, vaut ?mobile.)
+// Forcer un profil dans l'adresse : ?mobile, ?pc, ?classic (ou #mobile, #pc, #classic) ;
+// ?hd=0 coupe la haute définition. (?touch, plus ancien, vaut ?mobile.)
 
 export const DISPLAY_PROFILES = {
   classic: {
@@ -55,18 +55,22 @@ export const DISPLAY_PROFILES = {
  * Choisit le profil d'affichage.
  * @param {object} [o]
  * @param {string} [o.search]  paramètres d'adresse (par défaut location.search)
+ * @param {string} [o.hash]    ancre d'adresse (par défaut location.hash), ex. '#mobile'
  * @param {boolean} [o.touch]  écran tactile (par défaut : détecté)
- * @returns {typeof DISPLAY_PROFILES.pc}
+ * @returns {typeof DISPLAY_PROFILES.pc & {forced: string|null}} forced : profil imposé par l'adresse
  */
-export function detectDisplay({ search, touch } = {}) {
+export function detectDisplay({ search, hash, touch } = {}) {
   search ??= typeof location !== 'undefined' ? location.search : '';
+  hash ??= typeof location !== 'undefined' ? location.hash : '';
   touch ??= typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   const q = new URLSearchParams(search);
-  let id = touch ? 'mobile' : 'pc';
-  if (q.has('pc')) id = 'pc';
-  if (q.has('mobile') || q.has('touch')) id = 'mobile';
-  if (q.has('classic')) id = 'classic';
-  const p = { ...DISPLAY_PROFILES[id] };
+  const h = hash.replace(/^#/, '');
+  let forced = null;
+  if (q.has('pc') || h === 'pc') forced = 'pc';
+  if (q.has('mobile') || q.has('touch') || h === 'mobile') forced = 'mobile';
+  if (q.has('classic') || h === 'classic') forced = 'classic';
+  const id = forced ?? (touch ? 'mobile' : 'pc');
+  const p = { ...DISPLAY_PROFILES[id], forced };
   if (q.get('hd') === '0' && id === 'pc') Object.assign(p, { detail: 1, hd: false, smooth: false, shading: false, name: 'PC' });
   return p;
 }

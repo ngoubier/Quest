@@ -13,14 +13,17 @@ const img = (rows) => {
 const opaque = (im, x, y) => im.data[(y * im.width + x) * 4 + 3] === 255;
 
 test('Profil : écran tactile => mobile, sinon PC ; forçable dans l’adresse', () => {
-  assert.equal(detectDisplay({ search: '', touch: true }).id, 'mobile');
-  assert.equal(detectDisplay({ search: '', touch: false }).id, 'pc');
-  assert.equal(detectDisplay({ search: '?mobile', touch: false }).id, 'mobile');
-  assert.equal(detectDisplay({ search: '?touch', touch: false }).id, 'mobile', 'ancien paramètre');
-  assert.equal(detectDisplay({ search: '?pc', touch: true }).id, 'pc');
-  assert.equal(detectDisplay({ search: '?classic', touch: true }).detail, 1);
-  assert.equal(detectDisplay({ search: '?pc&hd=0', touch: false }).detail, 1, 'HD coupée');
-  assert.equal(detectDisplay({ search: '', touch: false }).detail, 2, 'PC : 2 pixels d’image par pixel de jeu');
+  assert.equal(detectDisplay({ hash: '', search: '', touch: true }).id, 'mobile');
+  assert.equal(detectDisplay({ hash: '', search: '', touch: false }).id, 'pc');
+  assert.equal(detectDisplay({ hash: '', search: '?mobile', touch: false }).id, 'mobile');
+  assert.equal(detectDisplay({ hash: '', search: '?touch', touch: false }).id, 'mobile', 'ancien paramètre');
+  assert.equal(detectDisplay({ hash: '', search: '?pc', touch: true }).id, 'pc');
+  assert.equal(detectDisplay({ hash: '', search: '?classic', touch: true }).detail, 1);
+  assert.equal(detectDisplay({ hash: '', search: '?pc&hd=0', touch: false }).detail, 1, 'HD coupée');
+  assert.equal(detectDisplay({ hash: '', search: '', touch: false }).detail, 2, 'PC : 2 pixels d’image par pixel de jeu');
+  assert.equal(detectDisplay({ hash: '', search: '', hash: '#mobile', touch: false }).id, 'mobile', 'ancre');
+  assert.equal(detectDisplay({ hash: '', search: '', hash: '#mobile', touch: false }).forced, 'mobile');
+  assert.equal(detectDisplay({ hash: '', search: '', hash: '', touch: true }).forced, null);
 });
 
 test('Scale2x : les diagonales sont arrondies, les aplats restent pleins', () => {
