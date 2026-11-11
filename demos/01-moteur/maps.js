@@ -1,0 +1,77 @@
+// Cartes de la démo, écrites en ASCII. Une "salle" = 16 x 11 tuiles (un écran).
+// La carte extérieure fait 2 x 2 salles.
+
+export const LEGEND = {
+  '.': 'floor',
+  ',': 'floor_alt',
+  '=': 'path',
+  '#': 'wall',
+  o: 'obstacle',
+  '~': 'water',
+  _: 'floor_in',
+  D: { tile: 'door', marker: 'door' },
+  P: { tile: 'path', marker: 'player' },
+  S: { tile: 'floor', marker: 'sign' },
+  s: { tile: 'floor_in', marker: 'sign' },
+  N: { tile: 'floor', marker: 'npc' },
+  n: { tile: 'floor_in', marker: 'npc' },
+};
+
+export const MAPS = {
+  overworld: {
+    name: 'Extérieur',
+    rows: [
+      '################################',
+      '#,.....,.......##.....~~~~~~...#',
+      '#..####........##..o..~~~~~~...#',
+      '#..####..S.....##.....~~~~~~.o.#',
+      '#..##D#...........~~~~~~~~~~...#',
+      '#....=====P====================#',
+      '#....=...........~~~~~~~~~~~...#',
+      '#....=...o.....##.....~~~~~~.N.#',
+      '#....=.......,.##.o...~~~~~~...#',
+      '#....=....o....##..............#',
+      '#####=####################.#####',
+      '#####=####################.#####',
+      '#....=........o##.........=....#',
+      '#.oo.=..oo.....##..~~~~...=..o.#',
+      '#.o..=...o..,..##..~~~~...=....#',
+      '#.o..=======...............=...#',
+      '#.oo...S......................=#',
+      '#..........oo......S.....=.....#',
+      '#..N.......o...##..~~~~..=..o..#',
+      '#.,........o...##..~~~~........#',
+      '#..............##.,............#',
+      '################################',
+    ],
+    signs: [
+      "Bienvenue dans l'essai n°1 du moteur ! Déplace-toi avec les flèches (ou ZQSD), parle avec Espace.",
+      'Appuie sur Tab (ou Select) pour changer d\'ambiance : la carte reste la même, seul le thème change.',
+      'Les écrans défilent comme dans les Zelda classiques. Appuie sur F1 (ou ²) pour voir les boîtes de collision.',
+    ],
+    npcs: [
+      ['Le lac est infranchissable... sauf par le pont !', 'Les moteurs de jeu, ça creuse.'],
+      ["Je me promène au hasard, mais je reste dans ma salle.", "Plus tard, des quêtes passeront par des gens comme moi."],
+    ],
+    doors: [{ to: 'house', at: { tx: 7, ty: 9 }, facing: 'up' }],
+  },
+  house: {
+    name: 'Maison',
+    rows: [
+      '################',
+      '#______________#',
+      '#_oo______n__o_#',
+      '#______________#',
+      '#____s_________#',
+      '#______________#',
+      '#_o__________o_#',
+      '#______________#',
+      '#______________#',
+      '#______________#',
+      '#######D########',
+    ],
+    signs: ["Cette pièce est une autre carte, chargée avec un fondu au noir. Sors par la porte en bas."],
+    npcs: [["Bienvenue chez moi ! Utilise Entrée (Start) pour ouvrir le menu et sauvegarder."]],
+    doors: [{ to: 'overworld', at: { tx: 5, ty: 5 }, facing: 'down' }],
+  },
+};

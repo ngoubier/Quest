@@ -1,0 +1,26 @@
+// Quest Engine — point d'entrée unique : import { Game, World, ... } from './engine/index.js'
+export { Game, DEFAULT_UI_STYLE } from './core/Game.js';
+export { EventBus } from './core/EventBus.js';
+export * from './core/math.js';
+export { Input, DEFAULT_BINDINGS, DEFAULT_PAD_BINDINGS } from './input/Input.js';
+export { TouchControls } from './input/TouchControls.js';
+export { Renderer } from './graphics/Renderer.js';
+export { SpriteSheet } from './graphics/SpriteSheet.js';
+export { Animator } from './graphics/Animator.js';
+export { createCanvas } from './graphics/canvas.js';
+export { Assets } from './assets/Assets.js';
+export { Tileset } from './world/Tileset.js';
+export { Tilemap } from './world/Tilemap.js';
+export { Entity } from './world/Entity.js';
+export { Camera } from './world/Camera.js';
+export { World } from './world/World.js';
+export { moveAndSlide, moveAxis } from './physics/collision.js';
+export { Scene } from './scene/Scene.js';
+export { SceneManager } from './scene/SceneManager.js';
+export { AudioEngine } from './audio/Audio.js';
+export { SaveStore } from './storage/SaveStore.js';
+export { ThemeRegistry, buildTileset } from './theme/ThemeRegistry.js';
+export { DialogScene } from './ui/DialogScene.js';
+export { MenuScene } from './ui/MenuScene.js';
+export { wrapText } from './ui/text.js';
+export { Debug } from './debug/Debug.js';
