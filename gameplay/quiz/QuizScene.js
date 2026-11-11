@@ -10,8 +10,14 @@ const PRAISE = ['Bravo !', 'Excellent !', 'Bien joué !', 'Super !', 'Parfait !'
 const EMOJI_FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif";
 
 export class QuizScene extends Scene {
-  constructor({ questions, speaker = null, onDone = null }) {
+  /**
+   * @param {object} o
+   * @param {{ left: () => number, spend: () => boolean }} [o.hints]
+   *   indices du jeu (compteur) : 2 au plus par question, chacun coûte 1 indice
+   */
+  constructor({ questions, speaker = null, onDone = null, hints = null }) {
     super();
+    this.hints = hints;
     this.transparent = true;
     this.questions = questions;
     this.speaker = speaker;
@@ -25,15 +31,16 @@ export class QuizScene extends Scene {
     // Safari (iPhone, iPad) n'accepte la voix que si elle est lancée PENDANT le toucher :
     // on écoute donc le toucher directement, sans attendre la boucle de jeu.
     this._onPointer = (e) => {
-      if (this.phase !== 'ask' || this.q.type !== 'dictation') return;
+      if (this.phase !== 'ask') return;
       const c = this.game.canvas.getBoundingClientRect();
       const x = ((e.clientX - c.left) * this.game.width) / c.width;
       const y = ((e.clientY - c.top) * this.game.height) / c.height;
       const inside = (b) => b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
-      // Tous les boutons de la dictée sont gérés ici, dans le geste (exigé pour la voix).
+      // Boutons gérés ici, dans le geste (exigé pour la voix).
+      if (inside(this.hintButton)) return this._hint();
+      if (this.q.type !== 'dictation') return;
       if (inside(this.listenButton)) this._listen();
       else if (inside(this.fallbackButton)) this._fallback();
-      else if (inside(this.hintButton)) this._hint();
     };
     this.game.canvas.addEventListener('pointerdown', this._onPointer);
     this._start(0);
@@ -57,19 +64,21 @@ export class QuizScene extends Scene {
     if (q.type === 'choice') {
       this.options = [...q.choices].sort(() => this.rng() - 0.5);
       this.sel = 0;
+      this.hintLevel = 0;
+      this.hintMsg = '';
     } else {
       const numeric = q.type !== 'dictation' && /^[\d\s.,]+$/.test(String(q.answer));
       // Dictée : Tab = écouter (ou voir), ? = indice.
       const onKey = (e) => {
-        if (q.type !== 'dictation') return false;
-        if (e.key === 'Tab') return this._listen(), true;
         if (e.key === '?') return this._hint(), true;
+        if (q.type === 'dictation' && e.key === 'Tab') return this._listen(), true;
         return false;
       };
       this.flashT = 0;
       this.triedVoice = false;
       this.showImage = false;
       this.hintLevel = 0;
+      this.hintMsg = '';
       this.field.open({ x: Math.round((this.game.width - 160) / 2), y: 142, w: 160, h: 18 }, { onSubmit: (v) => this._answer(v), onKey, placeholder: 'Ta réponse', inputMode: numeric ? 'decimal' : 'text' });
     }
   }
@@ -112,29 +121,53 @@ export class QuizScene extends Scene {
     this.spoke = true;
   }
 
-  /** Mot « complexe » : long, ou avec accents, ç, apostrophe, trait d'union. */
-  get complex() {
-    const w = String(this.q.answer);
-    return [...w].filter((c) => /\p{L}/u.test(c)).length >= 6 || /[àâäéèêëîïôöùûüç’'\-]/i.test(w);
+  /** Indices restants dans le jeu (compteur du bandeau). */
+  get hintsLeft() {
+    return this.hints ? this.hints.left() : 0;
   }
 
-  /** Indices : 1 = un tiret par lettre ; 2 = une ou deux lettres dévoilées. */
+  /** Un indice est-il possible pour cette question ? (2 au plus) */
+  get canHint() {
+    if (!this.hints || this.phase !== 'ask' || this.hintLevel >= 2) return false;
+    if (this.q.type === 'choice') return this.options.length > 2; // on garde toujours 2 choix
+    return true;
+  }
+
+  /**
+   * Utilise un indice du jeu :
+   *  - réponse écrite / dictée : 1 = un tiret par lettre (ou chiffre), 2 = une ou deux lettres dévoilées ;
+   *  - QCM : retire une mauvaise réponse.
+   */
   _hint() {
-    if (this.q.type !== 'dictation' || !this.complex || this.hintLevel >= 2) return;
+    if (!this.canHint) return;
+    if (this.hintsLeft <= 0 || !this.hints.spend()) {
+      this.hintMsg = 'Plus d’indice ! Gagnes-en avec les quêtes ou au magasin.';
+      this.game.audio.play('menu_no');
+      return;
+    }
     this.hintLevel++;
+    this.hintMsg = '';
     this.game.audio.play('secret');
+    if (this.q.type === 'choice') {
+      const wrong = this.options.filter((o) => o !== this.q.answer);
+      const out = wrong[Math.floor(this.rng() * wrong.length)];
+      const cur = this.options[this.sel];
+      this.options = this.options.filter((o) => o !== out);
+      this.sel = Math.max(0, this.options.indexOf(cur));
+    }
   }
 
-  /** Motif d'indice : « _ _ _ _ » puis « é _ _ _ _ a _ t ». */
+  /** Motif d'indice : « _ _ _ _ » puis « é _ _ _ _ a _ t » (lettres et chiffres). */
   hintPattern() {
+    const isChar = (c) => /[\p{L}\p{N}]/u.test(c);
     const chars = [...String(this.q.answer)];
-    const letters = chars.map((c, i) => (/\p{L}/u.test(c) ? i : -1)).filter((i) => i >= 0);
+    const letters = chars.map((c, i) => (isChar(c) ? i : -1)).filter((i) => i >= 0);
     const shown = new Set();
     if (this.hintLevel >= 2) {
       shown.add(letters[0]);
       if (letters.length >= 8) shown.add(letters[Math.floor(letters.length / 2)]);
     }
-    return chars.map((c, i) => (/\p{L}/u.test(c) ? (shown.has(i) ? c : '_') : c)).join(' ');
+    return chars.map((c, i) => (isChar(c) ? (shown.has(i) ? c : '_') : c)).join(' ');
   }
 
   // --- zones des boutons (pixels logiques)
@@ -151,9 +184,27 @@ export class QuizScene extends Scene {
   }
 
   get hintButton() {
-    if (this.q?.type !== 'dictation' || !this.complex || this.hintLevel >= 2 || this.phase !== 'ask') return null;
+    if (!this.q || !this.canHint) return null;
     const W = this.game.width;
-    return { x: Math.round(W / 2 - 40), y: 126, w: 80, h: 13 };
+    const w = 112;
+    const y = this.q.type === 'choice' ? this.game.height - 36 : 126;
+    return { x: Math.round(W / 2 - w / 2), y, w, h: 13 };
+  }
+
+  /** Bouton et message d'indice (tous types de questions). */
+  _drawHintButton(r, s) {
+    const hb = this.hintButton;
+    const W = this.game.width;
+    if (hb) {
+      const left = this.hintsLeft;
+      r.rect(hb.x, hb.y, hb.w, hb.h, left > 0 ? s.border : s.dim);
+      r.rect(hb.x + 1, hb.y + 1, hb.w - 2, hb.h - 2, s.box);
+      r.text(`💡 Indice ${this.hintLevel + 1}/2 · il t’en reste ${left}`, W / 2, hb.y + 3, { color: left > 0 ? s.text : s.dim, size: 6, font: s.font, align: 'center' });
+    }
+    if (this.hintMsg) {
+      const y = hb ? hb.y - 10 : (this.q.type === 'choice' ? this.game.height - 34 : 128);
+      r.text(this.hintMsg, W / 2, y, { color: '#ff7a6a', size: 6, font: s.font, align: 'center' });
+    }
   }
 
   _answer(value) {
@@ -161,6 +212,7 @@ export class QuizScene extends Scene {
     const q = this.q;
     const ok = checkAnswer(q, value);
     this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: describe(q), answer: q.answer, hints: this.hintLevel ?? 0, question: JSON.parse(JSON.stringify(q)) });
+    this.hintMsg = '';
     this.field.close();
     this.phase = 'feedback';
     this.t = 0;
@@ -179,6 +231,7 @@ export class QuizScene extends Scene {
         if (input.pressed('up') || input.pressed('left')) (this.sel = (this.sel - 1 + n) % n), this.game.audio.play('menu_move');
         if (input.pressed('down') || input.pressed('right')) (this.sel = (this.sel + 1) % n), this.game.audio.play('menu_move');
         if (input.pressed('action') && this.t > 0.2) this._answer(this.options[this.sel]);
+        if (input.pressed('hint')) this._hint();
       } else if (input.pressed('action') && this.t > 0.2) {
         // Bouton A tactile : valide ce qui est écrit.
         if (this.field.value.trim()) this._answer(this.field.value);
@@ -284,18 +337,18 @@ export class QuizScene extends Scene {
         r.text(this.hintPattern(), W / 2, ty, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
         ty += 14;
       }
-      const hb = this.hintButton;
-      if (hb) {
-        r.rect(hb.x, hb.y, hb.w, hb.h, s.border);
-        r.rect(hb.x + 1, hb.y + 1, hb.w - 2, hb.h - 2, s.box);
-        r.text(`💡 Indice ${this.hintLevel + 1}/2`, W / 2, hb.y + 3, { color: s.text, size: 7, font: s.font, align: 'center' });
-      }
     }
     const prompt = q.type === 'dictation' ? '' : q.prompt;
     for (const line of prompt ? this._wrapped(r, prompt, w - 24, 9) : []) {
       r.text(line, W / 2, ty, { color: s.text, size: 9, font: s.font, align: 'center' });
       ty += 12;
     }
+    if (q.type === 'text' && this.hintLevel > 0 && this.phase === 'ask') {
+      ty += 2;
+      r.text(this.hintPattern(), W / 2, ty, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
+      ty += 12;
+    }
+    if (this.phase === 'ask') this._drawHintButton(r, s);
     ty += 4;
 
     if (this.phase === 'ask') {
@@ -308,18 +361,18 @@ export class QuizScene extends Scene {
           r.text(o, W / 2, ty, { color: sel ? s.box : s.text, size: 8, font: s.font, align: 'center', bold: sel });
           ty += 15;
         });
-        r.text(W < 240 ? 'Haut/Bas · A : valider · B : je ne sais pas' : 'Haut/Bas : choisir · Action : valider · B : je ne sais pas', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+        r.text(W < 240 ? 'Haut/Bas · A : valider · B : passer' : 'Haut/Bas : choisir · A : valider · H : indice · B : passer', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
       } else {
         this.field.place();
         const narrow = W < 240;
         const hint =
           q.type === 'dictation'
             ? narrow
-              ? 'Entrée : valider' + (this.complex ? ' · ? : indice' : '')
-              : (this.mode === 'voice' ? 'Bouton (ou Tab) : écouter' : this.mode === 'image' ? 'Écris le mot' : 'Bouton (ou Tab) : voir le mot') + ' · Entrée : valider' + (this.complex ? ' · ? : indice' : '')
+              ? 'Entrée : valider · ? : indice'
+              : (this.mode === 'voice' ? 'Bouton (ou Tab) : écouter' : this.mode === 'image' ? 'Écris le mot' : 'Bouton (ou Tab) : voir le mot') + ' · Entrée : valider · ? : indice'
             : narrow
-              ? 'Entrée ou A : valider · B : je ne sais pas'
-              : 'Écris ta réponse puis Entrée (ou A) · B : je ne sais pas';
+              ? 'Entrée : valider · ? : indice'
+              : 'Entrée (ou A) : valider · ? : indice · B : je ne sais pas';
         r.text(hint, W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
       }
       return;

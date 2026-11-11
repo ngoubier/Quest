@@ -341,6 +341,15 @@ export class AdventureScene extends Scene {
       new QuizScene({
         questions,
         speaker,
+        // Indices du jeu : 1 ou 2 par question, chacun coûte 1 indice du compteur.
+        hints: {
+          left: () => st.count('hint'),
+          spend: () => {
+            if (!st.take('hint', 1)) return false;
+            st.addCounter('hints_used');
+            return true;
+          },
+        },
         onDone: (res) => {
           st.recordQuiz(res.results, { reviewDays: this.cfg.reviewDays ?? [1, 3, 7] });
           done(res);
