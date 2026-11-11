@@ -202,7 +202,7 @@ class TitleScene extends Scene {
     r.text('Essai n°2 — le gameplay', r.width / 2, 42, { color: s.text, size: 9, font: s.font, align: 'center' });
     const lines = touch
       ? ['Croix : bouger · A : parler, frapper', 'Start : menu · Select : ambiance']
-      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · I : sac · Tab : ambiance'];
+      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac · Tab : ambiance'];
     lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
     r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
     this.options.forEach((o, i) => {

@@ -301,7 +301,7 @@ function iconsSheet(p) {
   return {
     frameW: 8,
     frameH: 8,
-    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key', 'hint', 'bag'],
+    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key', 'hint', 'bag', 'quest'],
     paint(c, name) {
       if (name.startsWith('heart')) {
         heart(c, 0, 1, 1, name === 'heart_empty' ? '#333' : p.heart, p.heartLight);
@@ -310,6 +310,16 @@ function iconsSheet(p) {
         return;
       }
       if (name === 'coin') return euroCoin(c, 0, 0, 8, p);
+      if (name === 'quest') {
+        // parchemin
+        P(c, 1, 0, 6, 8, '#f4e8c8');
+        P(c, 0, 0, 8, 1, '#c8a060');
+        P(c, 0, 7, 8, 1, '#c8a060');
+        P(c, 2, 2, 4, 1, '#7a5a30');
+        P(c, 2, 4, 3, 1, '#7a5a30');
+        P(c, 6, 5, 1, 2, '#e8303a');
+        return;
+      }
       if (name === 'bag') {
         P(c, 2, 0, 4, 1, p.bagDark);
         P(c, 1, 1, 1, 2, p.bagDark);

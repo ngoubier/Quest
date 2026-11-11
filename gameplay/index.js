@@ -12,7 +12,7 @@ export { Effect } from './actors/Effect.js';
 export * from './objects/objects.js';
 export { ObjectFactory, standardFactory } from './objects/ObjectFactory.js';
 export { drawHud } from './ui/Hud.js';
-export { QuestLogScene } from './ui/QuestLogScene.js';
+export { QuestLogScene, DIFFICULTY } from './ui/QuestLogScene.js';
 export { GameOverScene } from './ui/GameOverScene.js';
 export { ShopScene } from './ui/ShopScene.js';
 export { InventoryScene } from './ui/InventoryScene.js';

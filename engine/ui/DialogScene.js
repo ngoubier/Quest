@@ -28,7 +28,7 @@ export class DialogScene extends Scene {
     const s = this.game.style;
     const pad = 8;
     this.box = { x: 8, w: r.width - 16, h: this.maxLines * (s.fontSize + 4) + pad * 2 + (this.speaker ? 4 : 0) };
-    this.box.y = r.height - this.box.h - 8;
+    this.box.y = r.height - this.box.h - 6;
     const measure = (str) => r.measure(str, s.fontSize, s.font);
     // Chaque page est découpée en "écrans" de maxLines lignes.
     this.screens = [];
@@ -97,7 +97,13 @@ export class DialogScene extends Scene {
     r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
     let ty = y + 8;
     if (this.speaker) {
-      r.text(this.speaker, x + 8, y - 4, { color: s.accent, size: s.fontSize, font: s.font, bold: true, shadow: '#000' });
+      // Onglet bien visible avec le nom de celui qui parle.
+      const nw = Math.ceil(r.measure(this.speaker, s.fontSize + 1, s.font, true)) + 14;
+      const th = s.fontSize + 7;
+      r.rect(x + 6, y - th + 2, nw, th, s.box);
+      r.strokeRect(x + 6, y - th + 2, nw, th, s.accent);
+      r.rect(x + 7, y, nw - 2, 2, s.box);
+      r.text(this.speaker, x + 13, y - th + 5, { color: s.accent, size: s.fontSize + 1, font: s.font, bold: true });
       ty += 2;
     }
     let left = Math.floor(this.shown);

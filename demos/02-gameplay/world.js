@@ -48,6 +48,7 @@ export const ITEMS = {
 export const QUESTS = [
   {
     id: 'relic',
+    difficulty: 3, // 1 facile · 2 moyenne · 3 difficile
     kind: 'main',
     title: 'La relique perdue',
     steps: [
@@ -72,6 +73,7 @@ export const QUESTS = [
   // Quête OBLIGATOIRE qui ouvre le monde : réparer le pont (fabrication + troc + embranchement).
   {
     id: 'bridge',
+    difficulty: 2, // 1 facile · 2 moyenne · 3 difficile
     kind: 'main',
     title: 'Le pont cassé',
     steps: [
@@ -96,6 +98,7 @@ export const QUESTS = [
   },
   {
     id: 'harvest',
+    difficulty: 1, // 1 facile · 2 moyenne · 3 difficile
     kind: 'side',
     title: 'La recette de la cuisinière',
     steps: [
@@ -109,6 +112,7 @@ export const QUESTS = [
   },
   {
     id: 'hunt',
+    difficulty: 1, // 1 facile · 2 moyenne · 3 difficile
     kind: 'side',
     title: 'Nettoyer les champs',
     steps: [
@@ -119,6 +123,7 @@ export const QUESTS = [
   // Quête « aller chercher » à étapes : questions scolaires + boutique + livraisons.
   {
     id: 'bouquet',
+    difficulty: 2, // 1 facile · 2 moyenne · 3 difficile
     kind: 'side',
     title: 'Un bouquet pour la cuisinière',
     steps: [

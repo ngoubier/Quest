@@ -92,13 +92,10 @@ export class AdventureScene extends Scene {
     this.quests.dispose();
   }
 
-  /** Zone tactile du bouton Sac (fournie par le bandeau). */
-  get bagButton() {
-    return this._bagButton ?? { x: 0, y: 0, w: 0, h: 0 };
-  }
-
-  set bagButton(r) {
-    this._bagButton = r;
+  /** Zones tactiles des boutons du bandeau (Quêtes, Sac). */
+  get hudButtons() {
+    const none = { x: 0, y: 0, w: 0, h: 0 };
+    return this._hudButtons ?? { quests: none, bag: none };
   }
 
   get viewport() {
@@ -175,9 +172,13 @@ export class AdventureScene extends Scene {
   update(dt) {
     const input = this.input;
     if (input.pressed('start')) return this.openMenu();
-    if (input.pressed('bag') || input.tappedIn(this.bagButton)) {
+    if (input.pressed('bag') || input.tappedIn(this.hudButtons.bag)) {
       input.consumeTaps();
       return this.openBag();
+    }
+    if (input.pressed('quests') || input.tappedIn(this.hudButtons.quests)) {
+      input.consumeTaps();
+      return this.openQuests();
     }
     if (this.cfg.allowThemeSwitch && input.pressed('select')) {
       const t = this.game.themes.next();
@@ -241,8 +242,10 @@ export class AdventureScene extends Scene {
     };
   }
 
+  /** Texte à trous résolu ; une phrase qui commence par un mot du thème prend une majuscule. */
   format(text) {
-    return formatText(text, { state: this.state, word: (k, p) => this.game.themes.word(k, p) });
+    const t = formatText(text, { state: this.state, word: (k, p) => this.game.themes.word(k, p) });
+    return /^\{(w|ws):/.test(String(text)) ? t.charAt(0).toUpperCase() + t.slice(1) : t;
   }
 
   /** Nom affiché d'un personnage (vocabulaire du thème, majuscule). */
@@ -380,6 +383,11 @@ export class AdventureScene extends Scene {
     this.world.add(new Companion(this.hero, { hintEvery: this.cfg.companionHintEvery ?? 480 }));
   }
 
+  openQuests() {
+    this.game.audio.play('menu_ok');
+    this.game.scenes.push(new QuestLogScene(this));
+  }
+
   openBag() {
     this.game.audio.play('menu_ok');
     this.game.scenes.push(new InventoryScene(this));
@@ -452,7 +460,7 @@ export class AdventureScene extends Scene {
               m.close();
               const seen = this.quests.revealedHints(q.id);
               if (!this.quests.hasMoreHints(q.id)) {
-                return this.say(seen.length ? [...seen.map((h) => `💡 ${h}`)] : 'Pas d’indice pour cette étape. Relis ton journal !', { speaker: 'Indice' });
+                return this.say(seen.length ? [...seen.map((h) => `💡 ${this.format(h)}`)] : 'Pas d’indice pour cette étape. Relis ton journal !', { speaker: 'Indice' });
               }
               if (st.count('hint') <= 0) {
                 return this.say('Tu n’as plus d’indice. Gagne-en avec des quêtes faciles, ou achète-en chez le marchand.', { speaker: 'Indice' });
@@ -460,7 +468,7 @@ export class AdventureScene extends Scene {
               st.take('hint', 1);
               g.audio.play('secret');
               const h = this.quests.revealHint(q.id);
-              this.say([...seen.map((x) => `💡 ${x}`), `💡 ${h}`], { speaker: 'Indice' });
+              this.say([...seen.map((x) => `💡 ${this.format(x)}`), `💡 ${this.format(h)}`], { speaker: 'Indice' });
             },
           })),
           { label: 'Retour', onSelect: (m) => m.close() },
@@ -510,7 +518,7 @@ export class AdventureScene extends Scene {
     const g = this.game;
     const items = [
       { label: 'Reprendre', onSelect: (m) => m.close() },
-      { label: 'Journal des quêtes', onSelect: (m) => (m.close(), g.scenes.push(new QuestLogScene(this))) },
+      { label: 'Quêtes', onSelect: (m) => (m.close(), this.openQuests()) },
       { label: () => `Utiliser un indice (${this.state.count('hint')})`, onSelect: (m) => (m.close(), this.openHints()) },
       { label: () => `Sac (${this.bagItems().length}/${this.bagCapacity()})`, onSelect: (m) => (m.close(), this.openBag()) },
       {
@@ -546,7 +554,7 @@ export class AdventureScene extends Scene {
   // ------------------------------------------------------------------ dessin
   draw(r) {
     this.world.draw(r);
-    this.bagButton = drawHud(r, this, this.cfg.hud);
+    this._hudButtons = drawHud(r, this, this.cfg.hud);
     const t = this.toasts[0];
     if (t) {
       const s = this.game.style;

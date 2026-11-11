@@ -1,6 +1,6 @@
-// Bandeau d'informations : cœurs à gauche, bouton Sac au centre, compteurs à droite.
-// Icônes 8x8 attendues (planche 'icons') : heart_full, heart_half, heart_empty, bag, et une par compteur.
-// Renvoie la zone du bouton Sac (pour le toucher / clic).
+// Bandeau d'informations : cœurs à gauche, boutons Quêtes et Sac au centre, compteurs à droite.
+// Icônes 8x8 attendues (planche 'icons') : heart_full, heart_half, heart_empty, quest, bag, et une par compteur.
+// Renvoie les zones des boutons (pour le toucher / clic) : { quests, bag }.
 
 export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'] } = {}) {
   const game = adv.game;
@@ -29,15 +29,29 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'] } = {}
     icons.draw(r, item, x, 4);
     x -= 7;
   }
-  // Bouton Sac : icône + places occupées, centré entre les cœurs et les compteurs.
+  // Boutons Quêtes et Sac, centrés entre les cœurs et les compteurs.
   const heartsEnd = 4 + hearts * 9;
+  const gap = x - heartsEnd;
+  const active = adv.quests.journal().filter((q) => q.status === 'active').length;
+  const wide = gap >= 110;
+  const qLabel = wide ? `Quêtes ${active}` : `${active}`;
+  const qw = Math.ceil(r.measure(qLabel, 7, s.font)) + 16;
   const used = adv.bagItems().length;
   const cap = adv.bagCapacity();
   const bw = 40;
-  const bx = Math.round(Math.max(heartsEnd + 2, Math.min(x - bw - 2, (heartsEnd + x) / 2 - bw / 2)));
-  r.rect(bx, 2, bw, 12, s.border);
-  r.rect(bx + 1, 3, bw - 2, 10, s.box);
-  icons.draw(r, 'bag', bx + 3, 4);
-  r.text(`${used}/${cap}`, bx + 13, 4, { color: used >= cap ? '#ff7a6a' : s.text, size: 7, font: s.font });
-  return { x: bx - 4, y: 0, w: bw + 8, h: height };
+  const total = qw + 4 + bw;
+  const start = Math.round(Math.max(heartsEnd + 2, (heartsEnd + x) / 2 - total / 2));
+  const button = (bx, w, icon, label, color) => {
+    r.rect(bx, 2, w, 12, s.border);
+    r.rect(bx + 1, 3, w - 2, 10, s.box);
+    icons.draw(r, icon, bx + 3, 4);
+    r.text(label, bx + 13, 4, { color, size: 7, font: s.font });
+  };
+  button(start, qw, 'quest', qLabel, s.accent);
+  const bx = start + qw + 4;
+  button(bx, bw, 'bag', `${used}/${cap}`, used >= cap ? '#ff7a6a' : s.text);
+  return {
+    quests: { x: start - 2, y: 0, w: qw + 3, h: height },
+    bag: { x: bx - 1, y: 0, w: bw + 4, h: height },
+  };
 }

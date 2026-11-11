@@ -5,6 +5,7 @@ import { runActions } from '../script/actions.js';
 //
 // {
 //   id: 'amulette', kind: 'main' | 'side', title: "L'amulette de l'Ancien",
+//   difficulty: 1 | 2 | 3,   // facile · moyenne · difficile (affichée dans la liste des quêtes)
 //   steps: [
 //     { goal: 'Trouver l\'amulette dans la grotte', done: { item: 'amulet' }, onDone: [...],
 //       hints: ['indice 1 (vague)', 'indice 2 (plus précis)'] },

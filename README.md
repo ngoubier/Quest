@@ -31,6 +31,7 @@ npm test       # tests automatiques du moteur
 | Se déplacer | Flèches / ZQSD (WASD) | Croix / stick |
 | Parler, valider, frapper | Espace / J | A |
 | Ouvrir le sac | I (ou bouton Sac du bandeau) | Y |
+| Liste des quêtes | L (ou bouton Quêtes du bandeau) | — |
 | Annuler | K / Maj | B |
 | Menu pause | Entrée / Échap | Start |
 | Changer d'ambiance | Tab | Select |

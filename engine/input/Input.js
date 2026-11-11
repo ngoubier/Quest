@@ -12,6 +12,7 @@ export const DEFAULT_BINDINGS = {
   start: ['Enter', 'Escape'],
   select: ['Tab'],
   bag: ['KeyI'],
+  quests: ['KeyL'],
   debug: ['F1', 'Backquote'],
 };
 
