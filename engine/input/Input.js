@@ -10,6 +10,8 @@ export const DEFAULT_BINDINGS = {
   action: ['Space', 'KeyJ'],
   secondary: ['KeyK', 'ShiftLeft', 'ShiftRight'],
   start: ['Enter', 'Escape'],
+  // Entrée VALIDE dans les menus et dialogues (en plus d'ouvrir le menu pause en jeu)
+  confirm: ['Enter', 'NumpadEnter'],
   select: ['Tab'],
   bag: ['KeyI'],
   quests: ['KeyL'],
@@ -138,6 +140,16 @@ export class Input {
       if ((now && !was) || this.latched.has(a)) this.justPressed.add(a);
     }
     this.latched.clear();
+  }
+
+  /** Valider : Action (Espace / A) ou Entrée. */
+  validated() {
+    return this.pressed('action') || this.pressed('confirm');
+  }
+
+  /** Annuler : B / Maj, ou Échap (mais pas Entrée, qui valide). */
+  cancelled() {
+    return this.pressed('secondary') || (this.pressed('start') && !this.pressed('confirm'));
   }
 
   /** Maintenu enfoncé. */
