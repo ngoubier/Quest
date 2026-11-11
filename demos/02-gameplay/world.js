@@ -1,6 +1,6 @@
 // CONTENU de l'essai n°2 : uniquement des DONNÉES (cartes, objets, quêtes, dialogues).
 // Toute la logique vient de gameplay/ et engine/.
-// Les {w:...} sont remplacés par le vocabulaire de l'ambiance (rubis / crédits / euros...).
+// Les {w:...} sont remplacés par le vocabulaire de l'ambiance (euros, clés...).
 
 export const LEGEND = {
   '.': 'floor',

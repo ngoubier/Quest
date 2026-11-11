@@ -1,13 +1,17 @@
-import { createCanvas } from './canvas.js';
+import { buildAtlas } from './pixelart.js';
+import { DISPLAY_PROFILES } from './display.js';
 
 // Planche de sprites : une image découpée en cases de taille fixe,
 // adressables par index ou par nom ("player_down_0").
+// `detail` : pixels d'image par pixel de jeu (2 = haute définition). frameW/frameH
+// restent en pixels de jeu : la logique ne voit aucune différence.
 export class SpriteSheet {
-  constructor(image, frameW, frameH, names = []) {
+  constructor(image, frameW, frameH, names = [], detail = 1) {
     this.image = image;
     this.frameW = frameW;
     this.frameH = frameH;
-    this.cols = image ? Math.max(1, Math.floor(image.width / frameW)) : 1;
+    this.detail = detail;
+    this.cols = image ? Math.max(1, Math.floor(image.width / (frameW * detail))) : 1;
     this.names = new Map(names.map((n, i) => [n, i]));
   }
 
@@ -22,36 +26,41 @@ export class SpriteSheet {
     return this.names.has(name);
   }
 
-  draw(r, frame, x, y, { flipX = false } = {}) {
+  /** Dessine une image ; `scale` l'agrandit (ex. icônes du bandeau sur mobile). */
+  draw(r, frame, x, y, { flipX = false, scale = 1 } = {}) {
     const i = this.index(frame);
-    const sx = (i % this.cols) * this.frameW;
-    const sy = Math.floor(i / this.cols) * this.frameH;
-    r.image(this.image, sx, sy, this.frameW, this.frameH, x, y, this.frameW, this.frameH, flipX);
+    const k = this.detail;
+    const sx = (i % this.cols) * this.frameW * k;
+    const sy = Math.floor(i / this.cols) * this.frameH * k;
+    r.image(this.image, sx, sy, this.frameW * k, this.frameH * k, x, y, this.frameW * scale, this.frameH * scale, flipX);
   }
 
   /**
    * Génère une planche par programme (aucun fichier image requis).
-   * @param {{frameW:number, frameH:number, frames:string[], paint:(ctx, name:string, index:number)=>void, outline?:string}} spec
-   *   outline : couleur d'un contour d'1 pixel ajouté autour des formes (lisibilité "rétro")
+   * @param {{frameW:number, frameH:number, frames:string[], paint:(ctx, name:string, index:number)=>void,
+   *          paintHD?:(ctx, name:string, index:number, k:number)=>boolean|void, outline?:string}} spec
+   *   paint   : dessin sur la grille du jeu (frameW×frameH)
+   *   paintHD : dessin fin (frameW×k par frameH×k), utilisé sur PC ; renvoyer false = pas de version HD
+   *   outline : couleur d'un contour ajouté autour des formes (lisibilité "rétro")
+   * @param {object} [profile] profil d'affichage (voir display.js)
    */
-  static paint({ frameW, frameH, frames, paint, outline = null }) {
+  static paint({ frameW, frameH, frames, paint, paintHD = null, outline = null }, profile = DISPLAY_PROFILES.classic) {
     const cols = Math.min(frames.length, 16);
     const rows = Math.ceil(frames.length / cols);
-    const canvas = createCanvas(cols * frameW, rows * frameH);
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      frames.forEach((name, i) => {
-        ctx.save();
-        ctx.translate((i % cols) * frameW, Math.floor(i / cols) * frameH);
-        ctx.beginPath();
-        ctx.rect(0, 0, frameW, frameH);
-        ctx.clip();
-        paint(ctx, name, i);
-        ctx.restore();
-        if (outline) addOutline(ctx, (i % cols) * frameW, Math.floor(i / cols) * frameH, frameW, frameH, outline);
-      });
-    }
-    return new SpriteSheet(canvas, frameW, frameH, frames);
+    const { canvas, detail } = buildAtlas({
+      count: frames.length,
+      place: (i) => ({ col: i % cols, row: Math.floor(i / cols) }),
+      cols,
+      rows,
+      cellW: frameW,
+      cellH: frameH,
+      paint: (ctx, i) => paint(ctx, frames[i], i),
+      paintHD: paintHD && ((ctx, i) => paintHD(ctx, frames[i], i, profile.detail)),
+      outline,
+      kind: 'sprite',
+      profile,
+    });
+    return new SpriteSheet(canvas, frameW, frameH, frames, detail);
   }
 }
 

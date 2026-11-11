@@ -13,7 +13,7 @@ Réunies, elles forment le **Cœur d'Iris**, seule arme capable de vaincre Morgo
 - **8 niveaux** : introduction, 6 niveaux « pierre », niveau final. Chaque niveau a la taille du niveau actuel
   (extérieur ~40×24 cases + maisons + donjon de 4 à 6 salles).
 - **Ordre libre** après l'introduction : l'objet de chaque niveau se trouve dans ce niveau.
-- **Le royaume se décolore** : tout est un peu gris au départ ; chaque pierre rend ses couleurs à sa région.
+- **Le royaume se décolore** (option, désactivée par défaut : menu pause → « Royaume terni ») : chaque pierre rend ses couleurs à sa région. Sur la carte du monde, les régions sans pierre restent grises.
 
 ## 2. La carte du monde
 
@@ -373,6 +373,14 @@ Le jeu se lance depuis `game/` (`npm start` puis http://localhost:8080/game/).
 - **Morpion** contre Bastien le garde (une fois sa quête finie) ; force selon l'âge ; 3 pièces par victoire
   (les 5 premières) — `gameplay/minigames/`, action `{ minigame: 'morpion', win, lose, draw, quit }`.
 - **Une seule ambiance** (médiéval) : la touche Tab ne change plus rien dans le jeu.
+
+## 12. Ajustements
+
+- **Graphismes** : le jeu utilise les profils d'affichage (mobile lisible, **PC en haute définition**, vue jusqu'à 20 tuiles),
+  voir `06-affichage-mobile-pc.md`. Les nouveaux dessins (neige, Yéti...) sont agrandis automatiquement ; à redessiner en HD plus tard.
+- **Énigmes** : banque passée de ~270 à ~780 questions (`content/quiz/bank-plus.js`) ; les jours, mois et saisons
+  sont en « Vie quotidienne », l'Histoire ne contient que le passé (vérifié par un test).
+- **Royaume terni** : option du menu pause, désactivée par défaut.
 
 ## 11. Lot 2 — le Mont Givré (fait)
 

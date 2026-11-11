@@ -1,5 +1,5 @@
-// Ambiance de La Quête d'Alia : uniquement le médiéval-fantastique (pas de station spatiale
-// ni de ville). On part du thème médiéval de l'essai n°2 et on y ajoute les images du jeu
+// Ambiance de La Quête d'Alia : le médiéval-fantastique, avec les graphismes adaptés à l'appareil
+// (mobile lisible, PC en haute définition). On part du thème médiéval de l'essai n°2 et on y ajoute les images du jeu
 // (carte du royaume, pierres magiques).
 import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
@@ -58,6 +58,8 @@ export const THEME = {
       ...objects,
       frames: [...objects.frames, ...NEW_FRAMES, ...GIVRE_OBJECT_FRAMES],
       paint: (c, name, i) => (GAME_FRAMES.has(name) ? paintNew(c, name) : GIVRE_FRAMES.has(name) ? paintGivreObject(c, name) : objects.paint(c, name, i)),
+      // PC : dessins haute définition du thème de base ; les nouvelles images sont agrandies automatiquement.
+      paintHD: (c, name, i, k) => (GAME_FRAMES.has(name) || GIVRE_FRAMES.has(name) || !objects.paintHD ? false : objects.paintHD(c, name, i, k)),
     },
     chars: {
       ...chars,
@@ -66,11 +68,13 @@ export const THEME = {
         const [who, dir, step] = name.split('_');
         return GIVRE_CHARS.includes(who) ? paintGivrePerson(c, who, dir, Number(step)) : chars.paint(c, name, i);
       },
+      paintHD: (c, name, i, k) => (GIVRE_CHARS.includes(name.split('_')[0]) || !chars.paintHD ? false : chars.paintHD(c, name, i, k)),
     },
     boss: {
       ...boss,
       frames: [...boss.frames, 'yeti_0', 'yeti_1'],
       paint: (c, name) => (name.startsWith('yeti') ? paintYeti(c, name === 'yeti_1' ? 1 : 0) : boss.paint(c, name)),
+      paintHD: (c, name, i, k) => (name.startsWith('yeti') || !boss.paintHD ? false : boss.paintHD(c, name, i, k)),
     },
   },
 };

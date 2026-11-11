@@ -1,5 +1,6 @@
-import { createCanvas } from '../graphics/canvas.js';
 import { createRng, hashString } from '../core/math.js';
+import { buildAtlas } from '../graphics/pixelart.js';
+import { DISPLAY_PROFILES } from '../graphics/display.js';
 import { Tileset } from '../world/Tileset.js';
 import { SpriteSheet } from '../graphics/SpriteSheet.js';
 
@@ -10,41 +11,72 @@ import { SpriteSheet } from '../graphics/SpriteSheet.js';
 // Forme d'un thème :
 // {
 //   id, name,
-//   tiles:   { [rôle]: { solid?, frames?, fps?, variants?, props?, paint(ctx, {size, frame, variant, rng}) } },
+//   tiles:   { [rôle]: { solid?, frames?, fps?, variants?, props?, paint(ctx, {size, frame, variant, rng}),
+//                        paintHD?(ctx, {size, k, frame, variant, rng}) } },
 //            props.shadow : projette une ombre sur la tuile du dessous ; props.edge : liseré (écume...)
-//   sprites: { [planche]: { frameW, frameH, frames: string[], paint(ctx, name, i) } },
+//            paintHD : version haute définition dessinée à la main (size = 16×k pixels), utilisée sur PC
+//   sprites: { [planche]: { frameW, frameH, frames: string[], paint(ctx, name, i), paintHD?(ctx, name, i, k) } },
+//   profiles: { mobile?: {...}, pc?: {...} }   // retouches propres à un profil d'affichage :
+//            mêmes clés que le thème (tiles, sprites, ui...), fusionnées par-dessus
 //   ui:      { box, border, text, accent, ... }   // style des boîtes de dialogue / menus
 //   sfx:     { [nom]: spec audio },
 //   words:   { [clé]: [singulier, pluriel] }       // vocabulaire propre à l'ambiance
 //   background: '#...'
 // }
 
-export function buildTileset(theme, roles, tileSize = 16) {
+export function buildTileset(theme, roles, tileSize = 16, profile = DISPLAY_PROFILES.classic) {
   const missing = roles.filter((r) => !theme.tiles?.[r]);
   if (missing.length) throw new Error(`Thème "${theme.id}" : rôles de tuiles manquants : ${missing.join(', ')}`);
   const tiles = roles.map((name) => {
     const t = theme.tiles[name];
-    return { name, solid: !!t.solid, frames: t.frames || 1, fps: t.fps || 3, variants: t.variants || 1, props: t.props || {}, paint: t.paint };
+    return { name, solid: !!t.solid, frames: t.frames || 1, fps: t.fps || 3, variants: t.variants || 1, props: t.props || {}, paint: t.paint, paintHD: t.paintHD };
   });
-  const maxCols = Math.max(...tiles.map((t) => t.frames * t.variants));
-  const canvas = createCanvas(maxCols * tileSize, (tiles.length + 1) * tileSize);
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    tiles.forEach((t, i) => {
-      for (let v = 0; v < t.variants; v++) {
-        for (let f = 0; f < t.frames; f++) {
-          ctx.save();
-          ctx.translate((v * t.frames + f) * tileSize, (i + 1) * tileSize);
-          ctx.beginPath();
-          ctx.rect(0, 0, tileSize, tileSize);
-          ctx.clip();
-          t.paint?.(ctx, { size: tileSize, frame: f, variant: v, rng: createRng(hashString(theme.id + t.name) + v * 7919) });
-          ctx.restore();
-        }
-      }
-    });
-  }
-  return new Tileset({ tileSize, tiles: tiles.map(({ paint, ...rest }) => rest), image: canvas });
+  // Une case par (tuile, variante, image) ; la tuile d'id N est sur la ligne N.
+  const cells = [];
+  tiles.forEach((t, i) => {
+    for (let v = 0; v < t.variants; v++) for (let f = 0; f < t.frames; f++) cells.push({ t, row: i + 1, col: v * t.frames + f, v, f });
+  });
+  const rng = (c) => createRng(hashString(theme.id + c.t.name) + c.v * 7919);
+  const k = profile.detail || 1;
+  const { canvas, detail } = buildAtlas({
+    count: cells.length,
+    place: (i) => cells[i],
+    cols: Math.max(...tiles.map((t) => t.frames * t.variants)),
+    rows: tiles.length + 1,
+    cellW: tileSize,
+    cellH: tileSize,
+    paint: (ctx, i) => {
+      const c = cells[i];
+      c.t.paint?.(ctx, { size: tileSize, frame: c.f, variant: c.v, rng: rng(c) });
+    },
+    paintHD: (ctx, i) => {
+      const c = cells[i];
+      if (!c.t.paintHD) return false;
+      return c.t.paintHD(ctx, { size: tileSize * k, k, frame: c.f, variant: c.v, rng: rng(c) });
+    },
+    kind: 'tile',
+    profile,
+    seed: hashString(theme.id),
+  });
+  return new Tileset({ tileSize, tiles: tiles.map(({ paint, paintHD, ...rest }) => rest), image: canvas, detail });
+}
+
+/** Applique les retouches d'un profil (theme.profiles[id]) par-dessus le thème. */
+export function themeForProfile(theme, profileId) {
+  const o = theme.profiles?.[profileId];
+  if (!o) return theme;
+  const merge = (a = {}, b = {}) => {
+    const out = { ...a };
+    for (const [key, v] of Object.entries(b)) out[key] = { ...(a[key] ?? {}), ...v };
+    return out;
+  };
+  return {
+    ...theme,
+    ...o,
+    tiles: merge(theme.tiles, o.tiles),
+    sprites: merge(theme.sprites, o.sprites),
+    ui: { ...theme.ui, ...o.ui },
+  };
 }
 
 export class ThemeRegistry {
@@ -55,6 +87,14 @@ export class ThemeRegistry {
     this.tileSize = 16;
     this.current = null; // { def, tileset, sprites }
     this._cache = new Map();
+    this.profile = DISPLAY_PROFILES.classic; // profil d'affichage (mobile, pc...)
+  }
+
+  /** Change le profil d'affichage ; l'ambiance en cours est refabriquée. */
+  setProfile(profile) {
+    this.profile = profile;
+    if (this.current) this.use(this.current.def.id);
+    return this;
   }
 
   /** Le jeu déclare les rôles de tuiles que chaque thème doit fournir. */
@@ -77,19 +117,23 @@ export class ThemeRegistry {
   use(id) {
     const def = this.themes.get(id);
     if (!def) throw new Error(`Thème "${id}" inconnu`);
-    let built = this._cache.get(id);
+    const p = this.profile;
+    const key = `${id}|${p.id}|${p.detail}`;
+    let built = this._cache.get(key);
     if (!built) {
+      const t = themeForProfile(def, p.id);
       const sprites = {};
-      for (const [k, spec] of Object.entries(def.sprites || {})) sprites[k] = SpriteSheet.paint(spec);
-      built = { def, tileset: buildTileset(def, this.roles, this.tileSize), sprites };
-      this._cache.set(id, built);
+      for (const [k, spec] of Object.entries(t.sprites || {})) sprites[k] = SpriteSheet.paint(spec, p);
+      built = { def: t, tileset: buildTileset(t, this.roles, this.tileSize, p), sprites, profile: p };
+      this._cache.set(key, built);
     }
     this.current = built;
     const g = this.game;
+    const d = built.def;
     if (g) {
-      if (def.ui) Object.assign(g.style, def.ui);
-      if (def.background) g.background = def.background;
-      for (const [k, spec] of Object.entries(def.sfx || {})) g.audio.define(k, spec);
+      if (d.ui) Object.assign(g.style, d.ui);
+      if (d.background) g.background = d.background;
+      for (const [k, spec] of Object.entries(d.sfx || {})) g.audio.define(k, spec);
       g.events.emit('theme:change', built);
     }
     return built;

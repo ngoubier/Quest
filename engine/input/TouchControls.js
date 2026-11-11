@@ -24,6 +24,10 @@ export class TouchControls {
     this.parent = parent;
     this.screen = screen;
     this.onLayout = onLayout;
+    // Taille des boutons : selon l'écran (plus grands sur les grands téléphones et tablettes).
+    const ref = Math.min(innerWidth, innerHeight);
+    this.btnSize = Math.round(Math.min(80, Math.max(60, ref * 0.17)));
+    this.padSize = Math.round(Math.min(156, Math.max(116, ref * 0.33)));
     buttons ??= [
       { action: 'secondary', label: 'B' },
       { action: 'action', label: 'A' },
@@ -50,7 +54,8 @@ export class TouchControls {
     ab.style.cssText = 'display:flex;gap:14px;align-items:center;';
     buttons.forEach((m, i) => {
       const b = this._button(m.action, m.label);
-      b.style.cssText += `width:60px;height:60px;flex-shrink:0;margin-top:${i % 2 ? -24 : 24}px;`;
+      const sz = this.btnSize;
+      b.style.cssText += `width:${sz}px;height:${sz}px;font-size:${Math.round(sz * 0.32)}px;flex-shrink:0;margin-top:${i % 2 ? -24 : 24}px;`;
       ab.appendChild(b);
     });
     this.right.appendChild(ab);
@@ -116,7 +121,7 @@ export class TouchControls {
   }
 
   _dpad() {
-    const size = 116;
+    const size = this.padSize;
     const el = document.createElement('div');
     el.style.cssText =
       `${BTN_CSS}width:${size}px;height:${size}px;flex-shrink:0;position:relative;font-size:14px;` +

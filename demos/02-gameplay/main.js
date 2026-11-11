@@ -1,14 +1,20 @@
 // ESSAI N°2 — Validation du gameplay : combat, objets, quêtes, énigmes, deux modes de caméra.
-// Ce fichier ne fait que brancher les données (world.js) et les ambiances (themes.js)
+// Ce fichier ne fait que brancher les données (world.js) et l’ambiance (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
-import { Game, Scene, MenuScene, TouchControls } from '../../engine/index.js';
+import { Game, Scene, MenuScene, TouchControls, detectDisplay, clamp } from '../../engine/index.js';
 import { AdventureScene, openParentSpace, PromptScene, MessageScene } from '../../gameplay/index.js';
 import { THEMES, TILE_ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './world.js';
 import { frenchSchoolBank } from '../../content/quiz/index.js';
 
 const TS = 16;
-const HUD_H = 16;
+// Profil d'affichage : 'mobile' (lisible) ou 'pc' (haute définition, vue large).
+// Pour comparer : ?mobile, ?pc, ?classic dans l'adresse.
+const display = detectDisplay();
+// Bandeau : agrandi sur mobile quand l'écran est assez large (en portrait, l'image est
+// déjà très grande et la place manque).
+const hud = { height: 16, counters: ['coin', 'key', 'hint'], objective: display.id === 'pc' };
+const hudHeight = (portrait) => (display.id === 'mobile' && !portrait ? 20 : 16);
 
 // ------------------------------------------------------------------ mise en page
 const style = document.createElement('style');
@@ -26,21 +32,29 @@ screen.id = 'screen';
 root.appendChild(screen);
 document.body.appendChild(root);
 
-// Sur téléphone en portrait, on affiche 12 tuiles de large au lieu de 16 :
-// l'image est ~35 % plus grande, et la caméra suit le héros dans la salle.
-const touch = TouchControls.isTouchDevice() || new URLSearchParams(location.search).has('touch');
-const logicalWidth = () => (touch && innerHeight > innerWidth ? 12 : 16) * TS;
-const game = new Game({ width: logicalWidth(), height: 11 * TS + HUD_H, parent: screen });
-if (touch) {
-  new TouchControls(game.input, {
-    parent: root,
-    screen,
-    onLayout: () => {
-      game.setLogicalSize(logicalWidth(), 11 * TS + HUD_H);
-      game.resize();
-    },
-  });
+// Taille de l'écran de jeu (en pixels de jeu) selon l'appareil :
+//  - mobile en portrait : 12 tuiles de large (image ~35 % plus grande), la caméra suit le héros ;
+//  - mobile en paysage  : 10 tuiles de haut (tout est plus gros), largeur selon l'écran ;
+//  - PC : 11 tuiles de haut et jusqu'à 20 de large si la fenêtre est large (on voit plus loin).
+const touch = TouchControls.isTouchDevice() || display.forced === 'mobile';
+function logicalSize() {
+  const rect = screen.getBoundingClientRect();
+  const aspect = (rect.width || innerWidth) / (rect.height || innerHeight);
+  const portrait = display.id === 'mobile' && innerHeight > innerWidth;
+  hud.height = hudHeight(portrait);
+  if (portrait) return [12 * TS, 11 * TS + hud.height];
+  const rows = display.id === 'mobile' ? 10 : 11;
+  const h = rows * TS + hud.height;
+  const maxCols = display.id === 'pc' ? 20 : 16;
+  const cols = clamp(Math.floor((aspect * h) / TS), display.id === 'mobile' ? 12 : 16, maxCols);
+  return [cols * TS, h];
 }
+const game = new Game({ width: 16 * TS, height: 11 * TS + 16, parent: screen });
+game.themes.setProfile(display);
+const relayout = () => (game.setLogicalSize(...logicalSize()), game.resize());
+if (touch) new TouchControls(game.input, { parent: root, screen, onLayout: relayout });
+relayout();
+addEventListener('resize', relayout);
 
 // ------------------------------------------------------------------ bruitages
 const sfx = {
@@ -78,7 +92,7 @@ const sfx = {
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
 
-// ------------------------------------------------------------------ ambiances
+// ------------------------------------------------------------------ ambiance
 game.themes.configure({ roles: TILE_ROLES, tileSize: TS });
 THEMES.forEach((t) => game.themes.register(t));
 game.themes.use('medieval');
@@ -91,7 +105,7 @@ const makeAdventure = () =>
     quests: QUESTS,
     questionBank: frenchSchoolBank(),
     startMap: 'overworld',
-    hud: { height: HUD_H, counters: ['coin', 'key', 'hint'] },
+    hud, // objet partagé : sa hauteur suit l'orientation de l'écran
     startItems: { hint: 1 },
     bagSize: 10, // places dans le sac (le grand sac du magasin passe à 20)
     quizCooldown: 600, // attente après un échec : 10 min (réglable dans l'Espace parents)
@@ -99,7 +113,6 @@ const makeAdventure = () =>
     end: { message: 'Bravo, tu as rapporté la relique !' },
     reportWhen: 'end', // bilan parents disponible à la fin du jeu
     saveNamespace: 'quest-essai-2',
-    allowThemeSwitch: true,
   });
 
 // ------------------------------------------------------------------ écran titre (profils)
@@ -154,7 +167,6 @@ class TitleScene extends Scene {
     const opts = this.options;
     const n = opts.length;
     this.choice = Math.min(this.choice, n - 1);
-    if (i.pressed('select')) (game.themes.next(), game.audio.play('switch'));
     if (i.pressed('up')) (this.choice = (this.choice - 1 + n) % n), game.audio.play('menu_move');
     if (i.pressed('down')) (this.choice = (this.choice + 1) % n), game.audio.play('menu_move');
     if (!(i.pressed('action') || i.pressed('start'))) return;
@@ -205,13 +217,14 @@ class TitleScene extends Scene {
     r.text('QUEST', r.width / 2, 14, { color: s.accent, size: 22, font: s.font, bold: true, align: 'center', shadow: '#000' });
     r.text('Essai n°2 — le gameplay', r.width / 2, 42, { color: s.text, size: 9, font: s.font, align: 'center' });
     const lines = touch
-      ? ['Croix : bouger · A : parler, frapper', 'Start : menu · Select : ambiance']
-      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac · Tab : ambiance'];
+      ? ['Croix : bouger · A : parler, frapper', 'Start : menu · B : annuler']
+      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac'];
     lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
-    r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
-    // Liste qui défile si elle est longue (jusqu'à 8 joueurs + 2 options)
+    // Liste qui défile si elle est longue (jusqu'à 8 joueurs + 2 options) ;
+    // le nombre de lignes visibles suit la hauteur de l'écran (mobile en paysage : plus basse).
     const opts = this.options;
-    const visible = 5;
+    const visible = clamp(Math.floor((r.height - 20 - 108) / 12), 3, 5);
+    r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
     const first = Math.max(0, Math.min(this.choice - 2, opts.length - visible));
     if (first > 0) r.text('▲', r.width / 2, 100, { color: s.dim, size: 6, font: s.font, align: 'center' });
     if (first + visible < opts.length) r.text('▼', r.width / 2, 108 + visible * 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
@@ -221,7 +234,7 @@ class TitleScene extends Scene {
       const blink = !sel || Math.floor(game.time * 2) % 2 === 0;
       if (blink) r.text(`${sel ? '▶ ' : '  '}${o.label}`, r.width / 2, 108 + k * 12, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, align: 'center' });
     });
-    r.text(`Ambiance : ${t.def.name}`, r.width / 2, 182, { color: s.dim, size: 7, font: s.font, align: 'center' });
+    r.text(`Affichage : ${display.name}`, r.width / 2, r.height - 10, { color: s.dim, size: 7, font: s.font, align: 'center' });
   }
 }
 

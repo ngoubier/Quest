@@ -1,6 +1,6 @@
 // ESSAI N°1 — Validation du moteur.
 // Ce fichier montre comment un jeu utilise le moteur : il ne contient que du "contenu"
-// (cartes, ambiances, quelques entités) ; tout le reste vient de engine/.
+// (cartes, ambiance, quelques entités) ; tout le reste vient de engine/.
 import { Game, Scene, World, Camera, Tilemap, MenuScene, SaveStore, TouchControls } from '../../engine/index.js';
 import { THEMES, TILE_ROLES } from './themes.js';
 import { MAPS, LEGEND } from './maps.js';
@@ -41,7 +41,7 @@ game.audio.define('door', { type: 'triangle', notes: [[330, 0.08], [247, 0.08], 
 game.audio.define('switch', { type: 'square', notes: [[523, 0.06], [659, 0.06], [784, 0.06], [1047, 0.12]], vol: 0.15 });
 game.audio.define('save', { type: 'triangle', notes: [[784, 0.08], [988, 0.08], [1175, 0.16]], vol: 0.25 });
 
-// ------------------------------------------------------------------ ambiances
+// ------------------------------------------------------------------ ambiance
 game.themes.configure({ roles: TILE_ROLES, tileSize: TS });
 THEMES.forEach((t) => game.themes.register(t));
 game.themes.use('medieval');
@@ -104,7 +104,6 @@ class WorldScene extends Scene {
   update(dt) {
     const input = this.input;
     if (input.pressed('start')) return this.openMenu();
-    if (input.pressed('select')) return this.switchTheme();
 
     this.world.update(dt);
     if (this.toast && (this.toast.t -= dt) <= 0) this.toast = null;
@@ -115,12 +114,6 @@ class WorldScene extends Scene {
         if (p.cx >= d.rect.x && p.cx < d.rect.x + d.rect.w && p.cy >= d.rect.y && p.cy < d.rect.y + d.rect.h) return this.warp(d);
       }
     }
-  }
-
-  switchTheme() {
-    const t = game.themes.next();
-    game.audio.play('switch');
-    this.showToast(`Ambiance : ${t.def.name}`);
   }
 
   showToast(text) {
@@ -135,7 +128,6 @@ class WorldScene extends Scene {
         width: 176,
         items: [
           { label: 'Reprendre', onSelect: (m) => m.close() },
-          { label: () => `Ambiance : ${game.themes.current.def.name}`, onSelect: () => (game.themes.next(), game.audio.play('switch')) },
           {
             label: 'Sauvegarder',
             onSelect: (m) => {
@@ -166,7 +158,7 @@ class WorldScene extends Scene {
     if (!s) return;
     const d = s.data;
     this.game.scenes.fade(() => {
-      game.themes.use(d.theme);
+      if (game.themes.themes.has(d.theme)) game.themes.use(d.theme);
       this.loadMap(d.mapId, { x: d.x, y: d.y, facing: d.facing });
       this.showToast('Partie chargée');
     });
@@ -190,7 +182,6 @@ class WorldScene extends Scene {
     r.rect(0, HUD_H - 1, r.width, 1, s.border);
     const cam = this.world.camera;
     r.text(`${this.mapDef.name} ${cam.room.x + 1}-${cam.room.y + 1}`, 4, 4, { color: s.text, size: 7, font: s.font });
-    r.text(game.themes.current.def.name, r.width - 4, 4, { color: s.accent, size: 7, font: s.font, align: 'right' });
     if (this.toast) {
       const w = r.measure(this.toast.text, 8, s.font) + 12;
       const x = Math.round((r.width - w) / 2);
@@ -204,10 +195,6 @@ class WorldScene extends Scene {
 // ------------------------------------------------------------------ scène : titre
 class TitleScene extends Scene {
   update() {
-    if (this.input.pressed('select')) {
-      game.themes.next();
-      game.audio.play('switch');
-    }
     if (this.input.pressed('action') || this.input.pressed('start')) {
       game.audio.play('menu_ok');
       game.scenes.fade(() => game.scenes.replace(new WorldScene(), { mapId: 'overworld' }));
@@ -226,13 +213,11 @@ class TitleScene extends Scene {
     const lines = [
       'Flèches / ZQSD ... se déplacer',
       'Espace ........... parler / valider',
-      'Tab .............. changer d\'ambiance',
       'Entrée ........... menu pause',
       'F1 ou ² .......... débogage',
     ];
     lines.forEach((l, i) => r.text(l, 40, 90 + i * 12, { color: s.text, size: 8, font: s.font }));
     if (Math.floor(game.time * 2) % 2 === 0) r.text('Appuie sur Espace (ou A)', r.width / 2, 160, { color: s.accent, size: 9, font: s.font, align: 'center' });
-    r.text(`Ambiance : ${t.def.name}`, r.width / 2, 176, { color: s.dim, size: 7, font: s.font, align: 'center' });
   }
 }
 

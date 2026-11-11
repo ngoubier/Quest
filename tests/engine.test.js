@@ -141,3 +141,13 @@ test('Démo : cartes rectangulaires et découpées en salles 16x11', () => {
 test('Démo : chaque thème fournit tous les rôles de tuiles', () => {
   for (const t of THEMES) for (const r of TILE_ROLES) assert.ok(t.tiles[r], `${t.id}.${r}`);
 });
+
+test('Camera : écran plus large que la salle (PC) => salle centrée', () => {
+  const cam = new Camera({ width: 320, height: 176, mode: 'rooms', roomWidth: 256, roomHeight: 176 });
+  cam.follow({ cx: 300, cy: 80 });
+  assert.equal(cam.x, 256 - 32, 'la salle n°1 est au milieu, 32 px de chaque côté');
+  const free = new Camera({ width: 320, height: 176, bounds: { w: 256, h: 400 } });
+  free.follow({ cx: 10, cy: 10 });
+  assert.equal(free.x, -32, 'carte étroite centrée');
+  assert.equal(free.y, 0);
+});

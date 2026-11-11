@@ -10,10 +10,12 @@ export class Tileset {
    * @param {number} [opts.tileSize=16]
    * @param {{name:string, solid?:boolean, frames?:number, fps?:number, props?:object}[]} opts.tiles
    * @param {CanvasImageSource|null} [opts.image]
+   * @param {number} [opts.detail=1]  l'image est `detail` fois plus fine que la grille du jeu
    */
-  constructor({ tileSize = 16, tiles = [], image = null } = {}) {
+  constructor({ tileSize = 16, tiles = [], image = null, detail = 1 } = {}) {
     this.tileSize = tileSize;
     this.image = image;
+    this.detail = detail; // pixels d'image par pixel de jeu (2 = haute définition)
     this.defs = [{ id: 0, name: null, solid: false, frames: 1, fps: 0, variants: 1, props: {} }];
     this.ids = new Map();
     tiles.forEach((t, i) => {
@@ -43,6 +45,7 @@ export class Tileset {
     const f = d.frames > 1 ? Math.floor(time * d.fps) % d.frames : 0;
     const v = d.variants > 1 ? variant % d.variants : 0;
     const ts = this.tileSize;
-    r.image(this.image, (v * d.frames + f) * ts, id * ts, ts, ts, x, y);
+    const s = ts * this.detail;
+    r.image(this.image, (v * d.frames + f) * s, id * s, s, s, x, y, ts, ts);
   }
 }
