@@ -49,7 +49,7 @@ export class QuestSystem {
     if (this.status(id) !== 'none') return;
     const d = this.def(id);
     this.state.quests[id] = { status: 'active', step: 0 };
-    this.ctx.toast?.(`Nouvelle quête : ${d.title}`);
+    this.ctx.toast?.(`Nouvelle quête : ${d.title} ({level:${id}})`);
     this.ctx.game?.audio.play('quest');
     runActions(d.onStart, this.ctx);
     this.evaluate();

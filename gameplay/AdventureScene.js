@@ -7,7 +7,7 @@ import { Companion } from './actors/Companion.js';
 import { Pickup } from './objects/objects.js';
 import { standardFactory } from './objects/ObjectFactory.js';
 import { drawHud } from './ui/Hud.js';
-import { QuestLogScene } from './ui/QuestLogScene.js';
+import { QuestLogScene, DIFFICULTY } from './ui/QuestLogScene.js';
 import { GameOverScene } from './ui/GameOverScene.js';
 import { ShopScene } from './ui/ShopScene.js';
 import { InventoryScene } from './ui/InventoryScene.js';
@@ -244,8 +244,14 @@ export class AdventureScene extends Scene {
 
   /** Texte à trous résolu ; une phrase qui commence par un mot du thème prend une majuscule. */
   format(text) {
-    const t = formatText(text, { state: this.state, word: (k, p) => this.game.themes.word(k, p) });
+    const t = formatText(text, { state: this.state, word: (k, p) => this.game.themes.word(k, p), questLevel: (id) => this.questLevel(id) });
     return /^\{(w|ws):/.test(String(text)) ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+  }
+
+  /** Difficulté d'une quête, en toutes lettres : « ★★☆ Moyenne ». */
+  questLevel(id) {
+    const d = this.quests.defs.get(id)?.difficulty ?? 1;
+    return `${'★'.repeat(d)}${'☆'.repeat(3 - d)} ${DIFFICULTY[d].label}`;
   }
 
   /** Nom affiché d'un personnage (vocabulaire du thème, majuscule). */

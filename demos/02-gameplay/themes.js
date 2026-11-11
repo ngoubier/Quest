@@ -11,6 +11,8 @@ export const TILE_ROLES = [
   'shop_floor', 'shop_wall', 'shelf', 'counter', 'shop_door', 'awning', 'shopfront',
   // extérieurs propres à chaque ambiance : toit + bas de toit, porte du magasin, roche / entrée de grotte
   'roof_eave', 'shop_entrance', 'cliff', 'cave_mouth',
+  // pont : cassé, puis réparé
+  'bridge_broken', 'bridge',
 ];
 
 // ------------------------------------------------------------ dessins génériques, colorés par thème
@@ -660,9 +662,9 @@ const BOSSES = {
   city: ['rat', { body: '#7a7a8a', dark: '#4a4a5a', light: '#9a9aa8', eye: '#ff3a3a' }],
 };
 const MORE_WORDS = {
-  medieval: { boss: 'le Roi Gluant', pet: 'le chiot' },
-  space: { boss: 'le Robot Géant', pet: 'le petit drone' },
-  city: { boss: 'le Rat Géant', pet: 'le chaton' },
+  medieval: { boss: 'le Roi Gluant', pet: 'le chiot', elderName: 'Augustin, l’Ancien' },
+  space: { boss: 'le Robot Géant', pet: 'le petit drone', elderName: 'Ada, la Commandante' },
+  city: { boss: 'le Rat Géant', pet: 'le chaton', elderName: 'Gérard, le Doyen' },
 };
 
 
@@ -1100,6 +1102,61 @@ const EXTERIORS = {
   },
 };
 
+// ------------------------------------------------------------ PONT (cassé / réparé), selon l'ambiance
+// Le pont relie la rive (rangée du haut) à la rive du bas : planches dans le sens vertical.
+const BRIDGES = {
+  medieval: { water: '#2f63c9', waterDark: '#2a58b8', wave: '#79a6f2', deck: '#a8743c', deckDark: '#6b4423', deckLight: '#c89a5a', post: '#4a2c18', rail: '#8a5a2c' },
+  space: { water: '#05060f', waterDark: '#05060f', wave: '#5a6aa0', deck: '#8b93a7', deckDark: '#4a5266', deckLight: '#c0c7d6', post: '#3a4254', rail: '#4ff0ff' },
+  city: { water: '#2a7f8f', waterDark: '#256f7e', wave: '#5ab4c4', deck: '#a8a8a2', deckDark: '#6e6e6a', deckLight: '#c8c8c2', post: '#4a4a46', rail: '#e8c547' },
+};
+function bridgeTiles(k) {
+  const water = (c, frame) => {
+    P(c, 0, 0, 16, 16, k.water);
+    P(c, 0, 8, 16, 8, k.waterDark);
+    const o = frame * 4;
+    P(c, (2 + o) % 14, 4, 4, 1, k.wave);
+    P(c, (9 + o) % 14, 12, 4, 1, k.wave);
+  };
+  const posts = (c) => {
+    P(c, 1, 0, 2, 16, k.post);
+    P(c, 13, 0, 2, 16, k.post);
+  };
+  return {
+    // pont cassé : poteaux, planches arrachées, un trou au milieu (infranchissable)
+    bridge_broken: {
+      solid: true,
+      frames: 2,
+      fps: 2,
+      props: { edge: null },
+      paint: (c, { frame }) => {
+        water(c, frame);
+        posts(c);
+        P(c, 3, 0, 10, 3, k.deck); // bout de tablier côté rive
+        P(c, 3, 2, 10, 1, k.deckDark);
+        P(c, 4, 3, 3, 2, k.deck); // planche pendante
+        P(c, 9, 3, 2, 3, k.deckDark);
+        P(c, 3, 13, 10, 3, k.deck); // autre bout
+        P(c, 3, 13, 10, 1, k.deckDark);
+        P(c, 6, 10, 4, 2, k.deck); // planche qui flotte
+        P(c, 6, 10, 4, 1, k.deckLight);
+        P(c, 2, 7, 1, 2, '#fff');
+      },
+    },
+    // pont réparé : tablier complet avec garde-corps
+    bridge: {
+      paint: (c) => {
+        water(c, 0);
+        P(c, 2, 0, 12, 16, k.deck);
+        for (let y = 0; y < 16; y += 3) P(c, 2, y, 12, 1, k.deckDark);
+        P(c, 2, 0, 1, 16, k.deckLight);
+        P(c, 1, 0, 1, 16, k.rail);
+        P(c, 14, 0, 1, 16, k.rail);
+        for (const y of [2, 8, 14]) (P(c, 0, y, 2, 2, k.post), P(c, 14, y, 2, 2, k.post));
+      },
+    },
+  };
+}
+
 export const THEMES = BASE.map((t) => {
   const x = EXTRA[t.id];
   const pal = { ...x.pal, pet: PETS[t.id] };
@@ -1114,6 +1171,7 @@ export const THEMES = BASE.map((t) => {
   tiles.shop_entrance = { paint: ext.shop_entrance };
   tiles.cliff = { solid: true, variants: 3, props: { shadow: true }, paint: ext.cliff };
   tiles.cave_mouth = { paint: ext.cave_mouth };
+  Object.assign(tiles, bridgeTiles(BRIDGES[t.id]));
   // Ombres portées sous les murs, obstacles et buissons ; écume au bord de l'eau.
   for (const k of ['wall', 'obstacle', 'bush']) tiles[k] = { ...tiles[k], props: { ...(tiles[k].props ?? {}), shadow: true } };
   tiles.water = { ...tiles.water, props: { ...(tiles.water.props ?? {}), edge: EDGES[t.id] } };

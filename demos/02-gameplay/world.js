@@ -140,7 +140,9 @@ export const QUESTS = [
 // ----------------------------------------------------------------- PNJ
 const ELDER = {
   type: 'npc',
-  name: 'Ancien',
+  name: '{w:elderName}',
+  role: 'quest',
+  gives: ['relic'],
   sprite: 'elder',
   dialogue: [
     {
@@ -148,7 +150,7 @@ const ELDER = {
       do: [
         { say: 'Ah, {player}, te voilà ! Un monstre a emporté mon {w:amulet} et l’a cachée au fond de {w:cave}...' },
         {
-          ask: 'Peux-tu m’aider ?',
+          ask: 'Peux-tu m’aider ?\nQuête « La relique perdue » : {level:relic}',
           choices: [
             { label: 'Oui', do: [{ startQuest: 'relic' }, { say: "Merci ! L'entrée est au sud-est, de l'autre côté de la rivière. Sois prudent." }] },
             { label: 'Pas maintenant', do: [{ say: 'Je comprends... Reviens me voir si tu changes d’avis.' }] },
@@ -168,7 +170,10 @@ const ELDER = {
 
 const COOK = {
   type: 'npc',
-  name: 'Cuisinière',
+  name: 'Margot, la cuisinière',
+  role: 'quest',
+  gives: ['harvest'],
+  involved: ['bouquet', 'bridge'],
   sprite: 'merchant',
   dialogue: [
     {
@@ -183,7 +188,7 @@ const COOK = {
       when: { quest: 'harvest', status: 'none' },
       do: [
         {
-          ask: 'Il me manque 3 {ws:mushroom} pour ma recette. Tu veux bien m’en trouver ?',
+          ask: 'Il me manque 3 {ws:mushroom} pour ma recette. Tu veux bien m’en trouver ?\nQuête : {level:harvest}',
           choices: [
             { label: 'Oui', do: [{ startQuest: 'harvest' }, { say: 'Génial ! Cherche partout... certains se cachent même sous les buissons !' }] },
             { label: 'Non', do: [{ say: 'Tant pis.' }] },
@@ -208,7 +213,7 @@ const COOK = {
     },
     {
       when: [{ quest: 'harvest', status: 'none' }, 'fisher_tarte'],
-      do: [{ say: 'Une tarte ? Il me faut d’abord 3 {ws:mushroom} !' }, { startQuest: 'harvest' }],
+      do: [{ say: ['Une tarte ? Il me faut d’abord 3 {ws:mushroom} !', 'Nouvelle quête : {level:harvest}'] }, { startQuest: 'harvest' }],
     },
     { when: { quest: 'harvest', status: 'active' }, do: [{ say: 'Tu en as {item:mushroom} sur 3. Pense à couper les buissons !' }] },
     { do: [{ say: 'Ma recette est un succès. Merci encore !' }] },
@@ -217,14 +222,16 @@ const COOK = {
 
 const GUARD = {
   type: 'npc',
-  name: 'Garde',
+  name: 'Bastien, le garde',
+  role: 'quest',
+  gives: ['hunt'],
   sprite: 'guard',
   dialogue: [
     {
       when: { quest: 'hunt', status: 'none' },
       do: [
         {
-          ask: 'Des {ws:blob} envahissent les champs. Tu peux en éliminer 3 ?',
+          ask: 'Des {ws:blob} envahissent les champs. Tu peux en éliminer 3 ?\nQuête : {level:hunt}',
           choices: [
             { label: 'Oui', do: [{ startQuest: 'hunt' }, { say: 'Bien ! Utilise ton arme : bouton Action quand rien n’est devant toi.' }] },
             { label: 'Non', do: [{ say: 'Dommage.' }] },
@@ -247,7 +254,8 @@ const diploma = (n, flag, title, reward) => ({
 });
 const TEACHER = {
   type: 'npc',
-  name: 'Maîtresse',
+  name: 'Mme Lili, la maîtresse',
+  role: 'quiz',
   sprite: 'teacher',
   dialogue: [
     diploma(5, 'diploma_1', 'Élève curieux', [{ give: 'hint', announce: true }]),
@@ -285,7 +293,8 @@ const tier = (n, flag, title, reward) => ({
 });
 const HISTORIAN = {
   type: 'npc',
-  name: 'Historien',
+  name: 'Edmond, l’historien',
+  role: 'quiz',
   sprite: 'scholar',
   dialogue: [
     tier(3, 'hist_tier_1', 'Apprenti historien', [{ give: 'hint', announce: true }]),
@@ -319,7 +328,9 @@ const HISTORIAN = {
 // Pêcheur : TROC et EMBRANCHEMENT — ses planches contre une tarte, ou contre de bonnes réponses.
 const FISHER = {
   type: 'npc',
-  name: 'Pêcheur',
+  name: 'Marius, le pêcheur',
+  role: 'quiz',
+  involved: ['bridge'],
   sprite: 'fisher',
   dialogue: [
     {
@@ -357,12 +368,14 @@ const FISHER = {
 // Charpentier : FABRICATION — planches + clous = pont réparé (ouvre l'accès à la grotte).
 const CARPENTER = {
   type: 'npc',
-  name: 'Charpentier',
+  name: 'Paulo, le charpentier',
+  role: 'quest',
+  gives: ['bridge'],
   sprite: 'carpenter',
   dialogue: [
     {
       when: { quest: 'bridge', status: 'none' },
-      do: [{ say: ['Le pont vers {w:cave} s’est effondré !', 'Pour le réparer, il me faut des planches et des clous.'] }, { startQuest: 'bridge' }],
+      do: [{ say: ['Le pont vers {w:cave} s’est effondré ! Regarde, au sud : il est tout cassé.', 'Pour le réparer, il me faut des planches et des clous.', 'Nouvelle quête « Le pont cassé » : {level:bridge}'] }, { startQuest: 'bridge' }],
     },
     {
       when: [{ item: 'planks' }, { item: 'nails' }, { not: 'bridge_built' }],
@@ -376,7 +389,8 @@ const CARPENTER = {
 // Écrivain public : uniquement des DICTÉES (le jeu prononce un mot, l'enfant l'écrit).
 const WRITER = {
   type: 'npc',
-  name: 'Écrivain',
+  name: 'Hugo, l’écrivain',
+  role: 'quiz',
   sprite: 'writer',
   dialogue: [
     {
@@ -407,7 +421,9 @@ const WRITER = {
 // Jardinière : donne des fleurs si on réussit 2 questions sur 3.
 const GARDENER = {
   type: 'npc',
-  name: 'Jardinière',
+  name: 'Rose, la jardinière',
+  role: 'quiz',
+  involved: ['bouquet'],
   sprite: 'gardener',
   dialogue: [
     {
@@ -439,7 +455,8 @@ const GARDENER = {
 // Marchand : le magasin (dans la maison en haut, au centre du village).
 const SELLER = {
   type: 'npc',
-  name: 'Marchand',
+  name: 'Victor, le marchand',
+  role: 'shop',
   sprite: 'seller',
   dialogue: [
     {
@@ -469,7 +486,9 @@ const SELLER = {
 // Léon : la quête du bouquet, en 5 étapes.
 const LEON = {
   type: 'npc',
-  name: 'Léon',
+  name: 'Léon, le timide',
+  role: 'quest',
+  gives: ['bouquet'],
   sprite: 'leon',
   dialogue: [
     {
@@ -477,7 +496,7 @@ const LEON = {
       do: [
         { say: 'Psst... J’aimerais offrir un bouquet à la cuisinière, mais je suis bien trop timide.' },
         {
-          ask: 'Tu veux bien m’aider ?',
+          ask: 'Tu veux bien m’aider ?\nQuête « Un bouquet pour la cuisinière » : {level:bouquet}',
           choices: [
             { label: 'Oui', do: [{ startQuest: 'bouquet' }, { say: 'Merci ! Il me faut des {w:flowers} de la jardinière et un ruban du marchand.' }] },
             { label: 'Non', do: [{ say: 'Oh... tant pis.' }] },
@@ -546,12 +565,12 @@ export const MAPS = {
       H: HISTORIAN,
       Y: FISHER,
       R: CARPENTER,
-      X: { type: 'tileswitch', tile: 'water', to: 'path', when: 'bridge_built' },
+      X: { type: 'tileswitch', tile: 'bridge_broken', to: 'bridge', when: 'bridge_built' },
       Q: { type: 'warp', tile: 'shop_entrance', to: 'shop', at: [7, 9], facing: 'up' },
       W: { type: 'pet', name: '{w:pet}', text: ['Il a l’air perdu... et il te suit déjà partout !', 'Ton nouveau compagnon trouvera parfois des indices pour toi.'] },
       Z: { type: 'sign', text: 'MAGASIN — tout pour l’aventure !' },
       G: GUARD,
-      S: { type: 'sign', text: ['Bienvenue au village !', 'Parle aux habitants (Action) pour obtenir des quêtes. Entrée ouvre le menu et le journal des quêtes.'] },
+      S: { type: 'sign', text: ['Bienvenue au village !', 'Au-dessus des habitants : « ! » doré = une quête à prendre, « ? » = quête en cours, livre bleu = énigmes, « € » = magasin.', 'Le bouton Quêtes, en haut, liste tes quêtes et leur difficulté.'] },
       U: { type: 'sign', text: 'Jardin fermé. Le levier ouvre la grille : frappe-le avec ton arme !' },
       T: { type: 'sign', text: 'Danger : {w:cave}, au-delà du pont. Les monstres y rôdent.' },
       m: { type: 'pickup', item: 'mushroom' },

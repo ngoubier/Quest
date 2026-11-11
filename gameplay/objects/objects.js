@@ -119,7 +119,10 @@ export class Chest extends WorldObject {
 // ------------------------------------------------------------------ PNJ
 export class Npc extends WorldObject {
   /**
-   * props : { name, sprite: 'npc', wander?: bool,
+   * props : { name: 'Margot, la cuisinière', sprite: 'npc', wander?: bool,
+   *           role?: 'quest' | 'quiz' | 'shop',     // repère affiché au-dessus de la tête
+   *           gives?: ['id de quête'],              // quêtes qu'il donne  → « ! » doré
+   *           involved?: ['id de quête'],           // quêtes où il intervient → « ? » quand elles sont en cours
    *           dialogue: [{ when?: condition, do: [actions] }, ...] }  (première règle vraie)
    */
   constructor({ x, y, uid, props }) {
@@ -181,9 +184,77 @@ export class Npc extends WorldObject {
     runActions(rule.do, ctx, () => (this.talking = false));
   }
 
+  /** Repère : '!' quête à prendre, '?' quête en cours, 'quiz' énigmes, 'shop' magasin, ou null. */
+  get marker() {
+    const st = this.state;
+    const gives = this.props.gives ?? [];
+    const involved = [...gives, ...(this.props.involved ?? [])];
+    if (gives.some((q) => st.questStatus(q) === 'none')) return '!';
+    if (involved.some((q) => st.questStatus(q) === 'active')) return '?';
+    if (this.props.role === 'quiz') return 'quiz';
+    if (this.props.role === 'shop') return 'shop';
+    return null;
+  }
+
+  /** Prénom affiché au-dessus de la tête (partie avant la virgule du nom). */
+  get firstName() {
+    return this.adv.format(this.props.name ?? '').split(',')[0].trim();
+  }
+
   draw(r) {
     const s = this.world.game.themes.current.sprites.chars;
     s.draw(r, this.anim.frame, this.x - 3, this.y - 8, { flipX: this.facing === 'left' });
+    const t = this.world.time;
+    const top = this.y - 10;
+    const m = this.marker;
+    if (m) drawMarker(r, this.cx, top - 9 + Math.round(Math.sin(t * 4) * 1.5), m);
+    // Prénom quand le héros s'approche
+    const h = this.adv.hero;
+    if (h && Math.hypot(h.cx - this.cx, h.cy - this.cy) < 40 && this.firstName) {
+      const g = this.world.game;
+      const name = this.firstName;
+      const w = Math.ceil(r.measure(name, 6, g.style.font)) + 6;
+      const ny = top - (m ? 20 : 9);
+      r.withAlpha(0.85, () => r.rect(Math.round(this.cx - w / 2), ny, w, 8, '#000'));
+      r.text(name, this.cx, ny + 1, { color: '#fff', size: 6, font: g.style.font, align: 'center' });
+    }
+  }
+}
+
+/**
+ * Bulle de repère au-dessus d'un personnage (couleurs fixes, lisibles dans toutes les ambiances) :
+ *   '!'    doré    : a une quête à donner
+ *   '?'    argent  : quête en cours avec lui
+ *   'quiz' bleu    : pose des énigmes (livre)
+ *   'shop' vert    : magasin (€)
+ */
+export function drawMarker(r, cx, y, kind) {
+  const x = Math.round(cx - 5);
+  const col = { '!': '#ffd35a', '?': '#d8dde8', quiz: '#3a8ad8', shop: '#3ac46a' }[kind];
+  r.rect(x, y, 10, 9, '#141414');
+  r.rect(x + 1, y + 1, 8, 7, col);
+  r.rect(x + 4, y + 9, 2, 1, '#141414'); // pointe de la bulle
+  const ink = kind === 'quiz' || kind === 'shop' ? '#ffffff' : '#141414';
+  if (kind === '!') {
+    r.rect(x + 4, y + 2, 2, 3, ink);
+    r.rect(x + 4, y + 6, 2, 1, ink);
+  } else if (kind === '?') {
+    r.rect(x + 3, y + 2, 4, 1, ink);
+    r.rect(x + 6, y + 3, 1, 1, ink);
+    r.rect(x + 4, y + 4, 2, 1, ink);
+    r.rect(x + 4, y + 6, 2, 1, ink);
+  } else if (kind === 'quiz') {
+    // livre ouvert
+    r.rect(x + 2, y + 2, 3, 5, ink);
+    r.rect(x + 5, y + 2, 3, 5, ink);
+    r.rect(x + 5, y + 2, 1, 5, col);
+    r.rect(x + 3, y + 3, 1, 1, col);
+    r.rect(x + 6, y + 4, 1, 1, col);
+  } else if (kind === 'shop') {
+    r.rect(x + 3, y + 2, 4, 1, ink);
+    r.rect(x + 3, y + 2, 1, 5, ink);
+    r.rect(x + 3, y + 6, 4, 1, ink);
+    r.rect(x + 2, y + 4, 4, 1, ink);
   }
 }
 
