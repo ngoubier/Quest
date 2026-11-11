@@ -3,7 +3,8 @@
 Un jeu d'aventure 2D dans l'esprit du *Zelda* original, construit en trois couches :
 
 1. **Quest Engine** (`engine/`) — moteur 2D réutilisable (affichage, entrées, cartes, caméra, collisions, scènes, son, sauvegarde, thèmes).
-2. **Quest Gameplay** (`gameplay/`) — systèmes d'aventure réutilisables : combat, objets, quêtes, énigmes, sauvegarde.
+2. **Quest Gameplay** (`gameplay/`) — systèmes d'aventure réutilisables : combat, objets, quêtes, énigmes scolaires, boutique, sauvegarde.
+   - **Contenu éducatif** (`content/quiz/`) — questions du CP au CM2, réutilisables par tous les jeux.
 3. **Le jeu** — contenu et histoire *(étape 3, à venir)*.
 
 ## Lancer les essais
@@ -19,6 +20,7 @@ npm test       # tests automatiques du moteur
 
 - [Étape 1 — Le moteur](docs/01-moteur.md) : architecture, choix techniques, check-list de validation.
 - [Étape 2 — Le gameplay](docs/02-gameplay.md) : combat, objets, langage de conditions/actions, quêtes, énigmes.
+- [Étape 3 — Quêtes, énigmes scolaires et économie](docs/03-quetes-et-enigmes.md) : questions par âge, boutique, proposition de quêtes.
 
 ## Commandes
 

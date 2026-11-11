@@ -1,6 +1,6 @@
 # Étape 2 — Le gameplay (Quest Gameplay)
 
-> Statut : **à valider**. Essai jouable : `demos/02-gameplay/`.
+> Statut : **validé avec ajustements** (voir `03-quetes-et-enigmes.md`). Essai jouable : `demos/02-gameplay/`.
 
 ## Décisions validées à l'étape 1
 

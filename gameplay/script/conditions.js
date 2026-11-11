@@ -8,6 +8,7 @@
 //   { quest: 'amulette', status: 'active' } statut de quête : none | active | done
 //   { quest: 'amulette', step: 1 }          quête active ET à l'étape 1 (0 = première)
 //   { hp: 2 }                               au moins 2 demi-cœurs
+//   { age: 8 }                              le joueur a au moins 8 ans (profil)
 //   { all: [...] }  { any: [...] }  { not: cond }   combinaisons
 //   [c1, c2]                                équivaut à { all: [c1, c2] }
 //   null / undefined                        toujours vrai
@@ -28,5 +29,6 @@ export function check(cond, state) {
     return st === (cond.status ?? 'done');
   }
   if ('hp' in cond) return state.hp >= cond.hp;
+  if ('age' in cond) return (state.profile?.age ?? 0) >= cond.age;
   throw new Error(`Condition inconnue : ${JSON.stringify(cond)}`);
 }

@@ -13,6 +13,10 @@ import { check } from './conditions.js';
 //   { heal: 2 | 'full' }  { maxHp: +2 }
 //   { sound: 'nom' }  { toast: 'texte' }
 //   { if: condition, then: [...], else: [...] }
+//   { quiz: { subject?: 'maths', count?: 3, pass?: 3 },      questions scolaires adaptées à l'âge
+//     perCorrect?: { give: 'coin', count: 2 },                 récompense par bonne réponse
+//     success?: [...], failure?: [...] }                       selon que `pass` est atteint
+//   { shop: { id, title?, offers: [{ item, price, once? }] } } ouvre une boutique
 //   { call: (ctx) => {} }      échappatoire en JavaScript pour les cas spéciaux
 //
 // `ctx` est fourni par le jeu (AdventureScene) : { state, quests, say, ask, toast, collect, game }.
@@ -37,6 +41,16 @@ function exec(a, ctx, next) {
     });
   }
   if ('if' in a) return runActions(check(a.if, s) ? a.then : a.else, ctx, next);
+  if ('quiz' in a) {
+    return ctx.quiz(a.quiz, (res) => {
+      const list = [];
+      if (a.perCorrect && res.correct > 0) list.push({ give: a.perCorrect.give, count: a.perCorrect.count * res.correct, announce: true });
+      const pass = a.quiz.pass ?? a.quiz.count ?? 3;
+      list.push(...[].concat((res.correct >= pass ? a.success : a.failure) ?? []));
+      runActions(list, ctx, next);
+    });
+  }
+  if ('shop' in a) return ctx.shop(a.shop, next);
   if ('give' in a) {
     ctx.collect(a.give, a.count ?? 1);
     if (a.announce) return ctx.announce(a.give, a.count ?? 1, next);

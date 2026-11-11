@@ -1,0 +1,94 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { checkAnswer, normalize, QuestionBank, GameState, runActions, createRngForTests } from './helpers.js';
+import { frenchSchoolBank, QUESTIONS_FR, MATHS_GENERATOR } from '../content/quiz/index.js';
+
+test('Réponses : tolérance sur la forme, pas sur le fond', () => {
+  const img = { type: 'text', answer: 'éléphant', image: '🐘' };
+  assert.ok(checkAnswer(img, 'Éléphant'));
+  assert.ok(checkAnswer(img, '  un elephant '), 'article + accent oublié');
+  assert.ok(checkAnswer(img, "l'éléphant"));
+  assert.ok(!checkAnswer(img, 'elefant'));
+  const conj = { type: 'text', answer: 'avons mangé', strictAccents: true };
+  assert.ok(checkAnswer(conj, 'Avons mangé'));
+  assert.ok(!checkAnswer(conj, 'avons mange'), 'en conjugaison, l’accent compte');
+  assert.ok(checkAnswer({ type: 'text', answer: '3,8' }, '3.8'));
+  assert.ok(checkAnswer({ type: 'text', answer: '1000' }, '1 000'));
+  assert.ok(checkAnswer({ type: 'choice', answer: 'a', choices: ['a', 'à'] }, 'a'));
+  assert.ok(!checkAnswer({ type: 'choice', answer: 'a', choices: ['a', 'à'] }, 'à'));
+  assert.ok(!checkAnswer({ type: 'text', answer: 'chat' }, null));
+  assert.equal(normalize('  Le  Mont Blanc ! ', { articles: true }), 'mont blanc');
+});
+
+test('Banque : toutes les questions sont valides et chaque âge a de quoi jouer', () => {
+  const bank = frenchSchoolBank(); // lève une erreur si une question est mal formée
+  assert.ok(QUESTIONS_FR.length >= 100);
+  const ids = new Set(QUESTIONS_FR.map((q) => q.id));
+  assert.equal(ids.size, QUESTIONS_FR.length, 'identifiants uniques');
+  for (let age = 6; age <= 10; age++) {
+    for (const subject of ['maths', 'francais', 'histoire', 'geographie', 'sciences']) {
+      const qs = bank.pick({ age, subject, count: 3 });
+      assert.ok(qs.length >= 1, `${age} ans / ${subject}`);
+      for (const q of qs) assert.equal(q.subject, subject);
+    }
+  }
+});
+
+test('Banque : évite les questions déjà vues', () => {
+  const bank = new QuestionBank({
+    questions: [1, 2, 3, 4].map((i) => ({ id: `q${i}`, subject: 'x', ages: [8, 8], prompt: `Q${i}`, answer: 'a' })),
+  });
+  const qs = bank.pick({ age: 8, count: 2, seen: ['q1', 'q2'], rng: createRngForTests(3) });
+  assert.deepEqual(qs.map((q) => q.id).sort(), ['q3', 'q4']);
+});
+
+test('Maths générées : la réponse attendue est juste (vérifiée par calcul)', () => {
+  const rng = createRngForTests(42);
+  for (let age = 6; age <= 10; age++) {
+    for (let i = 0; i < 300; i++) {
+      const q = MATHS_GENERATOR.make(rng, age);
+      if (q.type === 'choice') assert.ok(q.choices.includes(q.answer), q.prompt);
+      const m = q.prompt.match(/^([\d,]+) ([+−×÷]) ([\d,]+) = \?$/);
+      if (m) {
+        const n = (s) => Number(s.replace(',', '.'));
+        const [a, b] = [n(m[1]), n(m[3])];
+        const r = { '+': a + b, '−': a - b, '×': a * b, '÷': a / b }[m[2]];
+        assert.ok(Math.abs(r - n(q.answer)) < 1e-9, `${q.prompt} → ${q.answer}`);
+        assert.ok(r >= 0 && Number.isFinite(r));
+      }
+      const half = q.prompt.match(/moitié de (\d+)/);
+      if (half) assert.equal(Number(q.answer), Number(half[1]) / 2);
+      if (q.image) assert.equal([...q.image].length, Number(q.answer));
+    }
+  }
+});
+
+test('Action quiz : récompense par bonne réponse puis succès / échec', () => {
+  const s = new GameState();
+  const log = [];
+  const ctx = {
+    state: s,
+    say: (t, { onClose }) => (log.push(t), onClose()),
+    collect: (item, n) => s.give(item, n),
+    announce: (item, n, next) => (log.push(`+${n} ${item}`), next()),
+    quiz: (spec, done) => done({ correct: 2, total: 3, results: [] }),
+  };
+  runActions([{ quiz: { count: 3, pass: 2 }, perCorrect: { give: 'coin', count: 2 }, success: [{ setFlag: 'ok' }], failure: [{ setFlag: 'ko' }] }], ctx);
+  assert.equal(s.count('coin'), 4);
+  assert.ok(s.flag('ok') && !s.flag('ko'));
+  runActions([{ quiz: { count: 3 }, success: [{ setFlag: 'parfait' }], failure: [{ setFlag: 'rate' }] }], ctx);
+  assert.ok(s.flag('rate'), 'pass vaut count par défaut : 2/3 ne suffit pas');
+});
+
+test('Statistiques de questions sauvegardées', () => {
+  const s = new GameState();
+  s.recordQuiz([
+    { id: 'a', subject: 'maths', ok: true },
+    { id: 'gen:maths:1+1', subject: 'maths', ok: false },
+  ]);
+  assert.deepEqual(s.quiz.stats.maths, { ok: 1, total: 2 });
+  assert.deepEqual(s.quiz.seen, ['a'], 'les questions générées ne sont pas mémorisées');
+  const copy = new GameState();
+  copy.load(JSON.parse(JSON.stringify(s.toJSON())));
+  assert.deepEqual(copy.quiz, s.quiz);
+});

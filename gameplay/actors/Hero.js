@@ -41,6 +41,14 @@ export class Hero extends Actor {
   }
 
   die() {
+    // Une potion dans le sac sauve automatiquement le héros.
+    const st = this.adv.state;
+    if (st.take('potion', 1)) {
+      st.heal(st.maxHp);
+      this.game.audio.play('heal');
+      this.adv.toast('La potion te sauve !');
+      return;
+    }
     this.adv.gameOver();
   }
 

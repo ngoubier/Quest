@@ -6,6 +6,8 @@ import { EventBus } from '../../engine/index.js';
 //  - items     : inventaire   ex. { coin: 42, key: 1, amulet: 1 }
 //  - hp/maxHp  : vie du héros, en demi-cœurs (6 = 3 cœurs)
 //  - quests    : progression  ex. { amulette: { status: 'active', step: 1 } }
+//  - profile   : le joueur    ex. { age: 8 } (adapte la difficulté des questions)
+//  - quiz      : questions déjà vues et statistiques par matière
 // Chaque modification émet 'change' : les quêtes et les énigmes se réévaluent.
 
 export class GameState {
@@ -21,6 +23,23 @@ export class GameState {
     this.maxHp = maxHp;
     this.hp = maxHp;
     this.quests = {};
+    this.profile = this.profile ?? { age: 8 };
+    this.quiz = { seen: [], stats: {} };
+  }
+
+  // --- questions scolaires
+  recordQuiz(results) {
+    for (const r of results) {
+      if (r.id && !r.id.startsWith('gen:')) {
+        this.quiz.seen = this.quiz.seen.filter((id) => id !== r.id);
+        this.quiz.seen.push(r.id);
+      }
+      const st = (this.quiz.stats[r.subject] ??= { ok: 0, total: 0 });
+      st.total++;
+      if (r.ok) st.ok++;
+    }
+    if (this.quiz.seen.length > 300) this.quiz.seen = this.quiz.seen.slice(-300);
+    this._changed('quiz');
   }
 
   _changed(kind, key) {
@@ -99,7 +118,7 @@ export class GameState {
 
   // --- sauvegarde
   toJSON() {
-    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests });
+    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz });
   }
 
   load(data) {

@@ -53,7 +53,13 @@ export class Input {
   }
 
   attach(target) {
+    // On ignore la frappe dans un champ de texte (réponse à une question...).
+    const editable = (e) => {
+      const t = e.target;
+      return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    };
     target.addEventListener('keydown', (e) => {
+      if (editable(e)) return;
       const actions = this._keyToActions.get(e.code);
       if (actions) {
         e.preventDefault();

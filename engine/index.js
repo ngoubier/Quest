@@ -22,5 +22,6 @@ export { SaveStore } from './storage/SaveStore.js';
 export { ThemeRegistry, buildTileset } from './theme/ThemeRegistry.js';
 export { DialogScene } from './ui/DialogScene.js';
 export { MenuScene } from './ui/MenuScene.js';
+export { TextField } from './ui/TextField.js';
 export { wrapText } from './ui/text.js';
 export { Debug } from './debug/Debug.js';

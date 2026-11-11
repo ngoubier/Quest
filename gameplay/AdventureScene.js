@@ -8,12 +8,15 @@ import { standardFactory } from './objects/ObjectFactory.js';
 import { drawHud } from './ui/Hud.js';
 import { QuestLogScene } from './ui/QuestLogScene.js';
 import { GameOverScene } from './ui/GameOverScene.js';
+import { ShopScene } from './ui/ShopScene.js';
+import { InventoryScene } from './ui/InventoryScene.js';
+import { QuizScene } from './quiz/QuizScene.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
 //
 // new AdventureScene({
-//   maps:   { [id]: { name, rows: [...], camera: 'follow' | 'rooms',
+//   maps:   { [id]: { name, rows: [...], camera: 'follow' | 'rooms', level: 'donjon1',
 //                     objects: { 'A': { type: 'npc', tile: 'floor', ...props } },
 //                     roomClear: [{ room: [x, y], flag: 'salle_videe' }] } },
 //   legend: { '.': 'floor', '#': 'wall', 'P': { tile: 'path', marker: 'start' } },  // commun aux cartes
@@ -21,6 +24,7 @@ import { GameOverScene } from './ui/GameOverScene.js';
 //   quests: [ ... ],
 //   startMap: 'overworld',
 //   hud:    { height: 16, counters: ['coin', 'key'] },
+//   questionBank: frenchSchoolBank(),          // énigmes scolaires (voir content/quiz)
 //   saveNamespace: 'mon-jeu',
 //   allowThemeSwitch: true,
 // })
@@ -37,9 +41,10 @@ export class AdventureScene extends Scene {
   }
 
   // ------------------------------------------------------------------ cycle de vie
-  enter({ load = false } = {}) {
+  enter({ load = false, profile = null } = {}) {
     const g = this.game;
     this.state = new GameState({ maxHp: this.cfg.startHp ?? 6 });
+    if (profile) this.state.profile = { ...profile };
     this.quests = new QuestSystem(this.actionContext(), this.cfg.quests ?? []);
     this.offTheme = g.events.on('theme:change', (t) => this.world?.tilemap.setTileset(t.tileset));
     this.offDebug = g.debug.addInfo(() => this._debugLines());
@@ -93,6 +98,12 @@ export class AdventureScene extends Scene {
     camera.follow(this.hero);
     camera.onRoomChange = (room) => this.game.events.emit('room:enter', { mapId, room });
     this.entry = { mapId, x: px, y: py, facing };
+    // Niveau = groupe de cartes (par défaut : la carte seule). On mémorise son point de départ.
+    const level = def.level ?? mapId;
+    if (level !== this.level) {
+      this.level = level;
+      this.levelEntry = { ...this.entry };
+    }
     this.warping = false;
     this.toasts = [];
     this.toast(def.name);
@@ -157,6 +168,8 @@ export class AdventureScene extends Scene {
       ask: (q, opts) => this.ask(q, opts),
       toast: (t) => this.toast(t),
       collect: (item, n) => this.collect(item, n),
+      quiz: (spec, done) => this.quiz(spec, done, speaker),
+      shop: (spec, done) => this.game.scenes.push(new ShopScene(this, spec, done)),
       announce: (item, n, next) => this.announce(item, n, next),
     };
   }
@@ -191,8 +204,30 @@ export class AdventureScene extends Scene {
     return this.itemDef(item).icon ?? item;
   }
 
+  /** Nom affiché : vocabulaire du thème si disponible, sinon `name` de l'objet. */
   itemName(item, plural = false) {
-    return this.game.themes.word(this.itemDef(item).word ?? item, plural);
+    const def = this.itemDef(item);
+    const words = this.game.themes.current?.def.words ?? {};
+    if (def.word && words[def.word] !== undefined) return this.game.themes.word(def.word, plural);
+    return (plural ? def.plural : null) ?? def.name ?? item;
+  }
+
+  /** Pose des questions scolaires adaptées à l'âge du joueur. */
+  quiz(spec, done, speaker) {
+    const bank = this.cfg.questionBank;
+    const st = this.state;
+    const questions = bank ? bank.pick({ age: st.profile?.age ?? 8, subject: spec.subject ?? null, count: spec.count ?? 3, seen: st.quiz.seen }) : [];
+    if (!questions.length) return this.say('Je n’ai pas de question pour toi aujourd’hui.', { speaker, onClose: () => done({ correct: 0, total: 0, results: [] }) });
+    this.game.scenes.push(
+      new QuizScene({
+        questions,
+        speaker,
+        onDone: (res) => {
+          st.recordQuiz(res.results);
+          done(res);
+        },
+      }),
+    );
   }
 
   /** Donne un objet (ou applique son effet immédiat : cœur qui soigne...). */
@@ -227,10 +262,20 @@ export class AdventureScene extends Scene {
     this.game.scenes.push(new GameOverScene(this));
   }
 
-  continueAfterDeath() {
+  /**
+   * Recommencer le niveau : retour à son point de départ, vie pleine,
+   * et les monstres vaincus de ce niveau réapparaissent. Objets et quêtes sont conservés.
+   */
+  restartLevel() {
     this.game.scenes.fade(() => {
-      this.state.heal(this.state.maxHp);
-      this.loadMap(this.entry.mapId, this.entry);
+      const st = this.state;
+      const levelOf = (mapId) => this.cfg.maps[mapId]?.level ?? mapId;
+      for (const f of Object.keys(st.flags)) {
+        if (f.startsWith('killed:') && levelOf(f.slice(7).split(':')[0]) === this.level) st.setFlag(f, false);
+      }
+      st.heal(st.maxHp);
+      const e = this.levelEntry;
+      this.loadMap(e.mapId, e);
     });
   }
 
@@ -252,6 +297,7 @@ export class AdventureScene extends Scene {
   _applySave(d) {
     if (d.theme && this.game.themes.themes.has(d.theme)) this.game.themes.use(d.theme);
     this.state.load(d.state);
+    this.level = null;
     this.loadMap(d.mapId, { x: d.x, y: d.y, facing: d.facing });
     this.toasts = [{ text: 'Partie chargée', t: 2 }];
   }
@@ -261,6 +307,7 @@ export class AdventureScene extends Scene {
     const items = [
       { label: 'Reprendre', onSelect: (m) => m.close() },
       { label: 'Journal des quêtes', onSelect: (m) => (m.close(), g.scenes.push(new QuestLogScene(this))) },
+      { label: 'Sac', onSelect: (m) => (m.close(), g.scenes.push(new InventoryScene(this))) },
       {
         label: 'Sauvegarder',
         onSelect: (m) => {
@@ -270,6 +317,10 @@ export class AdventureScene extends Scene {
       },
       { label: 'Charger', enabled: () => this.hasSave(), onSelect: (m) => (m.close(), this.loadGame()) },
     ];
+    items.push({
+      label: () => `Âge du joueur : ${this.state.profile.age} ans`,
+      onSelect: () => (this.state.profile.age = this.state.profile.age >= 10 ? 6 : this.state.profile.age + 1),
+    });
     if (this.cfg.allowThemeSwitch) items.push({ label: () => `Ambiance : ${g.themes.current.def.name}`, onSelect: () => (g.themes.next(), g.audio.play('switch')) });
     items.push(
       { label: () => `Débogage : ${g.debug.enabled ? 'oui' : 'non'}`, onSelect: () => g.debug.toggle() },

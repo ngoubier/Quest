@@ -48,8 +48,9 @@ export class Enemy extends Actor {
    * @param {string} o.sprite   préfixe d'images
    * @param {keyof BEHAVIORS | Function} o.behavior
    */
-  constructor({ x, y, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
+  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
     super({ x: x + 2, y: y + 6, w: 12, h: 10, tags: ['enemy'], solid: false, hp, invulnTime: 0.3 });
+    this.uid = uid;
     this.kind = kind;
     this.speed = speed;
     this.damage = damage;
@@ -60,6 +61,11 @@ export class Enemy extends Actor {
     this.timer = 0;
     this.anim = new Animator({ idle: { frames: [`${sprite}_0`, `${sprite}_1`], fps: 4 } });
     this.anim.play('idle');
+  }
+
+  /** Un monstre vaincu ne revient pas, sauf si on recommence le niveau. */
+  added() {
+    if (this.uid && this.adv.state.flag(`killed:${this.uid}`)) this.dead = true;
   }
 
   /** Actif seulement s'il est visible à l'écran. */
@@ -85,6 +91,7 @@ export class Enemy extends Actor {
     super.die();
     this.game.audio.play('kill');
     this.world.add(new Effect(this.cx, this.cy - 2));
+    if (this.uid) this.adv.state.setFlag(`killed:${this.uid}`);
     this.adv.state.addCounter(`kills_${this.kind}`);
     this.game.events.emit('enemy:killed', { kind: this.kind, enemy: this });
     // Butin aléatoire.

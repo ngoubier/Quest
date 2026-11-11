@@ -20,6 +20,11 @@ export const ITEMS = {
   amulet: { icon: 'amulet', word: 'amulet' },
   mushroom: { icon: 'mushroom', word: 'mushroom', max: 9 },
   heart: { icon: 'heart', instant: (adv) => adv.state.heal(2), sound: 'heal' },
+  potion: { icon: 'potion', word: 'potion', name: 'Potion', max: 3 },
+  heart_container: { icon: 'heart_container', name: 'Cœur supplémentaire', instant: (adv) => adv.state.setMaxHp(adv.state.maxHp + 2, true), sound: 'heal' },
+  flowers: { icon: 'flowers', word: 'flowers', name: 'Fleurs', max: 1 },
+  ribbon: { icon: 'ribbon', name: 'Ruban', max: 1 },
+  bouquet: { icon: 'bouquet', name: 'Bouquet', max: 1 },
 };
 
 // ----------------------------------------------------------------- QUÊTES
@@ -37,10 +42,10 @@ export const QUESTS = [
   {
     id: 'harvest',
     kind: 'side',
-    title: 'La recette de la marchande',
+    title: 'La recette de la cuisinière',
     steps: [
       { goal: 'Trouver 3 {ws:mushroom} ({item:mushroom}/3)', done: { item: 'mushroom', count: 3 } },
-      { goal: 'Les apporter à la marchande', done: { flag: 'harvest_given' } },
+      { goal: 'Les apporter à la cuisinière', done: { flag: 'harvest_given' } },
     ],
   },
   {
@@ -51,6 +56,20 @@ export const QUESTS = [
       { goal: 'Vaincre 3 {ws:blob} ({counter:kills_blob}/3)', done: { counter: 'kills_blob', gte: 3 } },
       { goal: 'Retourner voir le garde', done: { flag: 'hunt_reported' } },
     ],
+  },
+  // Quête « aller chercher » à étapes : questions scolaires + boutique + livraisons.
+  {
+    id: 'bouquet',
+    kind: 'side',
+    title: 'Un bouquet pour la cuisinière',
+    steps: [
+      { goal: 'Obtenir des {w:flowers} auprès de la jardinière', done: { item: 'flowers' } },
+      { goal: 'Acheter un ruban chez le marchand', done: { item: 'ribbon' } },
+      { goal: 'Rapporter les {w:flowers} et le ruban à Léon', done: { flag: 'bouquet_made' } },
+      { goal: 'Offrir le bouquet à la cuisinière', done: { flag: 'bouquet_delivered' } },
+      { goal: 'Annoncer la réponse à Léon', done: { flag: 'bouquet_thanked' } },
+    ],
+    rewards: [{ give: 'coin', count: 25 }, { give: 'potion' }, { toast: 'Récompense : 25 {ws:coin} + {w:potion}' }],
   },
 ];
 
@@ -82,11 +101,19 @@ const ELDER = {
   ],
 };
 
-const MERCHANT = {
+const COOK = {
   type: 'npc',
-  name: 'Marchande',
+  name: 'Cuisinière',
   sprite: 'merchant',
   dialogue: [
+    {
+      when: [{ quest: 'bouquet', step: 3 }, { item: 'bouquet' }],
+      do: [
+        { say: ['Un bouquet ? De la part de Léon ?', 'Comme c’est gentil ! Dis-lui que j’accepte avec plaisir son invitation à pique-niquer.'] },
+        { take: 'bouquet' },
+        { setFlag: 'bouquet_delivered' },
+      ],
+    },
     {
       when: { quest: 'harvest', status: 'none' },
       do: [
@@ -119,7 +146,7 @@ const GUARD = {
         {
           ask: 'Des {ws:blob} envahissent les champs. Tu peux en éliminer 3 ?',
           choices: [
-            { label: 'Oui', do: [{ setCounter: 'kills_blob', value: 0 }, { startQuest: 'hunt' }, { say: 'Bien ! Utilise ton arme : bouton Action quand rien n’est devant toi.' }] },
+            { label: 'Oui', do: [{ startQuest: 'hunt' }, { say: 'Bien ! Utilise ton arme : bouton Action quand rien n’est devant toi.' }] },
             { label: 'Non', do: [{ say: 'Dommage.' }] },
           ],
         },
@@ -131,6 +158,132 @@ const GUARD = {
   ],
 };
 
+// Maîtresse : questions à volonté, 2 pièces par bonne réponse (source d'argent).
+const quizChoice = (label, subject) => ({
+  label,
+  do: [
+    {
+      quiz: { subject, count: 3 },
+      perCorrect: { give: 'coin', count: 2 },
+      success: [{ say: 'Trois sur trois, bravo !' }],
+      failure: [{ say: 'Continue de t’entraîner, tu vas progresser !' }],
+    },
+  ],
+});
+const TEACHER = {
+  type: 'npc',
+  name: 'Maîtresse',
+  sprite: 'teacher',
+  dialogue: [
+    {
+      do: [
+        { say: 'Bonjour ! Chaque bonne réponse à mes questions te rapporte 2 {ws:coin}.' },
+        {
+          ask: 'Quelle matière choisis-tu ?',
+          choices: [
+            quizChoice('Mathématiques', 'maths'),
+            quizChoice('Français', 'francais'),
+            quizChoice('Histoire', 'histoire'),
+            quizChoice('Géographie', 'geographie'),
+            quizChoice('Sciences', 'sciences'),
+            { label: 'Plus tard', do: [{ say: 'À bientôt !' }] },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+// Jardinière : donne des fleurs si on réussit 2 questions sur 3.
+const GARDENER = {
+  type: 'npc',
+  name: 'Jardinière',
+  sprite: 'gardener',
+  dialogue: [
+    {
+      when: [{ quest: 'bouquet', status: 'active' }, { not: { item: 'flowers' } }, { not: 'bouquet_made' }],
+      do: [
+        { say: 'Des {w:flowers} pour Léon ? Mes {w:flowers} se méritent !' },
+        {
+          ask: 'Réponds juste à 2 questions sur 3 et elles sont à toi. Prêt ?',
+          choices: [
+            {
+              label: 'Oui',
+              do: [
+                {
+                  quiz: { count: 3, pass: 2 },
+                  success: [{ say: 'Bravo ! Voici mes plus belles {w:flowers}.' }, { give: 'flowers', announce: true }],
+                  failure: [{ say: 'Presque ! Reviens essayer quand tu veux.' }],
+                },
+              ],
+            },
+            { label: 'Pas encore', do: [{ say: 'Prends ton temps.' }] },
+          ],
+        },
+      ],
+    },
+    { do: [{ say: 'Mon jardin est le plus beau du village. Ne coupe pas mes fleurs, hein !' }] },
+  ],
+};
+
+// Marchand : boutique.
+const SELLER = {
+  type: 'npc',
+  name: 'Marchand',
+  sprite: 'seller',
+  dialogue: [
+    {
+      do: [
+        { say: 'Bienvenue ! Gagne des {ws:coin} en répondant aux questions de la maîtresse, puis reviens me voir.' },
+        {
+          shop: {
+            id: 'village',
+            title: 'Boutique du village',
+            offers: [
+              { item: 'ribbon', price: 5 },
+              { item: 'potion', price: 20 },
+              { item: 'heart_container', price: 60, once: true },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
+// Léon : la quête du bouquet, en 5 étapes.
+const LEON = {
+  type: 'npc',
+  name: 'Léon',
+  sprite: 'leon',
+  dialogue: [
+    {
+      when: { quest: 'bouquet', status: 'none' },
+      do: [
+        { say: 'Psst... J’aimerais offrir un bouquet à la cuisinière, mais je suis bien trop timide.' },
+        {
+          ask: 'Tu veux bien m’aider ?',
+          choices: [
+            { label: 'Oui', do: [{ startQuest: 'bouquet' }, { say: 'Merci ! Il me faut des {w:flowers} de la jardinière et un ruban du marchand.' }] },
+            { label: 'Non', do: [{ say: 'Oh... tant pis.' }] },
+          ],
+        },
+      ],
+    },
+    {
+      when: { quest: 'bouquet', step: 2 },
+      do: [{ say: 'Tu as tout ! Je noue le ruban... Voilà ! Peux-tu l’offrir à la cuisinière de ma part ?' }, { take: 'flowers' }, { take: 'ribbon' }, { give: 'bouquet', announce: true }, { setFlag: 'bouquet_made' }],
+    },
+    { when: { quest: 'bouquet', step: 3 }, do: [{ say: 'Alors ? Tu lui as donné ? J’ai le trac !' }] },
+    {
+      when: { quest: 'bouquet', step: 4 },
+      do: [{ say: ['Elle accepte ?! Un pique-nique avec elle !', 'Merci, merci ! Tiens, c’est pour toi.'] }, { setFlag: 'bouquet_thanked' }],
+    },
+    { when: { quest: 'bouquet', status: 'active' }, do: [{ say: 'Il me faut des {w:flowers} de la jardinière et un ruban du marchand.' }] },
+    { do: [{ say: 'Demain, pique-nique ! Je suis tellement content.' }] },
+  ],
+};
+
 const blob = { type: 'enemy', kind: 'blob', sprite: 'blob', hp: 2, speed: 22, behavior: 'wander' };
 const flyer = { type: 'enemy', kind: 'flyer', sprite: 'flyer', hp: 1, speed: 38, behavior: 'chase', sight: 70 };
 
@@ -138,21 +291,22 @@ const flyer = { type: 'enemy', kind: 'flyer', sprite: 'flyer', hp: 1, speed: 38,
 export const MAPS = {
   overworld: {
     name: 'Le village',
+    level: 'village',
     camera: 'follow', // défilement libre à l'extérieur
     rows: [
       '########################################',
       '#..........,...........,....~~~~~~~~~~.#',
       '#.####.....####.............~~~~~~~~~~.#',
-      '#.####.....####..bbb.........~~~~~~~~..#',
+      '#.####..N..####..bbb.........~~~~~~~~..#',
       '#.####.....####..bnb...........~~~~....#',
       '#....A.....M.....b.b...................#',
       '#==P===========================......c.#',
       '#......=..............,..........m.....#',
-      '#..S...=..G.......E....................#',
+      '#..S...=..G..V....E....................#',
       '#......=.......................F.......#',
       '#..,...=...........bb.......,..........#',
       '#......=...........bb..................#',
-      '#......=.......ooooooo.........E.......#',
+      '#..K...=.......ooooooo..J......E.......#',
       '#......=.......o.....o.................#',
       '#......=.......o..m..o.....bbb.........#',
       '#..E...=.......o.....o.....bcb.........#',
@@ -167,7 +321,11 @@ export const MAPS = {
     ],
     objects: {
       A: ELDER,
-      M: MERCHANT,
+      M: COOK,
+      N: LEON,
+      V: SELLER,
+      J: GARDENER,
+      K: TEACHER,
       G: GUARD,
       S: { type: 'sign', text: ['Bienvenue au village !', 'Parle aux habitants (Action) pour obtenir des quêtes. Entrée ouvre le menu et le journal des quêtes.'] },
       U: { type: 'sign', text: 'Jardin fermé. Le levier ouvre la grille : frappe-le avec ton arme !' },
@@ -186,6 +344,7 @@ export const MAPS = {
 
   cave: {
     name: 'Les souterrains',
+    level: 'souterrains',
     camera: 'rooms', // salles fixes dans le donjon
     rows: [
       '################################',

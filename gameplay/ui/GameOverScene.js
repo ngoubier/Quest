@@ -1,13 +1,13 @@
 import { MenuScene } from '../../engine/index.js';
 
-// Écran de défaite : continuer (au début de la carte, vie pleine) ou recharger.
+// Écran de défaite : recommencer le niveau (au début, vie pleine, monstres revenus) ou recharger.
 export class GameOverScene extends MenuScene {
   constructor(adv) {
     super({
       title: 'VOUS ÊTES À TERRE',
       width: 180,
       items: [
-        { label: 'Continuer', onSelect: (m) => (m.close(), adv.continueAfterDeath()) },
+        { label: 'Recommencer le niveau', onSelect: (m) => (m.close(), adv.restartLevel()) },
         { label: 'Charger la sauvegarde', enabled: () => adv.hasSave(), onSelect: (m) => (m.close(), adv.loadGame()) },
       ],
     });

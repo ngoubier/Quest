@@ -29,7 +29,7 @@ function key(c, x, y, col, s = 1) {
 const OBJECT_FRAMES = [
   'chest', 'chest_open', 'block', 'plate', 'plate_down', 'gate', 'locked', 'lever_off', 'lever_on',
   'coin', 'key', 'amulet', 'mushroom', 'heart', 'sword_down', 'sword_up', 'sword_side', 'poof_0', 'poof_1',
-  'blob_0', 'blob_1', 'flyer_0', 'flyer_1',
+  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container',
 ];
 
 function objectsSheet(p) {
@@ -142,6 +142,40 @@ function objectsSheet(p) {
         case 'poof_1':
           for (const [x, y] of [[2, 2], [12, 2], [2, 12], [12, 12], [7, 1], [7, 13], [1, 7], [13, 7]]) P(c, x, y, 2, 2, '#ccc');
           return;
+        case 'flowers':
+        case 'bouquet': {
+          for (const [x, y, col] of [[4, 2, p.flowerA], [9, 3, p.flowerB], [6, 6, p.flowerB], [11, 7, p.flowerA]]) {
+            P(c, x, y, 3, 3, col);
+            P(c, x + 1, y + 1, 1, 1, '#ffe066');
+          }
+          P(c, 7, 9, 2, 6, '#3a8a2a');
+          P(c, 5, 10, 2, 4, '#3a8a2a');
+          P(c, 9, 10, 2, 4, '#3a8a2a');
+          if (name === 'bouquet') {
+            P(c, 4, 10, 8, 2, p.ribbon);
+            P(c, 3, 12, 2, 3, p.ribbon);
+            P(c, 11, 12, 2, 3, p.ribbon);
+          }
+          return;
+        }
+        case 'ribbon':
+          P(c, 2, 5, 5, 5, p.ribbon);
+          P(c, 9, 5, 5, 5, p.ribbon);
+          P(c, 6, 6, 4, 3, p.ribbonDark);
+          P(c, 5, 9, 2, 5, p.ribbon);
+          P(c, 9, 9, 2, 5, p.ribbon);
+          return;
+        case 'potion':
+          P(c, 6, 1, 4, 2, '#8a5a2a');
+          P(c, 6, 3, 4, 3, '#cfe8ff');
+          P(c, 3, 6, 10, 8, '#cfe8ff');
+          P(c, 4, 8, 8, 6, p.potion);
+          P(c, 5, 8, 2, 2, '#fff');
+          return;
+        case 'heart_container':
+          heart(c, 1, 2, 2, p.heart, p.heartLight);
+          P(c, 4, 4, 2, 2, '#fff');
+          return;
         case 'blob_0':
         case 'blob_1': {
           const sq = name === 'blob_1' ? 1 : 0;
@@ -222,8 +256,9 @@ const EXTRA = {
       plate: '#b0a890', plateLight: '#d4ccb4', plateDark: '#6a6454', on: '#5aff5a', off: '#ff5a5a', coin: '#3ad46a', coinLight: '#b4ffc8', key: '#ffd35a',
       amulet: '#e83a5a', mushCap: '#d83a2a', mushStem: '#f4e8c8', heart: '#e8303a', heartLight: '#ff9aa0', blade: '#c8d0e0', hilt: '#8a5a2a',
       blob: '#5ac83a', blobDark: '#2a7a1a', flyer: '#6a3a8a', flyerWing: '#9a5aca', eye: '#ffde3a',
+      flowerA: '#ff6a8a', flowerB: '#ffffff', ribbon: '#e83a5a', ribbonDark: '#a8203a', potion: '#e8303a',
     },
-    words: { coin: ['rubis', 'rubis'], key: ['clé', 'clés'], amulet: ['amulette', 'amulettes'], mushroom: ['champignon', 'champignons'], blob: ['gluant', 'gluants'], cave: 'la grotte', elder: "l'Ancien" },
+    words: { coin: ['rubis', 'rubis'], key: ['clé', 'clés'], amulet: ['amulette', 'amulettes'], mushroom: ['champignon', 'champignons'], blob: ['gluant', 'gluants'], cave: 'la grotte', elder: "l'Ancien", potion: ['potion', 'potions'], flowers: ['fleurs', 'fleurs'] },
     bush: (c) => {
       P(c, 0, 0, 16, 16, '#4c9a3c');
       P(c, 2, 3, 12, 11, '#3f8a36');
@@ -237,6 +272,10 @@ const EXTRA = {
       elder: { skin: '#e8b88a', hair: '#eee', eye: '#222', body: '#5a3a8a', bodyDark: '#3a2a5a', legs: '#3a2a5a', hat: 'hood', hatColor: '#5a3a8a' },
       merchant: { skin: '#f2c49b', hair: '#c4542a', eye: '#222', body: '#d8a03a', bodyDark: '#a8701a', legs: '#5a3a1a' },
       guard: { skin: '#d9a07a', hair: '#333', eye: '#111', body: '#8a8a9a', bodyDark: '#5a5a6a', legs: '#4a4a5a', hat: 'helmet', hatColor: '#9a9aaa', hatLight: '#ccc', visor: '#333' },
+      gardener: { skin: '#f2c49b', hair: '#e8c040', eye: '#222', body: '#5aa04a', bodyDark: '#3a7a2a', legs: '#6b4423', hat: 'cap', hatColor: '#e8d080', hatDark: '#b8a050' },
+      seller: { skin: '#c48a6a', hair: '#3a2a1a', eye: '#111', body: '#c43a3a', bodyDark: '#8a2a2a', legs: '#3a2a1a' },
+      teacher: { skin: '#f2c49b', hair: '#5a2a1a', eye: '#222', body: '#3a5ac8', bodyDark: '#2a3a8a', legs: '#2a2a3a' },
+      leon: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#7a3fa3', bodyDark: '#5a2a7a', legs: '#4a3020' },
     },
   },
   space: {
@@ -245,8 +284,9 @@ const EXTRA = {
       plate: '#2a5a4a', plateLight: '#4aff9a', plateDark: '#1a2a2a', on: '#4aff9a', off: '#ff4a4a', coin: '#4ff0ff', coinLight: '#d8ffff', key: '#ffb84a',
       amulet: '#c84aff', mushCap: '#4aff9a', mushStem: '#2a5a4a', heart: '#ff4a8a', heartLight: '#ffaaca', blade: '#8affff', hilt: '#5a6478',
       blob: '#c84aff', blobDark: '#7a2aaa', flyer: '#8a93a7', flyerWing: '#ff5a3a', eye: '#ff3a3a',
+      flowerA: '#4ff0ff', flowerB: '#c84aff', ribbon: '#ffb84a', ribbonDark: '#c8801a', potion: '#4aff9a',
     },
-    words: { coin: ['crédit', 'crédits'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante' },
+    words: { coin: ['crédit', 'crédits'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante', potion: ['kit de soin', 'kits de soin'], flowers: ['plantes hydroponiques', 'plantes hydroponiques'] },
     bush: (c) => {
       P(c, 0, 0, 16, 16, '#3a4254');
       P(c, 3, 4, 10, 10, '#5a3a1a');
@@ -258,6 +298,10 @@ const EXTRA = {
       elder: { skin: '#c48a6a', hair: '#ddd', eye: '#111', body: '#2a4a8a', bodyDark: '#1a2a5a', legs: '#1a2a5a', hat: 'cap', hatColor: '#2a4a8a', hatDark: '#ffd35a' },
       merchant: { skin: '#9adf9a', hair: '#4a8a4a', eye: '#000', body: '#d8a03a', bodyDark: '#a8701a', legs: '#333' },
       guard: { skin: '#f2c49b', hair: '#333', eye: '#111', body: '#c43a3a', bodyDark: '#8a2a2a', legs: '#333', hat: 'helmet', hatColor: '#c43a3a', hatLight: '#ff8a8a', visor: '#222' },
+      gardener: { skin: '#9adf9a', hair: '#2a6a2a', eye: '#000', body: '#2a8a5a', bodyDark: '#1a5a3a', legs: '#333' },
+      seller: { skin: '#c48a6a', hair: '#ddd', eye: '#111', body: '#5a6478', bodyDark: '#3a4254', legs: '#333', hat: 'cap', hatColor: '#ffb84a', hatDark: '#c8801a' },
+      teacher: { skin: '#f2c49b', hair: '#1a1a1a', eye: '#222', body: '#e8ecf4', bodyDark: '#a8b0c4', legs: '#2a3248' },
+      leon: { skin: '#e8b88a', hair: '#c47a2a', eye: '#222', body: '#3a7ad8', bodyDark: '#2a5aa8', legs: '#333' },
     },
   },
   city: {
@@ -266,8 +310,9 @@ const EXTRA = {
       plate: '#888', plateLight: '#bbb', plateDark: '#444', on: '#5aff5a', off: '#ff5a5a', coin: '#ffd35a', coinLight: '#fff2b4', key: '#c8c8d8',
       amulet: '#ff6aa8', mushCap: '#ff6aa8', mushStem: '#fff', heart: '#ff3a5a', heartLight: '#ffa0b0', blade: '#e8e8f0', hilt: '#222',
       blob: '#7a7a8a', blobDark: '#4a4a5a', flyer: '#9a9aa8', flyerWing: '#6a6a78', eye: '#ff6a3a',
+      flowerA: '#ff6aa8', flowerB: '#ffd35a', ribbon: '#3a7ad8', ribbonDark: '#1a4aa8', potion: '#ff3a5a',
     },
-    words: { coin: ['euro', 'euros'], key: ['clé', 'clés'], amulet: ['médaillon', 'médaillons'], mushroom: ['ticket', 'tickets'], blob: ['rat', 'rats'], cave: 'le parking souterrain', elder: 'le Doyen' },
+    words: { coin: ['euro', 'euros'], key: ['clé', 'clés'], amulet: ['médaillon', 'médaillons'], mushroom: ['ticket', 'tickets'], blob: ['rat', 'rats'], cave: 'le parking souterrain', elder: 'le Doyen', potion: ['trousse de secours', 'trousses de secours'], flowers: ['fleurs', 'fleurs'] },
     bush: (c) => {
       P(c, 0, 0, 16, 16, '#b9b4aa');
       P(c, 3, 6, 10, 9, '#1a1a1a');
@@ -279,6 +324,10 @@ const EXTRA = {
       elder: { skin: '#e8b88a', hair: '#ccc', eye: '#222', body: '#6a4a2a', bodyDark: '#4a2a1a', legs: '#333' },
       merchant: { skin: '#a8704a', hair: '#1a1a1a', eye: '#111', body: '#3ac48a', bodyDark: '#2a8a5a', legs: '#2a3a6a' },
       guard: { skin: '#f2c49b', hair: '#333', eye: '#111', body: '#2a3a7a', bodyDark: '#1a2a5a', legs: '#1a2a5a', hat: 'cap', hatColor: '#2a3a7a', hatDark: '#111' },
+      gardener: { skin: '#d9a07a', hair: '#1a1a1a', eye: '#111', body: '#5aa04a', bodyDark: '#3a7a2a', legs: '#2a3a6a' },
+      seller: { skin: '#f2c49b', hair: '#7a4a1a', eye: '#222', body: '#ffd35a', bodyDark: '#c8a030', legs: '#333' },
+      teacher: { skin: '#a8704a', hair: '#1a1a1a', eye: '#111', body: '#c84a80', bodyDark: '#8a2a5a', legs: '#2a2a3a' },
+      leon: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#3a7ad8', bodyDark: '#2a5aa8', legs: '#333' },
     },
   },
 };

@@ -14,3 +14,8 @@ export { ObjectFactory, standardFactory } from './objects/ObjectFactory.js';
 export { drawHud } from './ui/Hud.js';
 export { QuestLogScene } from './ui/QuestLogScene.js';
 export { GameOverScene } from './ui/GameOverScene.js';
+export { ShopScene } from './ui/ShopScene.js';
+export { InventoryScene } from './ui/InventoryScene.js';
+export { QuizScene } from './quiz/QuizScene.js';
+export { QuestionBank, SUBJECTS } from './quiz/QuestionBank.js';
+export { checkAnswer, normalize } from './quiz/answers.js';

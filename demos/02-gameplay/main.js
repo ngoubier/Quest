@@ -1,10 +1,11 @@
 // ESSAI N°2 — Validation du gameplay : combat, objets, quêtes, énigmes, deux modes de caméra.
 // Ce fichier ne fait que brancher les données (world.js) et les ambiances (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
-import { Game, Scene, TouchControls } from '../../engine/index.js';
+import { Game, Scene, MenuScene, TouchControls } from '../../engine/index.js';
 import { AdventureScene } from '../../gameplay/index.js';
 import { THEMES, TILE_ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './world.js';
+import { frenchSchoolBank } from '../../content/quiz/index.js';
 
 const TS = 16;
 const HUD_H = 16;
@@ -58,6 +59,8 @@ const sfx = {
   lever: { type: 'square', notes: [[330, 0.04], [440, 0.06]], vol: 0.15 },
   quest: { type: 'triangle', notes: [[523, 0.1], [659, 0.1], [784, 0.2]], vol: 0.25 },
   quest_done: { type: 'triangle', notes: [[523, 0.1], [659, 0.1], [784, 0.1], [1047, 0.3]], vol: 0.25 },
+  quiz_ok: { type: 'square', notes: [[784, 0.08], [1047, 0.16]], vol: 0.18 },
+  quiz_ko: { type: 'triangle', notes: [[330, 0.12], [262, 0.2]], vol: 0.2 },
   gameover: { type: 'triangle', notes: [[392, 0.2], [330, 0.2], [262, 0.4]], vol: 0.25 },
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
@@ -73,6 +76,7 @@ const makeAdventure = () =>
     legend: LEGEND,
     items: ITEMS,
     quests: QUESTS,
+    questionBank: frenchSchoolBank(),
     startMap: 'overworld',
     hud: { height: HUD_H, counters: ['coin', 'key'] },
     saveNamespace: 'quest-essai-2',
@@ -92,9 +96,19 @@ class TitleScene extends Scene {
     if (i.pressed('select')) (game.themes.next(), game.audio.play('switch'));
     if (this.hasSave && (i.pressed('up') || i.pressed('down'))) (this.choice = 1 - this.choice), game.audio.play('menu_move');
     if (i.pressed('action') || i.pressed('start')) {
+      i.consume('action');
       game.audio.play('menu_ok');
-      const load = this.hasSave && this.choice === 1;
-      game.scenes.fade(() => game.scenes.replace(this.adv, { load }));
+      if (this.hasSave && this.choice === 1) return game.scenes.fade(() => game.scenes.replace(this.adv, { load: true }));
+      // Nouvelle partie : on demande l'âge pour adapter les questions.
+      const start = (age) => game.scenes.fade(() => game.scenes.replace(this.adv, { profile: { age } }));
+      const CLASSES = { 6: 'CP', 7: 'CE1', 8: 'CE2', 9: 'CM1', 10: 'CM2' };
+      game.scenes.push(
+        new MenuScene({
+          title: 'Quel âge as-tu ?',
+          width: 150,
+          items: Object.entries(CLASSES).map(([age, cls]) => ({ label: `${age} ans (${cls})`, onSelect: () => start(Number(age)) })),
+        }),
+      );
     }
   }
 
