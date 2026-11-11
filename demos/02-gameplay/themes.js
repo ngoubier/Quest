@@ -402,106 +402,26 @@ const EXTRA = {
       writer: { skin: '#f2c49b', hair: '#5a3a1a', eye: '#222', body: '#2a6a5a', bodyDark: '#1a4a3a', legs: '#3a2a1a', hat: 'cap', hatColor: '#8a2a2a', hatDark: '#5a1a1a' },
     },
   },
-  space: {
-    pal: {
-      chest: '#5a6a8a', chestDark: '#2a3248', metal: '#4ff0ff', metalDark: '#2a7a8a', block: '#6a7488', blockLight: '#9aa4b8', blockDark: '#3a4254',
-      plate: '#2a5a4a', plateLight: '#4aff9a', plateDark: '#1a2a2a', on: '#4aff9a', off: '#ff4a4a', coin: '#e8b830', coinLight: '#fff0a0', coinDark: '#9a6a10', bag: '#a8703a', bagDark: '#6a4220', key: '#ffb84a',
-      amulet: '#c84aff', mushCap: '#4aff9a', mushStem: '#2a5a4a', heart: '#ff4a8a', heartLight: '#ffaaca', blade: '#8affff', hilt: '#5a6478',
-      blob: '#c84aff', blobDark: '#7a2aaa', flyer: '#8a93a7', flyerWing: '#ff5a3a', eye: '#ff3a3a',
-      flowerA: '#4ff0ff', flowerB: '#c84aff', ribbon: '#ffb84a', ribbonDark: '#c8801a', potion: '#4aff9a', hint: '#ffe066',
-    },
-    words: { coin: ['euro', 'euros'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante', potion: ['kit de soin', 'kits de soin'], flowers: ['plantes hydroponiques', 'plantes hydroponiques'] },
-    bush: (c) => {
-      P(c, 0, 0, 16, 16, '#3a4254');
-      P(c, 3, 4, 10, 10, '#5a3a1a');
-      P(c, 4, 5, 8, 8, '#8a5a2a');
-      P(c, 4, 8, 8, 1, '#5a3a1a');
-      P(c, 7, 5, 1, 8, '#5a3a1a');
-    },
-    people: {
-      elder: { skin: '#c48a6a', hair: '#ddd', eye: '#111', body: '#2a4a8a', bodyDark: '#1a2a5a', legs: '#1a2a5a', hat: 'cap', hatColor: '#2a4a8a', hatDark: '#ffd35a' },
-      merchant: { skin: '#9adf9a', hair: '#4a8a4a', eye: '#000', body: '#d8a03a', bodyDark: '#a8701a', legs: '#333' },
-      guard: { skin: '#f2c49b', hair: '#333', eye: '#111', body: '#c43a3a', bodyDark: '#8a2a2a', legs: '#333', hat: 'helmet', hatColor: '#c43a3a', hatLight: '#ff8a8a', visor: '#222' },
-      gardener: { skin: '#9adf9a', hair: '#2a6a2a', eye: '#000', body: '#2a8a5a', bodyDark: '#1a5a3a', legs: '#333' },
-      seller: { skin: '#c48a6a', hair: '#ddd', eye: '#111', body: '#5a6478', bodyDark: '#3a4254', legs: '#333', hat: 'cap', hatColor: '#ffb84a', hatDark: '#c8801a' },
-      teacher: { skin: '#f2c49b', hair: '#1a1a1a', eye: '#222', body: '#e8ecf4', bodyDark: '#a8b0c4', legs: '#2a3248' },
-      leon: { skin: '#e8b88a', hair: '#c47a2a', eye: '#222', body: '#3a7ad8', bodyDark: '#2a5aa8', legs: '#333' },
-      carpenter: { skin: '#c48a6a', hair: '#222', eye: '#111', body: '#ffb84a', bodyDark: '#c8801a', legs: '#333', hat: 'helmet', hatColor: '#ffb84a', hatLight: '#ffd88a', visor: '#222' },
-      fisher: { skin: '#9adf9a', hair: '#2a6a2a', eye: '#000', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#333' },
-      scholar: { skin: '#f2c49b', hair: '#aaa', eye: '#222', body: '#5a3a8a', bodyDark: '#3a2a5a', legs: '#222' },
-      writer: { skin: '#c48a6a', hair: '#222', eye: '#111', body: '#2a6a5a', bodyDark: '#1a4a3a', legs: '#333' },
-    },
-  },
-  city: {
-    pal: {
-      chest: '#3a6ab8', chestDark: '#1a3a6a', metal: '#e8e8e8', metalDark: '#888', block: '#c8a070', blockLight: '#e8c8a0', blockDark: '#7a5a3a',
-      plate: '#888', plateLight: '#bbb', plateDark: '#444', on: '#5aff5a', off: '#ff5a5a', coin: '#e8b830', coinLight: '#fff0a0', coinDark: '#9a6a10', bag: '#a8703a', bagDark: '#6a4220', key: '#c8c8d8',
-      amulet: '#ff6aa8', mushCap: '#ff6aa8', mushStem: '#fff', heart: '#ff3a5a', heartLight: '#ffa0b0', blade: '#e8e8f0', hilt: '#222',
-      blob: '#7a7a8a', blobDark: '#4a4a5a', flyer: '#9a9aa8', flyerWing: '#6a6a78', eye: '#ff6a3a',
-      flowerA: '#ff6aa8', flowerB: '#ffd35a', ribbon: '#3a7ad8', ribbonDark: '#1a4aa8', potion: '#ff3a5a', hint: '#ffe066',
-    },
-    words: { coin: ['euro', 'euros'], key: ['clé', 'clés'], amulet: ['médaillon', 'médaillons'], mushroom: ['ticket', 'tickets'], blob: ['rat', 'rats'], cave: 'le parking souterrain', elder: 'le Doyen', potion: ['trousse de secours', 'trousses de secours'], flowers: ['fleurs', 'fleurs'] },
-    bush: (c) => {
-      P(c, 0, 0, 16, 16, '#b9b4aa');
-      P(c, 3, 6, 10, 9, '#1a1a1a');
-      P(c, 4, 4, 8, 3, '#2a2a2a');
-      P(c, 7, 2, 2, 3, '#1a1a1a');
-      P(c, 5, 7, 1, 6, '#3a3a3a');
-    },
-    people: {
-      elder: { skin: '#e8b88a', hair: '#ccc', eye: '#222', body: '#6a4a2a', bodyDark: '#4a2a1a', legs: '#333' },
-      merchant: { skin: '#a8704a', hair: '#1a1a1a', eye: '#111', body: '#3ac48a', bodyDark: '#2a8a5a', legs: '#2a3a6a' },
-      guard: { skin: '#f2c49b', hair: '#333', eye: '#111', body: '#2a3a7a', bodyDark: '#1a2a5a', legs: '#1a2a5a', hat: 'cap', hatColor: '#2a3a7a', hatDark: '#111' },
-      gardener: { skin: '#d9a07a', hair: '#1a1a1a', eye: '#111', body: '#5aa04a', bodyDark: '#3a7a2a', legs: '#2a3a6a' },
-      seller: { skin: '#f2c49b', hair: '#7a4a1a', eye: '#222', body: '#ffd35a', bodyDark: '#c8a030', legs: '#333' },
-      teacher: { skin: '#a8704a', hair: '#1a1a1a', eye: '#111', body: '#c84a80', bodyDark: '#8a2a5a', legs: '#2a2a3a' },
-      leon: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#3a7ad8', bodyDark: '#2a5aa8', legs: '#333' },
-      carpenter: { skin: '#d9a07a', hair: '#333', eye: '#111', body: '#e8c547', bodyDark: '#b89520', legs: '#2a3a6a', hat: 'helmet', hatColor: '#ffd35a', hatLight: '#fff2b4', visor: '#333' },
-      fisher: { skin: '#a8704a', hair: '#ddd', eye: '#111', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#4a3a2a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
-      scholar: { skin: '#e8b88a', hair: '#888', eye: '#222', body: '#6a4a2a', bodyDark: '#4a2a1a', legs: '#333' },
-      writer: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#2a6a5a', bodyDark: '#1a4a3a', legs: '#2a2a3a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
-    },
-  },
 };
 
 const SIGNS = {
   medieval: (c) => (P(c, 7, 9, 2, 7, '#5a3a1c'), P(c, 2, 3, 12, 7, '#8a5a2c'), P(c, 2, 3, 12, 1, '#b07a40'), P(c, 4, 5, 8, 1, '#3a2410'), P(c, 4, 7, 6, 1, '#3a2410')),
-  space: (c) => (P(c, 6, 10, 4, 6, '#4a5670'), P(c, 2, 2, 12, 9, '#20283a'), P(c, 3, 3, 10, 7, '#0a3a4a'), P(c, 4, 4, 6, 1, '#4ff0ff'), P(c, 4, 6, 8, 1, '#4ff0ff')),
-  city: (c) => (P(c, 7, 6, 2, 10, '#555'), P(c, 2, 1, 12, 6, '#1a6a3a'), P(c, 3, 2, 10, 4, '#2a8a4a'), P(c, 4, 3, 8, 1, '#fff')),
 };
 
 const PLAYERS = {
   medieval: { skin: '#f2c49b', hair: '#7a4a1a', eye: '#222', body: '#3fa34d', bodyDark: '#2a7a36', legs: '#6b4423', hat: 'hood', hatColor: '#3fa34d' },
-  space: { skin: '#f2c49b', hair: '#333', eye: '#222', body: '#e8ecf4', bodyDark: '#a8b0c4', legs: '#c8cfdc', hat: 'helmet', hatColor: '#e8ecf4', hatLight: '#ffffff', visor: '#3a8aff' },
-  city: { skin: '#d9a07a', hair: '#1a1a1a', eye: '#111', body: '#ff6aa8', bodyDark: '#c84a80', legs: '#2a3a6a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
 };
 
-// ------------------------------------------------------------ compagnon (chiot / drone / chaton)
+// ------------------------------------------------------------ compagnon (chiot)
 function paintPet(c, pet, step) {
   P(c, 4, 15, 9, 1, 'rgba(0,0,0,.3)');
-  if (pet.kind === 'drone') {
-    const y = step ? 1 : 0;
-    P(c, 4, 6 + y, 8, 6, pet.body);
-    P(c, 5, 5 + y, 6, 1, pet.light);
-    P(c, 6, 8 + y, 4, 2, pet.eye);
-    P(c, 2, 4 + y, 3, 1, pet.light);
-    P(c, 11, 4 + y, 3, 1, pet.light);
-    P(c, 7, 12 + y, 2, 1, '#4ff0ff');
-    return;
-  }
-  // quadrupède : chiot ou chaton
   P(c, 3, 9, 9, 4, pet.body);
   P(c, 10, 5, 5, 5, pet.body);
   P(c, 10, 9, 5, 1, pet.dark);
-  if (pet.kind === 'cat') {
-    P(c, 10, 4, 1, 1, pet.body);
-    P(c, 14, 4, 1, 1, pet.body);
-  } else {
-    P(c, 10, 5, 1, 3, pet.dark);
-    P(c, 14, 5, 1, 3, pet.dark);
-  }
+  P(c, 10, 5, 1, 3, pet.dark); // oreilles
+  P(c, 14, 5, 1, 3, pet.dark);
   P(c, 12, 6, 1, 1, '#111');
-  P(c, 14, 7, 1, 1, pet.kind === 'cat' ? '#ff8aa8' : '#111');
+  P(c, 14, 7, 1, 1, '#111');
   P(c, 1, step ? 7 : 8, 2, 2, pet.body); // queue
   P(c, 4, 13, 2, step ? 2 : 1, pet.dark);
   P(c, 9, 13, 2, step ? 1 : 2, pet.dark);
@@ -527,35 +447,6 @@ function bossSheet(kind, b) {
       }
       const sq = name === 'boss_1' ? 1 : 0;
       P(c, 5, 29, 22, 2, 'rgba(0,0,0,.3)');
-      if (kind === 'robot') {
-        P(c, 6, 8 + sq, 20, 18 - sq, b.body);
-        P(c, 6, 8 + sq, 20, 2, b.light);
-        P(c, 9, 13 + sq, 14, 4, '#111');
-        P(c, 10, 14 + sq, 12, 2, b.eye);
-        P(c, 15, 3 + sq, 2, 5, b.dark);
-        P(c, 14, 1 + sq, 4, 2, b.eye);
-        P(c, 3, 14, 3, 8, b.dark);
-        P(c, 26, 14, 3, 8, b.dark);
-        P(c, 8, 26, 5, 3, b.dark);
-        P(c, 19, 26, 5, 3, b.dark);
-        P(c, 10, 20 + sq, 12, 2, b.dark);
-        return;
-      }
-      if (kind === 'rat') {
-        P(c, 4, 12 + sq, 22, 14 - sq, b.body);
-        P(c, 18, 7 + sq, 11, 11, b.body);
-        P(c, 18, 4 + sq, 4, 4, b.light);
-        P(c, 25, 4 + sq, 4, 4, b.light);
-        P(c, 22, 10 + sq, 2, 2, b.eye);
-        P(c, 27, 10 + sq, 2, 2, b.eye);
-        P(c, 28, 14 + sq, 3, 2, '#ff8aa8');
-        P(c, 1, 22, 4, 2, '#d8a0a8');
-        P(c, 0, 18, 2, 4, '#d8a0a8');
-        P(c, 6, 26, 4, 3, b.dark);
-        P(c, 18, 26, 4, 3, b.dark);
-        P(c, 6, 14 + sq, 10, 3, b.light);
-        return;
-      }
       // roi gluant
       P(c, 4, 12 + sq * 2, 24, 16 - sq * 2, b.dark);
       P(c, 6, 9 + sq * 2, 20, 4, b.body);
@@ -629,50 +520,16 @@ const BETTER_TILES = {
       },
     },
   },
-  space: {
-    floor: {
-      variants: 3,
-      paint: (c, { variant }) => {
-        P(c, 0, 0, 16, 16, '#3a4254');
-        P(c, 0, 0, 16, 1, '#4c566c');
-        P(c, 0, 15, 16, 1, '#272d3a');
-        P(c, 15, 0, 1, 16, '#272d3a');
-        for (const [x, y] of [[2, 2], [13, 2], [2, 13], [13, 13]]) P(c, x, y, 1, 1, '#6a7590');
-        if (variant === 1) for (let x = 4; x < 12; x += 2) P(c, x, 6, 1, 4, '#2a303d');
-        if (variant === 2) (P(c, 5, 5, 6, 6, '#333b4c'), P(c, 7, 7, 2, 2, '#4ff0ff'));
-      },
-    },
-  },
-  city: {
-    floor: {
-      variants: 3,
-      paint: (c, { variant, rng }) => {
-        P(c, 0, 0, 16, 16, '#b9b4aa');
-        P(c, 0, 0, 16, 1, '#9e998f');
-        P(c, 0, 8, 16, 1, '#9e998f');
-        P(c, 0, 0, 1, 8, '#9e998f');
-        P(c, 8, 8, 1, 8, '#9e998f');
-        if (variant === 1) (P(c, rng.int(2, 6), 3, 3, 1, '#a8a398'), P(c, rng.int(9, 12), 11, 1, 3, '#a8a398'));
-        if (variant === 2) P(c, rng.int(2, 12), rng.int(2, 12), 2, 2, '#8a857c');
-      },
-    },
-  },
 };
-const EDGES = { medieval: '#a8c8f8', space: '#3a4a8a', city: '#d8f0f4' };
+const EDGES = { medieval: '#a8c8f8' };
 const PETS = {
   medieval: { kind: 'dog', body: '#b07a40', dark: '#6a4220', light: '#d8a060', eye: '#111' },
-  space: { kind: 'drone', body: '#8b93a7', dark: '#3a4254', light: '#c0c7d6', eye: '#3aff8a' },
-  city: { kind: 'cat', body: '#e8903a', dark: '#a85a1a', light: '#ffc078', eye: '#111' },
 };
 const BOSSES = {
   medieval: ['slime', { body: '#5ac83a', dark: '#2a7a1a', light: '#9af07a', eye: '#ffd35a' }],
-  space: ['robot', { body: '#8b93a7', dark: '#4a5266', light: '#c0c7d6', eye: '#ff3a3a' }],
-  city: ['rat', { body: '#7a7a8a', dark: '#4a4a5a', light: '#9a9aa8', eye: '#ff3a3a' }],
 };
 const MORE_WORDS = {
   medieval: { boss: 'le Roi Gluant', pet: 'le chiot', elderName: 'Augustin, l’Ancien' },
-  space: { boss: 'le Robot Géant', pet: 'le petit drone', elderName: 'Ada, la Commandante' },
-  city: { boss: 'le Rat Géant', pet: 'le chaton', elderName: 'Gérard, le Doyen' },
 };
 
 
@@ -903,26 +760,6 @@ const CAVE_SHOP = {
       facade: '#8a8478', facadeDark: '#5a564e', awningA: '#c43a3a', awningB: '#f4e8c8',
     },
   },
-  space: {
-    cave: { mortar: '#1c1826', stone: '#4e4660', stoneAlt: '#584f6c', light: '#6e6684', dark: '#332d42', floor: '#3a3448', floorDark: '#2c2738', floorLight: '#4a4358' },
-    shop: {
-      floorStyle: 'grid', floorA: '#2a3444', floorB: '#3a4a5e',
-      wallStyle: 'panels', wall: '#c0c7d6', wallDark: '#8b93a7',
-      shelf: '#8b93a7', shelfDark: '#2a3040', counter: '#3a4254', counterTop: '#4ff0ff', counterDark: '#20283a', door: '#4a5670',
-      goods: ['#4ff0ff', '#c84aff', '#4aff9a', '#ffb84a', '#ff4a8a', '#e8ecf4'],
-      facade: '#8b93a7', facadeDark: '#4a5266', awningA: '#2a3a6a', awningB: '#4ff0ff',
-    },
-  },
-  city: {
-    cave: { mortar: '#30302c', stone: '#6a6a66', stoneAlt: '#5e5e5a', light: '#86867f', dark: '#46463f', floor: '#55554f', floorDark: '#46463f', floorLight: '#66665f' },
-    shop: {
-      floorStyle: 'checker', floorA: '#e8e4dc', floorB: '#b8b4ac',
-      wallStyle: 'stripes', wall: '#f2e6c8', wallDark: '#e0cfa4',
-      shelf: '#e8e8f0', shelfDark: '#9a9aa8', counter: '#3a7ad8', counterTop: '#e8e8f0', counterDark: '#1a4aa8', door: '#5aa0d0',
-      goods: ['#ff3a5a', '#ffd35a', '#3ac48a', '#3a7ad8', '#ff8a3a', '#ffffff', '#c84a80'],
-      facade: '#9a4a3a', facadeDark: '#6e3328', awningA: '#2a8a4a', awningB: '#ffffff',
-    },
-  },
 };
 
 // ------------------------------------------------------------ EXTÉRIEURS SELON L'AMBIANCE
@@ -998,124 +835,12 @@ const EXTERIORS = {
       P(c, 3, 14, 10, 2, '#2a2420');
     },
   },
-  space: {
-    awning: (c) => {
-      P(c, 0, 0, 16, 16, '#5c6377');
-      P(c, 0, 0, 16, 2, '#c0c7d6');
-      for (let x = 0; x < 16; x += 4) P(c, x, 2, 1, 14, '#4a5266');
-      P(c, 2, 6, 3, 3, '#3aff8a');
-      P(c, 11, 6, 3, 3, '#ff4a8a');
-    },
-    roof_eave: (c) => {
-      P(c, 0, 0, 16, 16, '#8b93a7');
-      P(c, 0, 0, 16, 9, '#20283a');
-      P(c, 0, 3, 16, 3, '#4ff0ff'); // bandeau lumineux
-      for (let x = 1; x < 16; x += 4) P(c, x, 4, 2, 1, '#e8ffff');
-      P(c, 0, 9, 16, 1, '#c0c7d6');
-      P(c, 0, 10, 16, 2, 'rgba(0,0,0,.3)');
-    },
-    shopfront: (c, { rng }) => {
-      P(c, 0, 0, 16, 16, '#8b93a7');
-      P(c, 0, 0, 16, 1, '#c0c7d6');
-      P(c, 3, 2, 10, 10, '#4a5266');
-      P(c, 4, 3, 8, 8, '#0a3a4a');
-      P(c, 5, 4, 6, 6, '#1a5a6a');
-      for (let x = 5; x < 11; x += 2) P(c, x, 9 - rng.int(1, 3), 1, rng.int(1, 3), rng.pick(['#4ff0ff', '#c84aff', '#4aff9a', '#ffb84a']));
-      P(c, 5, 4, 2, 1, '#e8ffff');
-      P(c, 0, 14, 16, 2, '#5c6377');
-    },
-    shop_entrance: (c) => {
-      P(c, 0, 0, 16, 16, '#8b93a7');
-      P(c, 2, 1, 12, 15, '#20283a');
-      P(c, 3, 2, 5, 14, '#4a5670');
-      P(c, 8, 2, 5, 14, '#4a5670');
-      P(c, 7, 2, 2, 14, '#20283a');
-      P(c, 6, 0, 4, 1, '#3aff8a');
-    },
-    // épave : coque rouillée
-    cliff: (c, { rng, variant }) => {
-      P(c, 0, 0, 16, 16, '#5c6377');
-      P(c, 0, 0, 16, 1, '#8b93a7');
-      P(c, 0, 8, 16, 1, '#3a4254');
-      P(c, 8 * (variant % 2), 0, 1, 16, '#3a4254');
-      for (const [x, y] of [[2, 2], [13, 2], [2, 11], [13, 11]]) P(c, x, y, 1, 1, '#a8b0c4');
-      for (let i = 0; i < 4 + variant * 2; i++) P(c, rng.int(0, 14), rng.int(0, 14), rng.int(1, 3), rng.int(1, 2), rng.pick(['#a85a1c', '#c87a3a', '#7a3a10']));
-    },
-    // brèche dans la coque
-    cave_mouth: (c) => {
-      P(c, 0, 0, 16, 16, '#5c6377');
-      P(c, 2, 3, 12, 13, '#0a0a14');
-      for (const [x, y] of [[2, 3], [5, 2], [9, 3], [12, 4], [13, 7], [2, 8]]) P(c, x, y, 2, 2, '#5c6377');
-      P(c, 3, 5, 1, 1, '#ffd35a');
-      P(c, 12, 10, 1, 1, '#4ff0ff');
-      P(c, 1, 2, 3, 1, '#c87a3a');
-      P(c, 12, 2, 3, 1, '#c87a3a');
-    },
-  },
-  city: {
-    // enseigne en haut de la façade
-    awning: (c) => {
-      P(c, 0, 0, 16, 16, '#9a4a3a');
-      P(c, 0, 0, 16, 2, '#6e3328');
-      P(c, 0, 4, 16, 9, '#1a1a1a');
-      P(c, 1, 5, 14, 7, '#2a2a30');
-      for (let x = 2; x < 15; x += 3) P(c, x, 7, 2, 3, '#ff6aa8');
-      P(c, 0, 13, 16, 3, '#9a4a3a');
-    },
-    // auvent rayé
-    roof_eave: (c) => {
-      P(c, 0, 0, 16, 16, '#9a4a3a');
-      for (let x = 0; x < 16; x += 4) {
-        P(c, x, 0, 2, 10, '#2a8a4a');
-        P(c, x + 2, 0, 2, 10, '#ffffff');
-      }
-      for (let x = 0; x < 16; x += 4) P(c, x, 10, 2, 2, '#2a8a4a');
-      P(c, 0, 12, 16, 2, 'rgba(0,0,0,.25)');
-    },
-    shopfront: (c, { rng }) => {
-      P(c, 0, 0, 16, 16, '#9a4a3a');
-      P(c, 1, 0, 14, 13, '#333');
-      P(c, 2, 1, 12, 11, '#a8d0e8');
-      P(c, 2, 1, 12, 1, '#d8f0ff');
-      for (let x = 3; x < 13; x += 3) P(c, x, 11 - rng.int(2, 4), 2, rng.int(2, 4), rng.pick(['#ff3a5a', '#ffd35a', '#3ac48a', '#3a7ad8']));
-      P(c, 3, 2, 2, 5, 'rgba(255,255,255,.5)');
-      P(c, 0, 13, 16, 3, '#6e3328');
-    },
-    shop_entrance: (c) => {
-      P(c, 0, 0, 16, 16, '#9a4a3a');
-      P(c, 2, 0, 12, 16, '#222');
-      P(c, 3, 1, 10, 15, '#5aa0d0');
-      P(c, 3, 1, 3, 15, '#8ac4ec');
-      P(c, 7, 1, 1, 15, '#222');
-      P(c, 9, 8, 2, 1, '#ccc');
-    },
-    // parking souterrain : béton
-    cliff: (c, { variant }) => {
-      P(c, 0, 0, 16, 16, '#8a8a86');
-      P(c, 0, 0, 16, 1, '#a8a8a2');
-      P(c, 0, 7, 16, 1, '#6e6e6a');
-      P(c, 0, 15, 16, 1, '#6e6e6a');
-      P(c, variant * 5, 0, 1, 16, '#7a7a76');
-      if (variant === 1) for (let x = 0; x < 16; x += 4) (P(c, x, 12, 2, 3, '#e8c547'), P(c, x + 2, 12, 2, 3, '#1a1a1a'));
-    },
-    cave_mouth: (c) => {
-      P(c, 0, 0, 16, 16, '#8a8a86');
-      P(c, 1, 4, 14, 12, '#1a1a1e');
-      P(c, 5, 0, 6, 4, '#2a5ad8'); // panneau P
-      P(c, 7, 1, 1, 2, '#fff');
-      P(c, 8, 1, 1, 1, '#fff');
-      P(c, 1, 8, 14, 2, '#e8303a'); // barrière
-      for (let x = 3; x < 15; x += 4) P(c, x, 8, 2, 2, '#ffffff');
-    },
-  },
 };
 
 // ------------------------------------------------------------ PONT (cassé / réparé), selon l'ambiance
 // Le pont relie la rive (rangée du haut) à la rive du bas : planches dans le sens vertical.
 const BRIDGES = {
   medieval: { water: '#2f63c9', waterDark: '#2a58b8', wave: '#79a6f2', deck: '#a8743c', deckDark: '#6b4423', deckLight: '#c89a5a', post: '#4a2c18', rail: '#8a5a2c' },
-  space: { water: '#05060f', waterDark: '#05060f', wave: '#5a6aa0', deck: '#8b93a7', deckDark: '#4a5266', deckLight: '#c0c7d6', post: '#3a4254', rail: '#4ff0ff' },
-  city: { water: '#2a7f8f', waterDark: '#256f7e', wave: '#5ab4c4', deck: '#a8a8a2', deckDark: '#6e6e6a', deckLight: '#c8c8c2', post: '#4a4a46', rail: '#e8c547' },
 };
 function bridgeTiles(k) {
   const water = (c, frame) => {
@@ -1175,21 +900,6 @@ const HD_TILES = {
     wall: (c, o) => bricksHD(c, '#8a8478', '#4f4a42', '#a9a294', o.rng),
     obstacle: (c, o) => treeHD(c, o),
     bush: (c, o) => bushHD(c, o),
-  },
-  city: {
-    floor_alt: (c, o) => grassHD(c, o, '#5aa04a'),
-    water: (c, o) => waterHD(c, o, { base: '#2a7f8f', deep: '#24707e', light: '#8ad4e0' }),
-    wall: (c, o) => {
-      bricksHD(c, '#9a4a3a', '#6e3328', '#b0604c', o.rng);
-      // fenêtre : cadre, vitre en dégradé, reflet, rebord
-      P(c, 7, 7, 18, 16, '#2a3a4a');
-      P(c, 9, 9, 14, 12, '#7ab0d8');
-      P(c, 9, 15, 14, 6, '#6aa0c8');
-      P(c, 15, 9, 2, 12, '#2a3a4a');
-      P(c, 10, 10, 3, 3, '#e0f0fc');
-      P(c, 10, 13, 1, 2, '#c8e4f8');
-      P(c, 6, 23, 20, 2, '#d0c8b8');
-    },
   },
 };
 

@@ -29,11 +29,10 @@ adaptés à l'appareil**. Le jeu choisit tout seul ; on peut forcer un profil da
 
 - **Images 2 fois plus fines** que la grille du jeu (32×32 pixels pour une case de 16×16).
 - **Redessinés à la main en HD** :
-  - les **personnages** (héros et habitants, dans les 3 ambiances) : visages avec yeux,
+  - les **personnages** (héros et habitants) : visages avec yeux,
     reflets et joues, ceinture, ombrage de la tunique, chaussures, cheveux en mèches ;
-  - **Médiéval** : herbe (brins, fleurs), chemin (cailloux), eau (vaguelettes, reflets),
+  - herbe (brins, fleurs), chemin (cailloux), eau (vaguelettes, reflets),
     murs de briques, arbres et buissons (feuillage en grappes) ;
-  - **Ville** : murs de briques avec fenêtres, gazon, eau ;
   - **objets** : coffre (planches, ferrures, serrure), pièce d'euro.
 - **Tout le reste** est agrandi automatiquement : lissage des diagonales, puis finition HD
   (lumière douce venant d'en haut à gauche, grain fin, bord des silhouettes légèrement
@@ -60,6 +59,6 @@ adaptés à l'appareil**. Le jeu choisit tout seul ; on peut forcer un profil da
 
 ## À décider ensemble
 
-1. Redessiner en HD **le reste** (Station spatiale, monstres, boss, magasin, grotte, icônes) ?
+1. Redessiner en HD **le reste** (monstres, boss, magasin, grotte, pont, icônes) ?
 2. Sur mobile, préférez-vous les **contours épais** partout, ou seulement autour du héros et des monstres ?
 3. Sur PC, vue large à **20 tuiles**, ou garder **16** (plus « Zelda d'origine ») ?

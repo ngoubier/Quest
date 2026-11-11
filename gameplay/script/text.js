@@ -1,5 +1,5 @@
 // Textes à trous, résolus au moment de l'affichage :
-//   {w:coin}        mot du thème au singulier  (rubis / crédit / euro)
+//   {w:coin}        mot du thème au singulier  (ex. euro)
 //   {ws:coin}       mot du thème au pluriel
 //   {item:mushroom} nombre possédé
 //   {counter:kills_blob}

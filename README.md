@@ -35,7 +35,6 @@ npm test       # tests automatiques du moteur
 | Liste des quêtes | L (ou bouton Quêtes du bandeau) | — |
 | Annuler | K / Maj | B |
 | Menu pause | Entrée / Échap | Start |
-| Changer d'ambiance | Tab | Select |
 | Débogage | F1 / ² | — |
 
 Sur téléphone, une manette tactile s'affiche automatiquement.

@@ -56,6 +56,10 @@ l'empaqueter (Tauri / Electron) sans rien réécrire.
 
 ## 4. Le concept clé : rôles de tuiles + thèmes
 
+> **Mise à jour** : les ambiances « Station spatiale » et « Ville moderne » ont été retirées ;
+> le jeu garde uniquement l'ambiance **Médiéval**. Le moteur sait toujours gérer plusieurs
+> ambiances (on pourra en ajouter une plus tard sans toucher aux cartes).
+
 Pour qu'un même moteur fasse du médiéval, de l'espace ou de la ville :
 
 1. **Le jeu déclare des rôles** : `floor`, `wall`, `water`, `door`, `obstacle`...

@@ -1,5 +1,5 @@
 // ESSAI N°2 — Validation du gameplay : combat, objets, quêtes, énigmes, deux modes de caméra.
-// Ce fichier ne fait que brancher les données (world.js) et les ambiances (themes.js)
+// Ce fichier ne fait que brancher les données (world.js) et l’ambiance (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
 import { Game, Scene, MenuScene, TouchControls, detectDisplay, clamp } from '../../engine/index.js';
 import { AdventureScene, openParentSpace, PromptScene } from '../../gameplay/index.js';
@@ -93,7 +93,7 @@ const sfx = {
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
 
-// ------------------------------------------------------------------ ambiances
+// ------------------------------------------------------------------ ambiance
 game.themes.configure({ roles: TILE_ROLES, tileSize: TS });
 THEMES.forEach((t) => game.themes.register(t));
 game.themes.use('medieval');
@@ -114,7 +114,6 @@ const makeAdventure = () =>
     end: { message: 'Bravo, tu as rapporté la relique !' },
     reportWhen: 'end', // bilan parents disponible à la fin du jeu
     saveNamespace: 'quest-essai-2',
-    allowThemeSwitch: true,
   });
 
 // ------------------------------------------------------------------ écran titre (profils)
@@ -169,7 +168,6 @@ class TitleScene extends Scene {
     const opts = this.options;
     const n = opts.length;
     this.choice = Math.min(this.choice, n - 1);
-    if (i.pressed('select')) (game.themes.next(), game.audio.play('switch'));
     if (i.pressed('up')) (this.choice = (this.choice - 1 + n) % n), game.audio.play('menu_move');
     if (i.pressed('down')) (this.choice = (this.choice + 1) % n), game.audio.play('menu_move');
     if (!(i.pressed('action') || i.pressed('start'))) return;
@@ -217,8 +215,8 @@ class TitleScene extends Scene {
     r.text('QUEST', r.width / 2, 14, { color: s.accent, size: 22, font: s.font, bold: true, align: 'center', shadow: '#000' });
     r.text('Essai n°2 — le gameplay', r.width / 2, 42, { color: s.text, size: 9, font: s.font, align: 'center' });
     const lines = touch
-      ? ['Croix : bouger · A : parler, frapper', 'Start : menu · Select : ambiance']
-      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac · Tab : ambiance'];
+      ? ['Croix : bouger · A : parler, frapper', 'Start : menu · B : annuler']
+      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac'];
     lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
     const n = this.options.length;
     r.text('Qui joue ?', r.width / 2, Math.min(92, r.height - 42 - n * 12), { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
@@ -227,7 +225,7 @@ class TitleScene extends Scene {
       const blink = !sel || Math.floor(game.time * 2) % 2 === 0;
       if (blink) r.text(`${sel ? '▶ ' : '  '}${o.label}`, r.width / 2, Math.min(108, r.height - 26 - n * 12) + i * 12, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, align: 'center' });
     });
-    r.text(`Ambiance : ${t.def.name} · Affichage : ${display.name}`, r.width / 2, r.height - 10, { color: s.dim, size: 7, font: s.font, align: 'center' });
+    r.text(`Affichage : ${display.name}`, r.width / 2, r.height - 10, { color: s.dim, size: 7, font: s.font, align: 'center' });
   }
 }
 
