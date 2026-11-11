@@ -9,6 +9,8 @@ export const TILE_ROLES = [
   'cave_floor', 'cave_wall', 'cave_rock', 'cave_torch', 'cave_exit',
   // magasin (intérieur et façade)
   'shop_floor', 'shop_wall', 'shelf', 'counter', 'shop_door', 'awning', 'shopfront',
+  // extérieurs propres à chaque ambiance : toit + bas de toit, porte du magasin, roche / entrée de grotte
+  'roof_eave', 'shop_entrance', 'cliff', 'cave_mouth',
 ];
 
 // ------------------------------------------------------------ dessins génériques, colorés par thème
@@ -910,12 +912,205 @@ const CAVE_SHOP = {
   },
 };
 
+// ------------------------------------------------------------ EXTÉRIEURS SELON L'AMBIANCE
+// Magasin : médiéval = colombages et chaume ; spatial = module métallique et néons ;
+// ville = boutique moderne à auvent. Grotte : médiéval = rocher et caverne ;
+// spatial = épave et brèche dans la coque ; ville = entrée de parking souterrain.
+const GRASS = '#4c9a3c';
+
+const EXTERIORS = {
+  medieval: {
+    // toit de chaume (rangée haute)
+    awning: (c, { rng }) => {
+      P(c, 0, 0, 16, 16, '#c9a04a');
+      P(c, 0, 0, 16, 2, '#8a6a2a'); // faîtage
+      for (let y = 3; y < 16; y += 3) for (let x = (y % 2) * 2; x < 16; x += 4) P(c, x, y, 2, 2, '#a8823a');
+      for (let i = 0; i < 18; i++) P(c, rng.int(0, 15), rng.int(2, 15), 1, 2, rng.pick(['#e0bc6a', '#9a7432']));
+    },
+    // bas du toit : chaume qui déborde, ombre sur le mur
+    roof_eave: (c, { rng }) => {
+      P(c, 0, 0, 16, 16, '#e8dcc0');
+      P(c, 0, 0, 16, 9, '#c9a04a');
+      for (let x = 0; x < 16; x += 2) P(c, x, 9, 1, rng.int(1, 3), '#a8823a');
+      for (let i = 0; i < 10; i++) P(c, rng.int(0, 15), rng.int(0, 8), 1, 2, rng.pick(['#e0bc6a', '#9a7432']));
+      P(c, 0, 11, 16, 2, 'rgba(0,0,0,.25)');
+      P(c, 0, 13, 16, 3, '#5a3a1c'); // poutre
+    },
+    // mur à colombages avec petite vitrine
+    shopfront: (c, { rng }) => {
+      P(c, 0, 0, 16, 16, '#e8dcc0');
+      P(c, 0, 0, 2, 16, '#5a3a1c');
+      P(c, 14, 0, 2, 16, '#5a3a1c');
+      P(c, 0, 14, 16, 2, '#5a3a1c');
+      P(c, 3, 2, 10, 8, '#5a3a1c');
+      P(c, 4, 3, 8, 6, '#a8d0e8');
+      for (let x = 5; x < 11; x += 2) P(c, x, 8 - rng.int(1, 3), 1, rng.int(1, 3), rng.pick(['#e8303a', '#ffd35a', '#3a8ad8', '#5ac83a']));
+      P(c, 8, 3, 1, 6, '#5a3a1c');
+      P(c, 3, 10, 10, 2, '#7a5228'); // jardinière
+      P(c, 4, 9, 2, 1, '#e8303a');
+      P(c, 9, 9, 2, 1, '#ffd35a');
+    },
+    shop_entrance: (c) => {
+      P(c, 0, 0, 16, 16, '#e8dcc0');
+      P(c, 0, 0, 2, 16, '#5a3a1c');
+      P(c, 14, 0, 2, 16, '#5a3a1c');
+      P(c, 3, 1, 10, 15, '#3a2410');
+      P(c, 4, 2, 8, 14, '#8a5a2c');
+      for (let x = 6; x < 12; x += 2) P(c, x, 2, 1, 14, '#6b4423');
+      P(c, 10, 9, 1, 1, '#ffd35a');
+      P(c, 12, 1, 3, 3, '#ffb030'); // lanterne
+    },
+    cliff: (c, { rng, variant }) => {
+      P(c, 0, 0, 16, 16, '#6e665c');
+      const blobs = 4 + variant;
+      for (let i = 0; i < blobs; i++) {
+        const x = rng.int(-2, 12);
+        const y = rng.int(-2, 12);
+        const w = rng.int(5, 8);
+        const h = rng.int(4, 7);
+        P(c, x, y, w, h, '#5a534a');
+        P(c, x + 1, y, w - 2, 2, '#8e857a');
+        P(c, x, y + h - 1, w, 1, '#46403a');
+      }
+      if (variant === 2) (P(c, rng.int(1, 12), 0, 4, 2, GRASS), P(c, rng.int(2, 10), 1, 2, 1, '#6bbf4e'));
+    },
+    cave_mouth: (c) => {
+      P(c, 0, 0, 16, 16, '#6e665c');
+      P(c, 0, 0, 16, 2, '#8e857a');
+      P(c, 1, 3, 14, 13, '#46403a');
+      P(c, 2, 4, 12, 12, '#0a0806');
+      P(c, 4, 2, 8, 2, '#0a0806');
+      P(c, 2, 4, 2, 2, '#46403a');
+      P(c, 12, 4, 2, 2, '#46403a');
+      P(c, 3, 14, 10, 2, '#2a2420');
+    },
+  },
+  space: {
+    awning: (c) => {
+      P(c, 0, 0, 16, 16, '#5c6377');
+      P(c, 0, 0, 16, 2, '#c0c7d6');
+      for (let x = 0; x < 16; x += 4) P(c, x, 2, 1, 14, '#4a5266');
+      P(c, 2, 6, 3, 3, '#3aff8a');
+      P(c, 11, 6, 3, 3, '#ff4a8a');
+    },
+    roof_eave: (c) => {
+      P(c, 0, 0, 16, 16, '#8b93a7');
+      P(c, 0, 0, 16, 9, '#20283a');
+      P(c, 0, 3, 16, 3, '#4ff0ff'); // bandeau lumineux
+      for (let x = 1; x < 16; x += 4) P(c, x, 4, 2, 1, '#e8ffff');
+      P(c, 0, 9, 16, 1, '#c0c7d6');
+      P(c, 0, 10, 16, 2, 'rgba(0,0,0,.3)');
+    },
+    shopfront: (c, { rng }) => {
+      P(c, 0, 0, 16, 16, '#8b93a7');
+      P(c, 0, 0, 16, 1, '#c0c7d6');
+      P(c, 3, 2, 10, 10, '#4a5266');
+      P(c, 4, 3, 8, 8, '#0a3a4a');
+      P(c, 5, 4, 6, 6, '#1a5a6a');
+      for (let x = 5; x < 11; x += 2) P(c, x, 9 - rng.int(1, 3), 1, rng.int(1, 3), rng.pick(['#4ff0ff', '#c84aff', '#4aff9a', '#ffb84a']));
+      P(c, 5, 4, 2, 1, '#e8ffff');
+      P(c, 0, 14, 16, 2, '#5c6377');
+    },
+    shop_entrance: (c) => {
+      P(c, 0, 0, 16, 16, '#8b93a7');
+      P(c, 2, 1, 12, 15, '#20283a');
+      P(c, 3, 2, 5, 14, '#4a5670');
+      P(c, 8, 2, 5, 14, '#4a5670');
+      P(c, 7, 2, 2, 14, '#20283a');
+      P(c, 6, 0, 4, 1, '#3aff8a');
+    },
+    // épave : coque rouillée
+    cliff: (c, { rng, variant }) => {
+      P(c, 0, 0, 16, 16, '#5c6377');
+      P(c, 0, 0, 16, 1, '#8b93a7');
+      P(c, 0, 8, 16, 1, '#3a4254');
+      P(c, 8 * (variant % 2), 0, 1, 16, '#3a4254');
+      for (const [x, y] of [[2, 2], [13, 2], [2, 11], [13, 11]]) P(c, x, y, 1, 1, '#a8b0c4');
+      for (let i = 0; i < 4 + variant * 2; i++) P(c, rng.int(0, 14), rng.int(0, 14), rng.int(1, 3), rng.int(1, 2), rng.pick(['#a85a1c', '#c87a3a', '#7a3a10']));
+    },
+    // brèche dans la coque
+    cave_mouth: (c) => {
+      P(c, 0, 0, 16, 16, '#5c6377');
+      P(c, 2, 3, 12, 13, '#0a0a14');
+      for (const [x, y] of [[2, 3], [5, 2], [9, 3], [12, 4], [13, 7], [2, 8]]) P(c, x, y, 2, 2, '#5c6377');
+      P(c, 3, 5, 1, 1, '#ffd35a');
+      P(c, 12, 10, 1, 1, '#4ff0ff');
+      P(c, 1, 2, 3, 1, '#c87a3a');
+      P(c, 12, 2, 3, 1, '#c87a3a');
+    },
+  },
+  city: {
+    // enseigne en haut de la façade
+    awning: (c) => {
+      P(c, 0, 0, 16, 16, '#9a4a3a');
+      P(c, 0, 0, 16, 2, '#6e3328');
+      P(c, 0, 4, 16, 9, '#1a1a1a');
+      P(c, 1, 5, 14, 7, '#2a2a30');
+      for (let x = 2; x < 15; x += 3) P(c, x, 7, 2, 3, '#ff6aa8');
+      P(c, 0, 13, 16, 3, '#9a4a3a');
+    },
+    // auvent rayé
+    roof_eave: (c) => {
+      P(c, 0, 0, 16, 16, '#9a4a3a');
+      for (let x = 0; x < 16; x += 4) {
+        P(c, x, 0, 2, 10, '#2a8a4a');
+        P(c, x + 2, 0, 2, 10, '#ffffff');
+      }
+      for (let x = 0; x < 16; x += 4) P(c, x, 10, 2, 2, '#2a8a4a');
+      P(c, 0, 12, 16, 2, 'rgba(0,0,0,.25)');
+    },
+    shopfront: (c, { rng }) => {
+      P(c, 0, 0, 16, 16, '#9a4a3a');
+      P(c, 1, 0, 14, 13, '#333');
+      P(c, 2, 1, 12, 11, '#a8d0e8');
+      P(c, 2, 1, 12, 1, '#d8f0ff');
+      for (let x = 3; x < 13; x += 3) P(c, x, 11 - rng.int(2, 4), 2, rng.int(2, 4), rng.pick(['#ff3a5a', '#ffd35a', '#3ac48a', '#3a7ad8']));
+      P(c, 3, 2, 2, 5, 'rgba(255,255,255,.5)');
+      P(c, 0, 13, 16, 3, '#6e3328');
+    },
+    shop_entrance: (c) => {
+      P(c, 0, 0, 16, 16, '#9a4a3a');
+      P(c, 2, 0, 12, 16, '#222');
+      P(c, 3, 1, 10, 15, '#5aa0d0');
+      P(c, 3, 1, 3, 15, '#8ac4ec');
+      P(c, 7, 1, 1, 15, '#222');
+      P(c, 9, 8, 2, 1, '#ccc');
+    },
+    // parking souterrain : béton
+    cliff: (c, { variant }) => {
+      P(c, 0, 0, 16, 16, '#8a8a86');
+      P(c, 0, 0, 16, 1, '#a8a8a2');
+      P(c, 0, 7, 16, 1, '#6e6e6a');
+      P(c, 0, 15, 16, 1, '#6e6e6a');
+      P(c, variant * 5, 0, 1, 16, '#7a7a76');
+      if (variant === 1) for (let x = 0; x < 16; x += 4) (P(c, x, 12, 2, 3, '#e8c547'), P(c, x + 2, 12, 2, 3, '#1a1a1a'));
+    },
+    cave_mouth: (c) => {
+      P(c, 0, 0, 16, 16, '#8a8a86');
+      P(c, 1, 4, 14, 12, '#1a1a1e');
+      P(c, 5, 0, 6, 4, '#2a5ad8'); // panneau P
+      P(c, 7, 1, 1, 2, '#fff');
+      P(c, 8, 1, 1, 1, '#fff');
+      P(c, 1, 8, 14, 2, '#e8303a'); // barrière
+      for (let x = 3; x < 15; x += 4) P(c, x, 8, 2, 2, '#ffffff');
+    },
+  },
+};
+
 export const THEMES = BASE.map((t) => {
   const x = EXTRA[t.id];
   const pal = { ...x.pal, pet: PETS[t.id] };
   const tiles = { ...t.tiles, bush: { solid: true, props: { cuttable: true, cutTo: 'floor' }, paint: x.bush } };
   for (const [k, v] of Object.entries(BETTER_TILES[t.id] ?? {})) tiles[k] = { ...tiles[k], ...v };
   Object.assign(tiles, caveTiles(CAVE_SHOP[t.id].cave), shopTiles(CAVE_SHOP[t.id].shop));
+  // Extérieurs propres à l'ambiance (remplacent la façade générique)
+  const ext = EXTERIORS[t.id];
+  tiles.awning = { solid: true, props: { shadow: true }, paint: ext.awning };
+  tiles.roof_eave = { solid: true, props: { shadow: true }, paint: ext.roof_eave };
+  tiles.shopfront = { solid: true, variants: 2, props: { shadow: true }, paint: ext.shopfront };
+  tiles.shop_entrance = { paint: ext.shop_entrance };
+  tiles.cliff = { solid: true, variants: 3, props: { shadow: true }, paint: ext.cliff };
+  tiles.cave_mouth = { paint: ext.cave_mouth };
   // Ombres portées sous les murs, obstacles et buissons ; écume au bord de l'eau.
   for (const k of ['wall', 'obstacle', 'bush']) tiles[k] = { ...tiles[k], props: { ...(tiles[k].props ?? {}), shadow: true } };
   tiles.water = { ...tiles.water, props: { ...(tiles.water.props ?? {}), edge: EDGES[t.id] } };

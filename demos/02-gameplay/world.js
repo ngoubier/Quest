@@ -476,13 +476,14 @@ export const MAPS = {
   overworld: {
     name: 'Le village',
     level: 'village',
-    legend: { a: 'awning', w: 'shopfront' }, // façade du magasin
+    // Façade du magasin (toit, bas de toit, vitrines) et roche de la grotte : apparence selon l'ambiance.
+    legend: { a: 'awning', e: 'roof_eave', w: 'shopfront', k: 'cliff' },
     camera: 'follow', // défilement libre à l'extérieur
     rows: [
       '########################################',
       '#..........,...........,....~~~~~~~~~~.#',
       '#.####.....aaaa.............~~~~~~~~~~.#',
-      '#.####..N..wwww..bbb.........~~~~~~~~..#',
+      '#.####..N..eeee..bbb.........~~~~~~~~..#',
       '#.####.....wwQw..bnb.......Y...~~~~....#',
       '#....A.....M..Z..b.b...................#',
       '#==P===========================......c.#',
@@ -495,10 +496,10 @@ export const MAPS = {
       '#......=.......o.....o.................#',
       '#......=.......o..m..o..W..bbb.........#',
       '#..E...=.......o.....o.....bcb.........#',
-      '#......=.......ooogooo.........######..#',
-      '#......=....L.U...............########.#',
-      '#......=.......=..............########.#',
-      '#......=========..............###D####.#',
+      '#......=.......ooogooo.........kkkkkk..#',
+      '#......=....L.U...............kkkkkkkk.#',
+      '#......=.......=..............kkkkkkkk.#',
+      '#......=========..............kkkDkkkk.#',
       '#.........................~~~~~~~X~~~~~#',
       '#..,......E.................======.T...#',
       '#.......................h....R....,....#',
@@ -514,7 +515,7 @@ export const MAPS = {
       Y: FISHER,
       R: CARPENTER,
       X: { type: 'tileswitch', tile: 'water', to: 'path', when: 'bridge_built' },
-      Q: { type: 'warp', tile: 'door', to: 'shop', at: [7, 9], facing: 'up' },
+      Q: { type: 'warp', tile: 'shop_entrance', to: 'shop', at: [7, 9], facing: 'up' },
       W: { type: 'pet', name: '{w:pet}', text: ['Il a l’air perdu... et il te suit déjà partout !', 'Ton nouveau compagnon trouvera parfois des indices pour toi.'] },
       Z: { type: 'sign', text: 'MAGASIN — tout pour l’aventure !' },
       G: GUARD,
@@ -529,7 +530,7 @@ export const MAPS = {
       F: flyer,
       L: { type: 'lever', flag: 'garden_open' },
       g: { type: 'gate', openWhen: { flag: 'garden_open' } },
-      D: { type: 'warp', tile: 'door', to: 'cave', at: [7, 20], facing: 'up' },
+      D: { type: 'warp', tile: 'cave_mouth', to: 'cave', at: [7, 20], facing: 'up' },
     },
   },
 
