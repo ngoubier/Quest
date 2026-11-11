@@ -5,11 +5,11 @@
 //   'mot'            mot sans image (proposé seulement si l'appareil parle)
 //   ['mot', '🐱']     mot illustré
 const WORDS = {
-  6: [['chat', '🐱'], ['lune', '🌙'], ['vélo', '🚲'], ['moto', '🏍️'], ['lit', '🛏️'], ['robe', '👗'], ['tomate', '🍅'], ['livre', '📖'], ['pomme', '🍎'], ['ami'], ['papa'], ['domino']],
-  7: [['maison', '🏠'], ['école', '🏫'], ['poisson', '🐟'], ['oiseau', '🐦'], ['lapin', '🐰'], ['cheval', '🐴'], ['bateau', '⛵'], ['fleur', '🌸'], ['soleil', '☀️'], ['jouet', '🧸'], ['jardin'], ['chemin']],
-  8: [['pantalon', '👖'], ['chocolat', '🍫'], ['éléphant', '🐘'], ['crayon', '✏️'], ['cahier', '📓'], ['montagne', '⛰️'], ['garçon', '👦'], ['feuille', '🍃'], ['château', '🏰'], ['fenêtre'], ['boulanger'], ['sorcière']],
-  9: [['papillon', '🦋'], ['parapluie', '☂️'], ['escargot', '🐌'], ['citrouille', '🎃'], ['grenouille', '🐸'], ['ordinateur', '💻'], ['beaucoup'], ['toujours'], ['longtemps'], ['maintenant'], ['souvent'], ['quelquefois']],
-  10: [['hélicoptère', '🚁'], ['téléphone', '📱'], ['dinosaure', '🦕'], ['champignon', '🍄'], ['abeille', '🐝'], ['automne', '🍂'], ['aujourd’hui'], ['plusieurs'], ['autrefois'], ['printemps'], ['cependant'], ['désormais']],
+  6: [['chat', '🐱'], ['lune', '🌙'], ['vélo', '🚲'], ['moto', '🏍️'], ['lit', '🛏️'], ['robe', '👗'], ['tomate', '🍅'], ['livre', '📖'], ['pomme', '🍎'], ['ami'], ['papa'], ['domino'], ['vache', '🐮'], ['rat', '🐀'], ['sac', '🎒'], ['nid', '🪺'], ['bébé', '👶'], ['banane', '🍌'], ['salade', '🥬'], ['mur'], ['été'], ['mari'], ['petit'], ['samedi']],
+  7: [['maison', '🏠'], ['école', '🏫'], ['poisson', '🐟'], ['oiseau', '🐦'], ['lapin', '🐰'], ['cheval', '🐴'], ['bateau', '⛵'], ['fleur', '🌸'], ['soleil', '☀️'], ['jouet', '🧸'], ['jardin'], ['chemin'], ['mouton', '🐑'], ['cochon', '🐷'], ['gâteau', '🎂'], ['ballon', '⚽'], ['table'], ['forêt', '🌲'], ['étoile', '⭐'], ['souris', '🐭'], ['cadeau', '🎁'], ['lundi'], ['matin'], ['dimanche']],
+  8: [['pantalon', '👖'], ['chocolat', '🍫'], ['éléphant', '🐘'], ['crayon', '✏️'], ['cahier', '📓'], ['montagne', '⛰️'], ['garçon', '👦'], ['feuille', '🍃'], ['château', '🏰'], ['fenêtre'], ['boulanger'], ['sorcière'], ['girafe', '🦒'], ['fromage', '🧀'], ['guitare', '🎸'], ['fraise', '🍓'], ['tortue', '🐢'], ['pompier', '🚒'], ['voiture', '🚗'], ['mercredi'], ['janvier'], ['famille'], ['cuisine'], ['histoire']],
+  9: [['papillon', '🦋'], ['parapluie', '☂️'], ['escargot', '🐌'], ['citrouille', '🎃'], ['grenouille', '🐸'], ['ordinateur', '💻'], ['beaucoup'], ['toujours'], ['longtemps'], ['maintenant'], ['souvent'], ['quelquefois'], ['crocodile', '🐊'], ['hérisson', '🦔'], ['perroquet', '🦜'], ['bibliothèque', '📚'], ['fusée', '🚀'], ['pharmacie'], ['pourquoi'], ['parce que'], ['pendant'], ['bientôt'], ['quelqu’un'], ['février']],
+  10: [['hélicoptère', '🚁'], ['téléphone', '📱'], ['dinosaure', '🦕'], ['champignon', '🍄'], ['abeille', '🐝'], ['automne', '🍂'], ['aujourd’hui'], ['plusieurs'], ['autrefois'], ['printemps'], ['cependant'], ['désormais'], ['kangourou', '🦘'], ['rhinocéros', '🦏'], ['pyramide'], ['thermomètre', '🌡️'], ['bicyclette', '🚲'], ['orchestre'], ['nécessaire'], ['quelques-uns'], ['malheureusement'], ['aussitôt'], ['davantage'], ['exactement']],
 };
 
 export const QUESTIONS_DICTEE = Object.entries(WORDS).flatMap(([age, words]) =>
