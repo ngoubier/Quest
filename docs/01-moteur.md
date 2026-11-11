@@ -1,6 +1,6 @@
 # Étape 1 — Le moteur (Quest Engine)
 
-> Statut : **à valider**. Essai jouable : `demos/01-moteur/`.
+> Statut : **validé** (décisions reportées dans `02-gameplay.md`). Essai jouable : `demos/01-moteur/`.
 
 ## 1. La vision en 3 couches
 

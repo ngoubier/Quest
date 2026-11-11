@@ -14,6 +14,7 @@ import { SpriteSheet } from '../graphics/SpriteSheet.js';
 //   sprites: { [planche]: { frameW, frameH, frames: string[], paint(ctx, name, i) } },
 //   ui:      { box, border, text, accent, ... }   // style des boîtes de dialogue / menus
 //   sfx:     { [nom]: spec audio },
+//   words:   { [clé]: [singulier, pluriel] }       // vocabulaire propre à l'ambiance
 //   background: '#...'
 // }
 
@@ -89,6 +90,17 @@ export class ThemeRegistry {
       g.events.emit('theme:change', built);
     }
     return built;
+  }
+
+  /**
+   * Vocabulaire du thème : un même objet s'appelle « rubis », « crédits » ou « euros ».
+   * theme.words = { coin: ['rubis', 'rubis'], key: ['clé', 'clés'] }  (singulier, pluriel)
+   */
+  word(key, plural = false) {
+    const w = this.current?.def.words?.[key];
+    if (w === undefined) return key;
+    if (Array.isArray(w)) return plural ? w[1] ?? w[0] : w[0];
+    return w;
   }
 
   /** Passe au thème suivant (pratique pour comparer). */

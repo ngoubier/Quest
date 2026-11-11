@@ -1,0 +1,310 @@
+// Ambiances de l'essai n°2 : on reprend celles de l'essai n°1 et on y ajoute
+// ce que le gameplay demande (buissons, objets, monstres, icônes, vocabulaire).
+import { THEMES as BASE, TILE_ROLES as BASE_ROLES, P, humanoid } from '../01-moteur/themes.js';
+
+export const TILE_ROLES = [...BASE_ROLES, 'bush'];
+
+// ------------------------------------------------------------ dessins génériques, colorés par thème
+function heart(c, x, y, s, col, dark) {
+  // cœur de 7x6 à l'échelle s
+  const rows = ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'];
+  rows.forEach((row, j) => [...row].forEach((ch, i) => ch === '#' && P(c, x + i * s, y + j * s, s, s, j < 1 && i % 3 === 1 ? dark : col)));
+}
+function gem(c, x, y, col, light) {
+  P(c, x + 2, y, 2, 1, light);
+  P(c, x + 1, y + 1, 4, 1, col);
+  P(c, x, y + 2, 6, 3, col);
+  P(c, x + 1, y + 2, 1, 2, light);
+  P(c, x + 1, y + 5, 4, 1, col);
+  P(c, x + 2, y + 6, 2, 1, col);
+}
+function key(c, x, y, col, s = 1) {
+  P(c, x, y, 3 * s, 3 * s, col);
+  P(c, x + s, y + s, s, s, 'rgba(0,0,0,.6)');
+  P(c, x + 3 * s, y + s, 4 * s, s, col);
+  P(c, x + 5 * s, y + 2 * s, s, s, col);
+  P(c, x + 7 * s - s, y + 2 * s, s, s, col);
+}
+
+const OBJECT_FRAMES = [
+  'chest', 'chest_open', 'block', 'plate', 'plate_down', 'gate', 'locked', 'lever_off', 'lever_on',
+  'coin', 'key', 'amulet', 'mushroom', 'heart', 'sword_down', 'sword_up', 'sword_side', 'poof_0', 'poof_1',
+  'blob_0', 'blob_1', 'flyer_0', 'flyer_1',
+];
+
+function objectsSheet(p) {
+  return {
+    frameW: 16,
+    frameH: 16,
+    frames: OBJECT_FRAMES,
+    paint(c, name) {
+      switch (name) {
+        case 'chest':
+        case 'chest_open': {
+          P(c, 1, 14, 14, 2, 'rgba(0,0,0,.3)');
+          P(c, 1, 5, 14, 10, p.chestDark);
+          P(c, 2, 6, 12, 8, p.chest);
+          P(c, 1, 8, 14, 1, p.chestDark);
+          if (name === 'chest') {
+            P(c, 1, 3, 14, 5, p.chestDark);
+            P(c, 2, 4, 12, 3, p.chest);
+            P(c, 7, 7, 2, 3, p.metal);
+          } else {
+            P(c, 1, 1, 14, 4, p.chestDark);
+            P(c, 2, 2, 12, 2, p.chest);
+            P(c, 3, 6, 10, 2, '#000');
+          }
+          return;
+        }
+        case 'block':
+          P(c, 0, 0, 16, 16, p.blockDark);
+          P(c, 0, 0, 15, 15, p.block);
+          P(c, 0, 0, 15, 1, p.blockLight);
+          P(c, 0, 0, 1, 15, p.blockLight);
+          P(c, 4, 4, 7, 7, p.blockDark);
+          P(c, 5, 5, 5, 5, p.block);
+          return;
+        case 'plate':
+        case 'plate_down':
+          P(c, 2, 2, 12, 12, p.plateDark);
+          P(c, 3, 3, 10, 10, name === 'plate' ? p.plate : p.plateDark);
+          if (name === 'plate') P(c, 3, 3, 10, 1, p.plateLight);
+          P(c, 7, 7, 2, 2, name === 'plate' ? p.plateDark : p.plate);
+          return;
+        case 'gate':
+          P(c, 0, 0, 16, 16, 'rgba(0,0,0,.55)');
+          for (let x = 1; x < 16; x += 4) P(c, x, 0, 2, 16, p.metal);
+          P(c, 0, 3, 16, 2, p.metalDark);
+          P(c, 0, 11, 16, 2, p.metalDark);
+          return;
+        case 'locked':
+          P(c, 0, 0, 16, 16, p.chestDark);
+          P(c, 1, 1, 14, 14, p.chest);
+          P(c, 7, 0, 2, 16, p.chestDark);
+          P(c, 5, 5, 6, 6, p.metal);
+          P(c, 7, 6, 2, 2, '#000');
+          P(c, 7, 8, 2, 2, '#000');
+          return;
+        case 'lever_off':
+        case 'lever_on': {
+          P(c, 3, 11, 10, 4, p.metalDark);
+          P(c, 4, 11, 8, 1, p.metal);
+          const on = name === 'lever_on';
+          for (let i = 0; i < 7; i++) P(c, on ? 8 + Math.floor(i / 2) : 8 - Math.floor(i / 2), 11 - i, 1, 1, p.metal);
+          P(c, on ? 10 : 4, 3, 3, 3, on ? p.on : p.off);
+          return;
+        }
+        case 'coin':
+          gem(c, 5, 4, p.coin, p.coinLight);
+          return;
+        case 'key':
+          key(c, 1, 5, p.key, 2);
+          return;
+        case 'amulet':
+          for (let i = 0; i < 6; i++) P(c, 3 + i, 2 + Math.abs(i - 2.5) * 0.6, 1, 1, p.metal);
+          P(c, 4, 5, 8, 8, p.metalDark);
+          P(c, 5, 6, 6, 6, p.amulet);
+          P(c, 6, 7, 2, 2, '#fff');
+          return;
+        case 'mushroom':
+          P(c, 3, 4, 10, 5, p.mushCap);
+          P(c, 4, 3, 8, 1, p.mushCap);
+          P(c, 5, 5, 2, 2, '#fff');
+          P(c, 9, 4, 2, 2, '#fff');
+          P(c, 6, 9, 4, 4, p.mushStem);
+          return;
+        case 'heart':
+          heart(c, 4, 4, 1, p.heart, p.heartLight);
+          return;
+        case 'sword_down':
+          P(c, 7, 0, 2, 3, p.hilt);
+          P(c, 5, 3, 6, 1, p.hilt);
+          P(c, 7, 4, 2, 10, p.blade);
+          P(c, 7, 4, 1, 10, '#fff');
+          return;
+        case 'sword_up':
+          P(c, 7, 13, 2, 3, p.hilt);
+          P(c, 5, 12, 6, 1, p.hilt);
+          P(c, 7, 2, 2, 10, p.blade);
+          P(c, 7, 2, 1, 10, '#fff');
+          return;
+        case 'sword_side':
+          P(c, 0, 7, 3, 2, p.hilt);
+          P(c, 3, 5, 1, 6, p.hilt);
+          P(c, 4, 7, 11, 2, p.blade);
+          P(c, 4, 7, 11, 1, '#fff');
+          return;
+        case 'poof_0':
+          P(c, 5, 5, 6, 6, '#fff');
+          P(c, 3, 7, 10, 2, '#ddd');
+          P(c, 7, 3, 2, 10, '#ddd');
+          return;
+        case 'poof_1':
+          for (const [x, y] of [[2, 2], [12, 2], [2, 12], [12, 12], [7, 1], [7, 13], [1, 7], [13, 7]]) P(c, x, y, 2, 2, '#ccc');
+          return;
+        case 'blob_0':
+        case 'blob_1': {
+          const sq = name === 'blob_1' ? 1 : 0;
+          P(c, 2, 15, 12, 1, 'rgba(0,0,0,.3)');
+          P(c, 3 - sq, 7 + sq, 10 + 2 * sq, 8 - sq, p.blobDark);
+          P(c, 4 - sq, 5 + sq, 8 + 2 * sq, 3, p.blob);
+          P(c, 3 - sq, 8 + sq, 10 + 2 * sq, 6 - sq, p.blob);
+          P(c, 5, 9, 2, 2, '#fff');
+          P(c, 9, 9, 2, 2, '#fff');
+          P(c, 6, 10, 1, 1, '#000');
+          P(c, 10, 10, 1, 1, '#000');
+          return;
+        }
+        case 'flyer_0':
+        case 'flyer_1': {
+          const up = name === 'flyer_0';
+          P(c, 5, 6, 6, 5, p.flyer);
+          P(c, 6, 7, 1, 1, p.eye);
+          P(c, 9, 7, 1, 1, p.eye);
+          if (up) {
+            P(c, 1, 3, 4, 2, p.flyerWing);
+            P(c, 11, 3, 4, 2, p.flyerWing);
+            P(c, 3, 5, 2, 2, p.flyerWing);
+            P(c, 11, 5, 2, 2, p.flyerWing);
+          } else {
+            P(c, 1, 9, 4, 2, p.flyerWing);
+            P(c, 11, 9, 4, 2, p.flyerWing);
+            P(c, 3, 8, 2, 2, p.flyerWing);
+            P(c, 11, 8, 2, 2, p.flyerWing);
+          }
+          P(c, 4, 14, 8, 1, 'rgba(0,0,0,.25)');
+          return;
+        }
+      }
+    },
+  };
+}
+
+function iconsSheet(p) {
+  return {
+    frameW: 8,
+    frameH: 8,
+    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key'],
+    paint(c, name) {
+      if (name.startsWith('heart')) {
+        heart(c, 0, 1, 1, name === 'heart_empty' ? '#333' : p.heart, p.heartLight);
+        if (name === 'heart_half') P(c, 4, 1, 3, 6, '#333');
+        if (name === 'heart_half') P(c, 3, 1, 1, 6, '#333');
+        return;
+      }
+      if (name === 'coin') return gem(c, 1, 0, p.coin, p.coinLight);
+      if (name === 'key') return key(c, 0, 2, p.key);
+    },
+  };
+}
+
+function chars(people, sign) {
+  const frames = [];
+  for (const who of Object.keys(people)) for (const d of ['down', 'up', 'side']) for (const s of [0, 1]) frames.push(`${who}_${d}_${s}`);
+  frames.push('sign');
+  return {
+    frameW: 16,
+    frameH: 16,
+    frames,
+    paint(c, name, i) {
+      if (name === 'sign') return sign(c);
+      const [who, dir, step] = name.split('_');
+      humanoid(c, dir, Number(step), people[who]);
+    },
+  };
+}
+
+// ------------------------------------------------------------ ajouts par thème
+const EXTRA = {
+  medieval: {
+    pal: {
+      chest: '#a8672a', chestDark: '#5a3414', metal: '#d8c070', metalDark: '#7a6a3a', block: '#9a9488', blockLight: '#c4beb2', blockDark: '#5a564e',
+      plate: '#b0a890', plateLight: '#d4ccb4', plateDark: '#6a6454', on: '#5aff5a', off: '#ff5a5a', coin: '#3ad46a', coinLight: '#b4ffc8', key: '#ffd35a',
+      amulet: '#e83a5a', mushCap: '#d83a2a', mushStem: '#f4e8c8', heart: '#e8303a', heartLight: '#ff9aa0', blade: '#c8d0e0', hilt: '#8a5a2a',
+      blob: '#5ac83a', blobDark: '#2a7a1a', flyer: '#6a3a8a', flyerWing: '#9a5aca', eye: '#ffde3a',
+    },
+    words: { coin: ['rubis', 'rubis'], key: ['clé', 'clés'], amulet: ['amulette', 'amulettes'], mushroom: ['champignon', 'champignons'], blob: ['gluant', 'gluants'], cave: 'la grotte', elder: "l'Ancien" },
+    bush: (c) => {
+      P(c, 0, 0, 16, 16, '#4c9a3c');
+      P(c, 2, 3, 12, 11, '#3f8a36');
+      P(c, 1, 5, 14, 7, '#3f8a36');
+      P(c, 4, 4, 3, 2, '#6bc458');
+      P(c, 9, 7, 3, 2, '#6bc458');
+      P(c, 5, 9, 2, 2, '#2b6a26');
+      P(c, 3, 13, 10, 2, '#2b6a26');
+    },
+    people: {
+      elder: { skin: '#e8b88a', hair: '#eee', eye: '#222', body: '#5a3a8a', bodyDark: '#3a2a5a', legs: '#3a2a5a', hat: 'hood', hatColor: '#5a3a8a' },
+      merchant: { skin: '#f2c49b', hair: '#c4542a', eye: '#222', body: '#d8a03a', bodyDark: '#a8701a', legs: '#5a3a1a' },
+      guard: { skin: '#d9a07a', hair: '#333', eye: '#111', body: '#8a8a9a', bodyDark: '#5a5a6a', legs: '#4a4a5a', hat: 'helmet', hatColor: '#9a9aaa', hatLight: '#ccc', visor: '#333' },
+    },
+  },
+  space: {
+    pal: {
+      chest: '#5a6a8a', chestDark: '#2a3248', metal: '#4ff0ff', metalDark: '#2a7a8a', block: '#6a7488', blockLight: '#9aa4b8', blockDark: '#3a4254',
+      plate: '#2a5a4a', plateLight: '#4aff9a', plateDark: '#1a2a2a', on: '#4aff9a', off: '#ff4a4a', coin: '#4ff0ff', coinLight: '#d8ffff', key: '#ffb84a',
+      amulet: '#c84aff', mushCap: '#4aff9a', mushStem: '#2a5a4a', heart: '#ff4a8a', heartLight: '#ffaaca', blade: '#8affff', hilt: '#5a6478',
+      blob: '#c84aff', blobDark: '#7a2aaa', flyer: '#8a93a7', flyerWing: '#ff5a3a', eye: '#ff3a3a',
+    },
+    words: { coin: ['crédit', 'crédits'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante' },
+    bush: (c) => {
+      P(c, 0, 0, 16, 16, '#3a4254');
+      P(c, 3, 4, 10, 10, '#5a3a1a');
+      P(c, 4, 5, 8, 8, '#8a5a2a');
+      P(c, 4, 8, 8, 1, '#5a3a1a');
+      P(c, 7, 5, 1, 8, '#5a3a1a');
+    },
+    people: {
+      elder: { skin: '#c48a6a', hair: '#ddd', eye: '#111', body: '#2a4a8a', bodyDark: '#1a2a5a', legs: '#1a2a5a', hat: 'cap', hatColor: '#2a4a8a', hatDark: '#ffd35a' },
+      merchant: { skin: '#9adf9a', hair: '#4a8a4a', eye: '#000', body: '#d8a03a', bodyDark: '#a8701a', legs: '#333' },
+      guard: { skin: '#f2c49b', hair: '#333', eye: '#111', body: '#c43a3a', bodyDark: '#8a2a2a', legs: '#333', hat: 'helmet', hatColor: '#c43a3a', hatLight: '#ff8a8a', visor: '#222' },
+    },
+  },
+  city: {
+    pal: {
+      chest: '#3a6ab8', chestDark: '#1a3a6a', metal: '#e8e8e8', metalDark: '#888', block: '#c8a070', blockLight: '#e8c8a0', blockDark: '#7a5a3a',
+      plate: '#888', plateLight: '#bbb', plateDark: '#444', on: '#5aff5a', off: '#ff5a5a', coin: '#ffd35a', coinLight: '#fff2b4', key: '#c8c8d8',
+      amulet: '#ff6aa8', mushCap: '#ff6aa8', mushStem: '#fff', heart: '#ff3a5a', heartLight: '#ffa0b0', blade: '#e8e8f0', hilt: '#222',
+      blob: '#7a7a8a', blobDark: '#4a4a5a', flyer: '#9a9aa8', flyerWing: '#6a6a78', eye: '#ff6a3a',
+    },
+    words: { coin: ['euro', 'euros'], key: ['clé', 'clés'], amulet: ['médaillon', 'médaillons'], mushroom: ['ticket', 'tickets'], blob: ['rat', 'rats'], cave: 'le parking souterrain', elder: 'le Doyen' },
+    bush: (c) => {
+      P(c, 0, 0, 16, 16, '#b9b4aa');
+      P(c, 3, 6, 10, 9, '#1a1a1a');
+      P(c, 4, 4, 8, 3, '#2a2a2a');
+      P(c, 7, 2, 2, 3, '#1a1a1a');
+      P(c, 5, 7, 1, 6, '#3a3a3a');
+    },
+    people: {
+      elder: { skin: '#e8b88a', hair: '#ccc', eye: '#222', body: '#6a4a2a', bodyDark: '#4a2a1a', legs: '#333' },
+      merchant: { skin: '#a8704a', hair: '#1a1a1a', eye: '#111', body: '#3ac48a', bodyDark: '#2a8a5a', legs: '#2a3a6a' },
+      guard: { skin: '#f2c49b', hair: '#333', eye: '#111', body: '#2a3a7a', bodyDark: '#1a2a5a', legs: '#1a2a5a', hat: 'cap', hatColor: '#2a3a7a', hatDark: '#111' },
+    },
+  },
+};
+
+const SIGNS = {
+  medieval: (c) => (P(c, 7, 9, 2, 7, '#5a3a1c'), P(c, 2, 3, 12, 7, '#8a5a2c'), P(c, 2, 3, 12, 1, '#b07a40'), P(c, 4, 5, 8, 1, '#3a2410'), P(c, 4, 7, 6, 1, '#3a2410')),
+  space: (c) => (P(c, 6, 10, 4, 6, '#4a5670'), P(c, 2, 2, 12, 9, '#20283a'), P(c, 3, 3, 10, 7, '#0a3a4a'), P(c, 4, 4, 6, 1, '#4ff0ff'), P(c, 4, 6, 8, 1, '#4ff0ff')),
+  city: (c) => (P(c, 7, 6, 2, 10, '#555'), P(c, 2, 1, 12, 6, '#1a6a3a'), P(c, 3, 2, 10, 4, '#2a8a4a'), P(c, 4, 3, 8, 1, '#fff')),
+};
+
+const PLAYERS = {
+  medieval: { skin: '#f2c49b', hair: '#7a4a1a', eye: '#222', body: '#3fa34d', bodyDark: '#2a7a36', legs: '#6b4423', hat: 'hood', hatColor: '#3fa34d' },
+  space: { skin: '#f2c49b', hair: '#333', eye: '#222', body: '#e8ecf4', bodyDark: '#a8b0c4', legs: '#c8cfdc', hat: 'helmet', hatColor: '#e8ecf4', hatLight: '#ffffff', visor: '#3a8aff' },
+  city: { skin: '#d9a07a', hair: '#1a1a1a', eye: '#111', body: '#ff6aa8', bodyDark: '#c84a80', legs: '#2a3a6a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
+};
+
+export const THEMES = BASE.map((t) => {
+  const x = EXTRA[t.id];
+  return {
+    ...t,
+    words: x.words,
+    tiles: { ...t.tiles, bush: { solid: true, props: { cuttable: true, cutTo: 'floor' }, paint: x.bush } },
+    sprites: {
+      chars: chars({ player: PLAYERS[t.id], ...x.people }, SIGNS[t.id]),
+      objects: objectsSheet(x.pal),
+      icons: iconsSheet(x.pal),
+    },
+  };
+});

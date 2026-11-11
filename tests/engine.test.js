@@ -24,7 +24,7 @@ test('Tilemap : solidité des tuiles et des bords', () => {
 
 test('Tilemap.fromAscii : marqueurs', () => {
   const { markers } = Tilemap.fromAscii({ rows: ['.P.'], legend: { '.': 'floor', P: { tile: 'floor', marker: 'player' } }, tileset });
-  assert.deepEqual(markers, [{ name: 'player', char: 'P', tx: 1, ty: 0, x: 16, y: 0 }]);
+  assert.deepEqual(markers, [{ name: 'player', char: 'P', tx: 1, ty: 0, x: 16, y: 0, props: {} }]);
 });
 
 test('Collision : on glisse contre un mur et on s’y colle exactement', () => {

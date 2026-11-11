@@ -5,14 +5,14 @@
 // Rôles de tuiles que la démo utilise : chaque thème doit tous les fournir.
 export const TILE_ROLES = ['floor', 'floor_alt', 'path', 'wall', 'obstacle', 'water', 'door', 'floor_in'];
 
-const P = (ctx, x, y, w, h, c) => {
+export const P = (ctx, x, y, w, h, c) => {
   ctx.fillStyle = c;
   ctx.fillRect(x, y, w, h);
 };
-const speckle = (ctx, rng, n, colors, size = 1) => {
+export const speckle = (ctx, rng, n, colors, size = 1) => {
   for (let i = 0; i < n; i++) P(ctx, rng.int(0, 15), rng.int(0, 15), size, size, rng.pick(colors));
 };
-const bricks = (ctx, base, mortar, hi) => {
+export const bricks = (ctx, base, mortar, hi) => {
   P(ctx, 0, 0, 16, 16, mortar);
   for (let row = 0; row < 4; row++) {
     const off = row % 2 ? -4 : 0;
@@ -25,7 +25,7 @@ const bricks = (ctx, base, mortar, hi) => {
 };
 
 // Personnage générique 16x16 : directions down/up/side (gauche = side retourné), 2 pas.
-function humanoid(ctx, dir, step, c) {
+export function humanoid(ctx, dir, step, c) {
   P(ctx, 4, 15, 8, 1, 'rgba(0,0,0,.3)');
   // jambes
   if (dir === 'side') {

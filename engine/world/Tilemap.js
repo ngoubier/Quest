@@ -27,9 +27,9 @@ export class Tilemap {
    * Construit une carte depuis du texte ASCII — idéal pour prototyper.
    * @param {object} o
    * @param {string[]} o.rows  une chaîne par ligne
-   * @param {Record<string, string | {tile:string, marker?:string, over?:string}>} o.legend
+   * @param {Record<string, string | {tile:string, marker?:string, over?:string, props?:object}>} o.legend
    * @param {import('./Tileset.js').Tileset} o.tileset
-   * @returns {{tilemap: Tilemap, markers: {name:string, char:string, tx:number, ty:number, x:number, y:number}[]}}
+   * @returns {{tilemap: Tilemap, markers: {name:string, char:string, tx:number, ty:number, x:number, y:number, props:object}[]}}
    */
   static fromAscii({ rows, legend, tileset }) {
     const height = rows.length;
@@ -51,7 +51,7 @@ export class Tilemap {
           over[ty * width + tx] = tileset.id(entry.over);
           hasOver = true;
         }
-        if (entry.marker) markers.push({ name: entry.marker, char: ch, tx, ty, x: tx * ts, y: ty * ts });
+        if (entry.marker) markers.push({ name: entry.marker, char: ch, tx, ty, x: tx * ts, y: ty * ts, props: entry.props || {} });
       }
     });
     const layers = [{ name: 'ground', data: ground }];

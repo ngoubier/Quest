@@ -20,4 +20,4 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404).end('Introuvable');
   }
-}).listen(port, () => console.log(`Quest : http://localhost:${port}/demos/01-moteur/`));
+}).listen(port, () => console.log(`Quest : http://localhost:${port}/`));
