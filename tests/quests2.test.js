@@ -120,11 +120,11 @@ test('Essai : le pont est obligatoire pour atteindre la grotte', () => {
   const start = (() => {
     for (let y = 0; y < ts.length; y++) for (let x = 0; x < ts[y].length; x++) if (ts[y][x] === 'P') return [x, y];
   })();
-  const solidTile = new Set(['wall', 'water', 'obstacle']);
+  const solidTile = new Set(['wall', 'water', 'obstacle', 'awning', 'shopfront']);
   const walkable = (ch, bridge) => {
     if (ch === 'X') return bridge;
     if (ch === 'D') return true;
-    const l = LEGEND[ch];
+    const l = m.legend?.[ch] ?? LEGEND[ch];
     if (l) return !solidTile.has(typeof l === 'string' ? l : l.tile);
     const o = m.objects[ch];
     return !['npc', 'sign', 'gate', 'lever', 'locked', 'chest'].includes(o.type) && (o.tile ?? 'floor') !== 'bush';

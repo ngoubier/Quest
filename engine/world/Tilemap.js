@@ -163,7 +163,9 @@ export class Tilemap {
         for (let tx = x0; tx <= x1; tx++) {
           const id = layer.data[ty * this.width + tx];
           if (!id) continue;
-          const v = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
+          let v = Math.imul(tx + 0x9e37, 0x85ebca6b) ^ Math.imul(ty + 0x7f4a, 0xc2b2ae35);
+          v = Math.imul(v ^ (v >>> 13), 0x27d4eb2d);
+          v = (v ^ (v >>> 15)) >>> 0;
           this.tileset.draw(r, id, tx * ts, ty * ts, time, v % 97);
           if (layer !== ground) continue;
           const def = this.tileset.def(id);

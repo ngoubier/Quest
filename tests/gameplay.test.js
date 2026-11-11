@@ -116,7 +116,7 @@ test('Essai 2 : cartes valides et quêtes cohérentes', () => {
   for (const [id, m] of Object.entries(MAPS)) {
     const w = m.rows[0].length;
     m.rows.forEach((r, i) => assert.equal(r.length, w, `${id} ligne ${i}`));
-    for (const ch of m.rows.join('')) assert.ok(ch in LEGEND || ch in (m.objects ?? {}), `${id} : "${ch}"`);
+    for (const ch of m.rows.join('')) assert.ok(ch in LEGEND || ch in (m.legend ?? {}) || ch in (m.objects ?? {}), `${id} : "${ch}"`);
     for (const o of Object.values(m.objects ?? {})) if (o.type === 'warp') assert.ok(MAPS[o.to], `destination ${o.to}`);
   }
   for (const q of QUESTS) assert.ok(q.steps.length && q.steps.every((s) => s.goal && s.done));

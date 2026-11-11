@@ -471,13 +471,14 @@ export const MAPS = {
   overworld: {
     name: 'Le village',
     level: 'village',
+    legend: { a: 'awning', w: 'shopfront' }, // façade du magasin
     camera: 'follow', // défilement libre à l'extérieur
     rows: [
       '########################################',
       '#..........,...........,....~~~~~~~~~~.#',
-      '#.####.....####.............~~~~~~~~~~.#',
-      '#.####..N..####..bbb.........~~~~~~~~..#',
-      '#.####.....##Q#..bnb.......Y...~~~~....#',
+      '#.####.....aaaa.............~~~~~~~~~~.#',
+      '#.####..N..wwww..bbb.........~~~~~~~~..#',
+      '#.####.....wwQw..bnb.......Y...~~~~....#',
       '#....A.....M..Z..b.b...................#',
       '#==P===========================......c.#',
       '#......=..............,..........m.....#',
@@ -531,31 +532,35 @@ export const MAPS = {
     name: 'Le magasin',
     level: 'village', // fait partie du niveau « village »
     camera: 'rooms',
+    // Étagères garnies (o), comptoir (c) : on parle au marchand par-dessus le comptoir.
+    legend: { '#': 'shop_wall', _: 'shop_floor', o: 'shelf', c: 'counter' },
     rows: [
       '################',
-      '#oooooo__oooooo#',
-      '#______________#',
+      '#oooooo##oooooo#',
       '#______V_______#',
+      '#__cccccccccc__#',
       '#______________#',
+      '#_oo________oo_#',
+      '#_oo________oo_#',
       '#______________#',
       '#_o__________o_#',
-      '#______________#',
-      '#______________#',
       '#______________#',
       '#######D########',
     ],
     objects: {
-      V: { ...SELLER, tile: 'floor_in' },
-      D: { type: 'warp', tile: 'door', to: 'overworld', at: [13, 5], facing: 'down' },
+      V: { ...SELLER, tile: 'shop_floor' },
+      D: { type: 'warp', tile: 'shop_door', to: 'overworld', at: [13, 5], facing: 'down' },
     },
   },
 
   cave: {
     name: 'Les souterrains',
     level: 'souterrains',
+    // Grotte en pierres : murs, sol rocheux, rochers (o), torches (t).
+    legend: { '#': 'cave_wall', _: 'cave_floor', o: 'cave_rock', t: 'cave_torch' },
     camera: 'rooms', // salles fixes dans le donjon
     rows: [
-      '################################',
+      '####t#####t##########t#####t####',
       '#______________##______________#',
       '#_o__________o_##__F________F__#',
       '#______________##______________#',
@@ -566,7 +571,7 @@ export const MAPS = {
       '#_o__________o_##______________#',
       '#______________##______________#',
       '#######################_########',
-      '#######################G########',
+      '####t#####t#########t##G###t####',
       '#______________##______________#',
       '#______________##______________#',
       '#______________##______p_______#',
@@ -579,18 +584,18 @@ export const MAPS = {
       '#######D########################',
     ],
     objects: {
-      E: { ...blob, tile: 'floor_in' },
-      F: { ...flyer, tile: 'floor_in' },
-      B: { type: 'block', tile: 'floor_in' },
-      p: { type: 'plate', flag: 'cave_plate', tile: 'floor_in' },
-      G: { type: 'gate', openWhen: { flag: 'cave_plate' }, tile: 'floor_in' },
-      L: { type: 'locked', key: 'key', tile: 'floor_in' },
-      C: { type: 'chest', item: 'key', appearWhen: { flag: 'cave_hall_cleared' }, tile: 'floor_in' },
-      A: { type: 'chest', item: 'amulet', appearWhen: 'boss_defeated', tile: 'floor_in' },
+      E: { ...blob, tile: 'cave_floor' },
+      F: { ...flyer, tile: 'cave_floor' },
+      B: { type: 'block', tile: 'cave_floor' },
+      p: { type: 'plate', flag: 'cave_plate', tile: 'cave_floor' },
+      G: { type: 'gate', openWhen: { flag: 'cave_plate' }, tile: 'cave_floor' },
+      L: { type: 'locked', key: 'key', tile: 'cave_floor' },
+      C: { type: 'chest', item: 'key', appearWhen: { flag: 'cave_hall_cleared' }, tile: 'cave_floor' },
+      A: { type: 'chest', item: 'amulet', appearWhen: 'boss_defeated', tile: 'cave_floor' },
       // Boss : combat + questions. Vaincu, il fait apparaître le coffre de la relique.
-      Z: { type: 'boss', name: '{w:boss}', hp: 6, flag: 'boss_defeated', tile: 'floor_in' },
-      h: { type: 'pickup', item: 'heart', tile: 'floor_in' },
-      D: { type: 'warp', tile: 'door', to: 'overworld', at: [33, 20], facing: 'down' },
+      Z: { type: 'boss', name: '{w:boss}', hp: 6, flag: 'boss_defeated', tile: 'cave_floor' },
+      h: { type: 'pickup', item: 'heart', tile: 'cave_floor' },
+      D: { type: 'warp', tile: 'cave_exit', to: 'overworld', at: [33, 20], facing: 'down' },
     },
     // Vaincre tous les monstres de la salle en haut à droite fait apparaître le coffre à clé.
     roomClear: [{ room: [1, 0], flag: 'cave_hall_cleared' }],

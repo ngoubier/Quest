@@ -2,7 +2,14 @@
 // ce que le gameplay demande (buissons, objets, monstres, icônes, vocabulaire).
 import { THEMES as BASE, TILE_ROLES as BASE_ROLES, P, humanoid } from '../01-moteur/themes.js';
 
-export const TILE_ROLES = [...BASE_ROLES, 'bush'];
+export const TILE_ROLES = [
+  ...BASE_ROLES,
+  'bush',
+  // grotte en pierres
+  'cave_floor', 'cave_wall', 'cave_rock', 'cave_torch', 'cave_exit',
+  // magasin (intérieur et façade)
+  'shop_floor', 'shop_wall', 'shelf', 'counter', 'shop_door', 'awning', 'shopfront',
+];
 
 // ------------------------------------------------------------ dessins génériques, colorés par thème
 function heart(c, x, y, s, col, dark) {
@@ -643,11 +650,262 @@ const MORE_WORDS = {
   city: { boss: 'le Rat Géant', pet: 'le chaton' },
 };
 
+
+// ------------------------------------------------------------ GROTTE EN PIERRES et MAGASIN
+// Murs en moellons irréguliers, sol rocheux, rochers, torches ; magasin avec étagères garnies,
+// comptoir, façade à auvent et vitrine. Une palette par ambiance.
+
+function stoneWall(c, rng, k) {
+  P(c, 0, 0, 16, 16, k.mortar);
+  // rangées de pierres de tailles variées, décalées
+  let y = 0;
+  while (y < 16) {
+    const h = rng.int(4, 6);
+    let x = -rng.int(0, 4);
+    while (x < 16) {
+      const w = rng.int(5, 8);
+      const x0 = Math.max(0, x + 1);
+      const x1 = Math.min(16, x + w);
+      if (x1 > x0) {
+        P(c, x0, y + 1, x1 - x0, h - 1, rng() < 0.3 ? k.stoneAlt : k.stone);
+        P(c, x0, y + 1, x1 - x0, 1, k.light);
+        P(c, x0, y + 1, 1, h - 1, k.light);
+        P(c, x0, y + h - 1, x1 - x0, 1, k.dark);
+      }
+      x += w;
+    }
+    y += h;
+  }
+  P(c, 0, 15, 16, 1, k.dark);
+}
+
+function stoneFloor(c, rng, k, variant) {
+  P(c, 0, 0, 16, 16, k.floor);
+  for (let i = 0; i < 14; i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick([k.floorDark, k.floorLight]));
+  for (let i = 0; i < 2 + variant; i++) {
+    const x = rng.int(1, 12);
+    const y = rng.int(1, 13);
+    P(c, x, y, 3, 2, k.floorDark);
+    P(c, x, y, 2, 1, k.floorLight);
+  }
+  if (variant === 1) {
+    // petite fissure discrète
+    let x = rng.int(3, 11);
+    for (let y = rng.int(3, 7); y < rng.int(9, 13); y += 1) {
+      P(c, x, y, 1, 1, k.floorDark);
+      if (rng() < 0.4) x += rng() < 0.5 ? -1 : 1;
+    }
+  }
+}
+
+function caveTiles(k) {
+  return {
+    cave_floor: { variants: 4, paint: (c, { rng, variant }) => stoneFloor(c, rng, k, variant % 3) },
+    cave_wall: { solid: true, variants: 3, props: { shadow: true }, paint: (c, { rng }) => stoneWall(c, rng, k) },
+    cave_rock: {
+      solid: true,
+      variants: 2,
+      props: { shadow: true },
+      paint: (c, { rng, variant }) => {
+        stoneFloor(c, rng, k, 0);
+        P(c, 2, 13, 12, 2, 'rgba(0,0,0,.3)');
+        P(c, 3, 4 + variant, 10, 10 - variant, k.dark);
+        P(c, 2, 6 + variant, 12, 7 - variant, k.dark);
+        P(c, 3, 5 + variant, 9, 7 - variant, k.stone);
+        P(c, 4, 4 + variant, 6, 2, k.light);
+        P(c, 4, 6 + variant, 2, 3, k.light);
+        P(c, 9, 9, 3, 1, k.dark);
+      },
+    },
+    cave_torch: {
+      solid: true,
+      frames: 2,
+      fps: 6,
+      props: { shadow: true },
+      paint: (c, { rng, frame }) => {
+        stoneWall(c, rng, k);
+        P(c, 7, 8, 2, 6, '#5a3a1c');
+        P(c, 6, 8, 4, 1, '#3a2410');
+        const f = frame ? 1 : 0;
+        P(c, 6, 3 + f, 4, 5 - f, '#e8701a');
+        P(c, 7, 1 + f * 2, 2, 7 - f * 2, '#ffb030');
+        P(c, 7, 5, 2, 2, '#fff2a0');
+        P(c, 5, 2, 6, 7, 'rgba(255,200,80,.15)');
+      },
+    },
+    cave_exit: {
+      paint: (c, { rng }) => {
+        stoneWall(c, rng, k);
+        P(c, 3, 3, 10, 13, k.dark);
+        P(c, 4, 2, 8, 14, '#0a0806');
+        P(c, 5, 1, 6, 1, '#0a0806');
+        P(c, 4, 14, 8, 2, k.floor);
+      },
+    },
+  };
+}
+
+function shopTiles(k) {
+  const floor = (c, { variant }) => {
+    if (k.floorStyle === 'checker') {
+      for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) P(c, x * 8, y * 8, 8, 8, (x + y) % 2 ? k.floorB : k.floorA);
+      return;
+    }
+    if (k.floorStyle === 'grid') {
+      P(c, 0, 0, 16, 16, k.floorA);
+      P(c, 0, 0, 16, 1, k.floorB);
+      P(c, 0, 0, 1, 16, k.floorB);
+      if (variant === 1) P(c, 6, 6, 4, 4, k.floorB);
+      return;
+    }
+    // parquet
+    P(c, 0, 0, 16, 16, k.floorA);
+    for (let y = 0; y < 16; y += 4) P(c, 0, y, 16, 1, k.floorB);
+    const o = variant * 3;
+    for (let row = 0; row < 4; row++) P(c, (row * 5 + o) % 16, row * 4, 1, 4, k.floorB);
+    P(c, 2 + o, 2, 2, 1, k.floorC);
+  };
+  const wall = (c) => {
+    P(c, 0, 0, 16, 16, k.wall);
+    if (k.wallStyle === 'planks') {
+      for (let x = 0; x < 16; x += 4) P(c, x, 0, 1, 16, k.wallDark);
+      P(c, 0, 5, 16, 2, k.wallDark);
+    } else if (k.wallStyle === 'panels') {
+      P(c, 1, 1, 14, 6, k.wallDark);
+      P(c, 1, 9, 14, 6, k.wallDark);
+      P(c, 2, 2, 12, 4, k.wall);
+      P(c, 2, 10, 12, 4, k.wall);
+    } else {
+      for (let x = 0; x < 16; x += 4) P(c, x, 0, 2, 16, k.wallDark);
+      P(c, 0, 12, 16, 4, k.wallDark);
+    }
+    P(c, 0, 15, 16, 1, 'rgba(0,0,0,.35)');
+  };
+  return {
+    shop_floor: { variants: 3, paint: floor },
+    shop_wall: { solid: true, props: { shadow: true }, paint: wall },
+    shelf: {
+      solid: true,
+      variants: 3,
+      props: { shadow: true },
+      paint: (c, { rng }) => {
+        wall(c);
+        P(c, 1, 1, 14, 15, k.shelfDark);
+        for (const y of [5, 10, 15]) P(c, 1, y, 14, 1, k.shelf);
+        // produits rangés sur 3 étagères
+        for (const top of [1, 6, 11]) {
+          let x = 2;
+          while (x < 14) {
+            const w = rng.int(2, 3);
+            const h = rng.int(2, 4);
+            const col = rng.pick(k.goods);
+            P(c, x, top + 4 - h, Math.min(w, 14 - x), h, col);
+            if (h >= 3) P(c, x, top + 4 - h, 1, 1, '#ffffff');
+            x += w + (rng() < 0.3 ? 1 : 0);
+          }
+        }
+      },
+    },
+    counter: {
+      solid: true,
+      variants: 2,
+      props: { shadow: true, counter: true },
+      paint: (c, { variant }) => {
+        floor(c, { variant: 0 });
+        P(c, 0, 3, 16, 13, k.counter);
+        P(c, 0, 3, 16, 3, k.counterTop);
+        P(c, 0, 6, 16, 1, k.counterDark);
+        for (let x = 3; x < 16; x += 5) P(c, x, 8, 1, 7, k.counterDark);
+        if (variant === 1) {
+          // caisse enregistreuse
+          P(c, 4, 0, 8, 4, '#333');
+          P(c, 5, 1, 6, 1, '#7ad87a');
+          P(c, 4, 3, 8, 1, '#555');
+        }
+      },
+    },
+    shop_door: {
+      paint: (c) => {
+        wall(c);
+        P(c, 3, 1, 10, 15, '#2a1a0e');
+        P(c, 4, 2, 8, 14, k.door);
+        P(c, 5, 3, 6, 5, '#cfe8ff');
+        P(c, 10, 10, 1, 1, '#ffd35a');
+      },
+    },
+    awning: {
+      solid: true,
+      props: { shadow: true },
+      paint: (c) => {
+        P(c, 0, 0, 16, 16, k.facade);
+        for (let x = 0; x < 16; x += 4) {
+          P(c, x, 2, 2, 10, k.awningA);
+          P(c, x + 2, 2, 2, 10, k.awningB);
+        }
+        for (let x = 0; x < 16; x += 4) {
+          P(c, x, 12, 2, 2, k.awningA);
+          P(c, x + 2, 12, 2, 1, k.awningB);
+        }
+        P(c, 0, 1, 16, 1, k.facadeDark);
+      },
+    },
+    shopfront: {
+      solid: true,
+      variants: 2,
+      props: { shadow: true },
+      paint: (c, { rng }) => {
+        P(c, 0, 0, 16, 16, k.facade);
+        P(c, 1, 2, 14, 11, k.facadeDark);
+        P(c, 2, 3, 12, 9, '#a8d0e8');
+        P(c, 2, 3, 12, 1, '#d8f0ff');
+        // articles en vitrine
+        for (let x = 3; x < 13; x += 3) P(c, x, 12 - rng.int(2, 4), 2, rng.int(2, 4), rng.pick(k.goods));
+        P(c, 3, 4, 2, 4, 'rgba(255,255,255,.5)');
+        P(c, 0, 13, 16, 3, k.facadeDark);
+      },
+    },
+  };
+}
+
+const CAVE_SHOP = {
+  medieval: {
+    cave: { mortar: '#2e2a26', stone: '#6e665c', stoneAlt: '#625b52', light: '#8e857a', dark: '#46403a', floor: '#57514a', floorDark: '#47423c', floorLight: '#6a645b' },
+    shop: {
+      floorStyle: 'planks', floorA: '#b07a40', floorB: '#7a5228', floorC: '#d8a060',
+      wallStyle: 'planks', wall: '#8a5a30', wallDark: '#5a3a1c',
+      shelf: '#c89a5a', shelfDark: '#4a2c18', counter: '#8a5a2c', counterTop: '#c89a5a', counterDark: '#5a3a1c', door: '#6b4423',
+      goods: ['#e8303a', '#3a8ad8', '#e8c040', '#5ac83a', '#d8a060', '#9a5ad8', '#f4e8c8'],
+      facade: '#8a8478', facadeDark: '#5a564e', awningA: '#c43a3a', awningB: '#f4e8c8',
+    },
+  },
+  space: {
+    cave: { mortar: '#1c1826', stone: '#4e4660', stoneAlt: '#584f6c', light: '#6e6684', dark: '#332d42', floor: '#3a3448', floorDark: '#2c2738', floorLight: '#4a4358' },
+    shop: {
+      floorStyle: 'grid', floorA: '#2a3444', floorB: '#3a4a5e',
+      wallStyle: 'panels', wall: '#c0c7d6', wallDark: '#8b93a7',
+      shelf: '#8b93a7', shelfDark: '#2a3040', counter: '#3a4254', counterTop: '#4ff0ff', counterDark: '#20283a', door: '#4a5670',
+      goods: ['#4ff0ff', '#c84aff', '#4aff9a', '#ffb84a', '#ff4a8a', '#e8ecf4'],
+      facade: '#8b93a7', facadeDark: '#4a5266', awningA: '#2a3a6a', awningB: '#4ff0ff',
+    },
+  },
+  city: {
+    cave: { mortar: '#30302c', stone: '#6a6a66', stoneAlt: '#5e5e5a', light: '#86867f', dark: '#46463f', floor: '#55554f', floorDark: '#46463f', floorLight: '#66665f' },
+    shop: {
+      floorStyle: 'checker', floorA: '#e8e4dc', floorB: '#b8b4ac',
+      wallStyle: 'stripes', wall: '#f2e6c8', wallDark: '#e0cfa4',
+      shelf: '#e8e8f0', shelfDark: '#9a9aa8', counter: '#3a7ad8', counterTop: '#e8e8f0', counterDark: '#1a4aa8', door: '#5aa0d0',
+      goods: ['#ff3a5a', '#ffd35a', '#3ac48a', '#3a7ad8', '#ff8a3a', '#ffffff', '#c84a80'],
+      facade: '#9a4a3a', facadeDark: '#6e3328', awningA: '#2a8a4a', awningB: '#ffffff',
+    },
+  },
+};
+
 export const THEMES = BASE.map((t) => {
   const x = EXTRA[t.id];
   const pal = { ...x.pal, pet: PETS[t.id] };
   const tiles = { ...t.tiles, bush: { solid: true, props: { cuttable: true, cutTo: 'floor' }, paint: x.bush } };
   for (const [k, v] of Object.entries(BETTER_TILES[t.id] ?? {})) tiles[k] = { ...tiles[k], ...v };
+  Object.assign(tiles, caveTiles(CAVE_SHOP[t.id].cave), shopTiles(CAVE_SHOP[t.id].shop));
   // Ombres portées sous les murs, obstacles et buissons ; écume au bord de l'eau.
   for (const k of ['wall', 'obstacle', 'bush']) tiles[k] = { ...tiles[k], props: { ...(tiles[k].props ?? {}), shadow: true } };
   tiles.water = { ...tiles.water, props: { ...(tiles.water.props ?? {}), edge: EDGES[t.id] } };

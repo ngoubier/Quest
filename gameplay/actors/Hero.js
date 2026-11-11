@@ -103,7 +103,16 @@ export class Hero extends Actor {
   }
 
   interact() {
-    const target = this.frontEntity(10, (e) => typeof e.talk === 'function' && (e.canTalk?.() ?? true));
+    const talkable = (e) => typeof e.talk === 'function' && (e.canTalk?.() ?? true);
+    let target = this.frontEntity(10, talkable);
+    // Comptoir (propriété de tuile `counter`) : on parle au marchand par-dessus.
+    if (!target) {
+      const d = DIRS[this.facing];
+      const tm = this.world.tilemap;
+      const fx = Math.floor((this.cx + d.x * 12) / tm.tileSize);
+      const fy = Math.floor((this.cy + d.y * 12) / tm.tileSize);
+      if (tm.propAt(fx, fy, 'counter')) target = this.frontEntity(26, talkable);
+    }
     if (!target) return false;
     target.talk(this);
     return true;
