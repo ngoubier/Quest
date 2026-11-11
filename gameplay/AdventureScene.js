@@ -17,6 +17,8 @@ import { check } from './script/conditions.js';
 import { EndScene } from './ui/EndScene.js';
 import { openParentSpace } from './ui/parents.js';
 import { ProfileStore, parentSettings } from './profiles.js';
+import { WorldMapScene } from './ui/WorldMapScene.js';
+import { createMinigame } from './minigames/index.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -39,7 +41,12 @@ import { ProfileStore, parentSettings } from './profiles.js';
 //   reportWhen: 'end' | 'always',
 //   saveNamespace: 'mon-jeu',
 //   allowThemeSwitch: true,
+//   colorLoss: (adv) => 0.5,                   // 0..1 : le monde perd ses couleurs (0 = normal)
+//   worldMap: { when: 'flag', lockedText, nodes: [...], paint(r, box, state) },  // voir ui/WorldMapScene.js
 // })
+//
+// Une carte avec un objet { type: 'warp', worldMap: true, back: [tx, ty] } ouvre la carte du monde
+// (back : où replacer le héros s'il la referme sans voyager).
 //
 // Types d'objets reconnus par défaut : warp, pickup, chest, npc, sign, block, plate,
 // gate, locked, lever, enemy (voir objects/ObjectFactory.js).
@@ -163,6 +170,7 @@ export class AdventureScene extends Scene {
   }
 
   warp(w) {
+    if (w.worldMap) return this.openWorldMap({ from: w });
     this.warping = true;
     this.game.audio.play('door');
     this.game.scenes.fade(() => this.loadMap(w.to, { tx: w.at[0], ty: w.at[1], facing: w.facing ?? 'down' }));
@@ -238,6 +246,7 @@ export class AdventureScene extends Scene {
       quizCooldown: this.parentSettings().cooldown ?? this.cfg.quizCooldown ?? 600,
       quiz: (spec, done) => this.quiz(spec, done, speaker),
       shop: (spec, done) => this.game.scenes.push(new ShopScene(this, spec, done)),
+      minigame: (name, done) => this.minigame(name, done, speaker),
       announce: (item, n, next) => this.announce(item, n, next),
     };
   }
@@ -402,6 +411,60 @@ export class AdventureScene extends Scene {
     this.world.add(new Companion(this.hero, { hintEvery: this.cfg.companionHintEvery ?? 480 }));
   }
 
+  /** Lance un mini-jeu contre un habitant. done(result) : 'win' | 'lose' | 'draw' | 'quit'. */
+  minigame(name, done, speaker) {
+    const st = this.state;
+    const scene = createMinigame(name, {
+      opponent: this.speakerName(speaker) ?? 'Habitant',
+      age: st.profile?.age ?? 8,
+      onDone: (result) => {
+        st.addCounter(`game_${name}_${result}`);
+        done(result);
+      },
+    });
+    this.game.scenes.push(scene);
+  }
+
+  /** La carte du monde est-elle disponible ? */
+  get hasWorldMap() {
+    const wm = this.cfg.worldMap;
+    return !!wm && check(wm.when, this.state);
+  }
+
+  /**
+   * Ouvre la carte du monde. Depuis une sortie (`from`) : on peut voyager ; si on la referme,
+   * le héros revient sur la case `back`. Depuis le menu : voyage seulement depuis une carte
+   * marquée `worldExit: true` (un extérieur), sinon simple consultation.
+   */
+  openWorldMap({ from = null } = {}) {
+    const wm = this.cfg.worldMap;
+    const back = () => {
+      if (from?.back) {
+        const ts = this.cfg.tileSize;
+        this.hero.x = from.back[0] * ts + 3;
+        this.hero.y = from.back[1] * ts + 6;
+      }
+      this.warping = false;
+    };
+    this.warping = true;
+    if (!this.hasWorldMap) return this.say(wm?.lockedText ?? 'Cette route ne mène nulle part pour l’instant.', { onClose: back });
+    this.game.audio.play('menu_ok');
+    this.game.scenes.push(
+      new WorldMapScene({
+        ...wm,
+        state: this.state,
+        current: wm.currentNode?.(this),
+        travel: !!from || !!this.mapDef.worldExit,
+        format: (t) => this.format(t),
+        onTravel: (node) => {
+          this.game.audio.play('door');
+          this.game.scenes.fade(() => this.loadMap(node.mapId, { tx: node.at[0], ty: node.at[1], facing: node.facing ?? 'down' }));
+        },
+        onClose: back,
+      }),
+    );
+  }
+
   openQuests() {
     this.game.audio.play('menu_ok');
     this.game.scenes.push(new QuestLogScene(this));
@@ -540,6 +603,7 @@ export class AdventureScene extends Scene {
       { label: 'Quêtes', onSelect: (m) => (m.close(), this.openQuests()) },
       { label: () => `Utiliser un indice (${this.state.count('hint')})`, onSelect: (m) => (m.close(), this.openHints()) },
       { label: () => `Sac (${this.bagItems().length}/${this.bagCapacity()})`, onSelect: (m) => (m.close(), this.openBag()) },
+      ...(this.hasWorldMap ? [{ label: 'Carte du royaume', onSelect: (m) => (m.close(), this.openWorldMap()) }] : []),
       {
         label: 'Sauvegarder',
         onSelect: (m) => {
@@ -558,6 +622,20 @@ export class AdventureScene extends Scene {
     g.scenes.push(new MenuScene({ title: 'PAUSE', width: 180, items }));
   }
 
+  /** Le monde perd ses couleurs (0 = normal, 1 = tout gris) : mélange « saturation » vers le gris. */
+  _drawColorLoss(r) {
+    const k = Math.max(0, Math.min(1, this.cfg.colorLoss?.(this) ?? 0));
+    if (k <= 0) return;
+    const c = r.ctx;
+    const vp = this.viewport;
+    c.save();
+    c.globalCompositeOperation = 'saturation';
+    c.globalAlpha = k;
+    c.fillStyle = '#808080';
+    c.fillRect(vp.x, vp.y, vp.w, vp.h);
+    c.restore();
+  }
+
   _debugLines() {
     const h = this.hero;
     const cam = this.world.camera;
@@ -573,6 +651,7 @@ export class AdventureScene extends Scene {
   // ------------------------------------------------------------------ dessin
   draw(r) {
     this.world.draw(r);
+    this._drawColorLoss(r);
     this._hudButtons = drawHud(r, this, this.cfg.hud);
     const t = this.toasts[0];
     if (t) {

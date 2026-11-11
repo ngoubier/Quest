@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan à valider**. Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, lot 1 réalisé** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -26,7 +26,7 @@ Sud : Prébois (départ) · **Centre : le Volcan Noir**, fermé tant que les 6 p
 `P` héros · `N` habitant · `$` marchand · `G` mini-jeu · `E` monstre · `F` monstre rapide · `Z` boss ·
 `S` pierre · `C` coffre · `K` clé · `O` bloc à pousser · `o` dalle · `l` levier/cible · `g` grille ·
 `k` mur fissuré · `|` `!` portes bleues/rouges · `u` interrupteur cristal · `x` piques · `+` trou ·
-`i` glace · `Y` brasero · `c` courant · `w` bulle d'air · `v` geyser · `L` lave · `W` entrée · `h` cœur ·
+`i` glace · `Y` brasero · `c` courant · `v` geyser · `L` lave · `W` entrée · `h` cœur ·
 `#` mur · `^` montagne/rocher · `T` arbre · `~` eau · `H r d` maison (mur, toit, porte) · `s` dune · `a` algues · `q` corail · `@` tronc du Grand Chêne · `Q` château · `A` Alia.
 
 ## 4. Les niveaux
@@ -239,27 +239,28 @@ TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 ### Niveau 7 — Les Abysses de Corail · Pierre des Marées
 - **Accès** : le capitaine Barnabé prête sa **combinaison de plongée** contre sa longue-vue.
 - **Objet** : **trident** (frappe loin, à travers les algues). **Monstres** : crabes, méduses (rapides), anguilles, poissons-lanternes.
-- **Astuces** : nage, courants, bulles d'air, algues qui cachent des passages, coquillages-interrupteurs, portes de corail.
+- **Bouteille d'oxygène** : temps limité (compte à rebours). Si le niveau n'est pas fini à temps, on le recommence.
+- **Astuces** : nage, courants, algues qui cachent des passages, coquillages-interrupteurs, portes de corail.
 - **Mini-jeu** : le chant des coquillages (Simon) avec Coralie la sirène. **Boss** : **Kraken** — tentacules puis tête.
 
 ```
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^~
 ~^aaa..q....^^^^^^^^^^^^^^^...q....aa.^~
-~^aa.......^^..........Z..^^.......w..^~
+~^aa.......^^..........Z..^^..........^~
 ~^.....F...^^..........S..^^...E......^~
 ~^..q......^^.............^^.....q....^~
 ~^.........^^^^^^^g^^^^^^^^^......aa..^~
-~^...w.......cccccccccc...............^~
+~^...........cccccccccc...............^~
 ~^.q...........E.........q.....qqq....^~
 ~^......aaa............HHHH...q.C.q...^~
 ~^......aNa.....q......rrrr...q...q...^~
 ~^......aaa...........HHdHH....qqq....^~
-~^...E.........G...........w..........^~
+~^...E.........G......................^~
 ~^.qq.......cccccc.........N...F......^~
 ~^.qq..q...........aa........$........^~
 ~^.......E.........aa.........q.......^~
-~^...........w..............aa......q.^~
+~^..........................aa......q.^~
 ~^.....q..........E.........aa....E...^~
 ~^...aa..........................h....^~
 ~^...aa...q.........P...........q.....^~
@@ -340,21 +341,36 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 
 | Lot | Contenu | Effort |
 |---|---|---|
-| 1 | Scène d'histoire, carte du monde, niveaux débloquables, bouton Objet, décoloration, intro réécrite, Morpion | L |
-| 2 | Mont Givré : glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
+| 1 ✓ | Histoire en images, carte du monde, décoloration, intro réécrite, Morpion, ambiance médiévale seule | L |
+| 2 | Mont Givré : bouton Objet, glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
 | 3 | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
 | 4 | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
 | 5 | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
 | 6 | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
-| 7 | Océan : nage, courants, bulles, trident, Simon, Kraken | L |
+| 7 | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
 | 8 | Volcan, armure, château, Morgor, fin | L |
 
-## 9. Questions à trancher
+## 9. Décisions
 
-1. Les noms (Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne...) vous plaisent ?
-2. Ordre libre des 6 niveaux (recommandé) ou imposé ?
-3. Un pouvoir dès chaque pierre (recommandé) ou seulement les 6 réunies ?
-4. Armure à 300 pièces ?
-5. Sous l'eau : réserve d'air ou pas ?
-6. Ambiances Station spatiale / Ville : on les garde ?
-7. On commence par le lot 1 puis le Mont Givré ?
+| Sujet | Décision |
+|---|---|
+| Sous l'eau | **Bouteille d'oxygène à temps limité** ; temps écoulé = on recommence le niveau |
+| Ambiances | **Médiéval-fantastique seulement** (plus de station spatiale ni de ville) |
+| Démarrage | Lot 1, puis le Mont Givré |
+| Noms, ordre libre, pouvoir dès chaque pierre, armure à 300 pièces | retenus par défaut (pas d'objection) |
+
+## 10. Lot 1 — ce qui est fait
+
+Le jeu se lance depuis `game/` (`npm start` puis http://localhost:8080/game/).
+
+- **Histoire en images** à chaque nouvelle partie (5 pages, Start pour passer) — `gameplay/ui/StoryScene.js`, `game/data/story.js`.
+- **Prébois** : l'Ancien raconte l'enlèvement d'Alia ; la quête principale devient « La carte du royaume » ;
+  le Roi Gluant garde la carte ; la rapporter à l'Ancien ouvre la carte du monde — `game/data/prebois.js`.
+- **Carte du monde** : sortie à l'ouest du village (ou menu pause). 8 lieux ; seuls Prébois est ouvert pour
+  l'instant, les autres affichent « en construction » ; le Volcan Noir demande les 6 pierres —
+  `gameplay/ui/WorldMapScene.js`, `game/data/worldmap.js`.
+- **Le royaume se décolore** : Prébois est grisé et retrouve ses couleurs pierre après pierre (`colorLoss`).
+- **Morpion** contre Bastien le garde (une fois sa quête finie) ; force selon l'âge ; 3 pièces par victoire
+  (les 5 premières) — `gameplay/minigames/`, action `{ minigame: 'morpion', win, lose, draw, quit }`.
+- **Une seule ambiance** (médiéval) : la touche Tab ne change plus rien dans le jeu.
+- Le **bouton Objet** arrive avec le lot 2 (premier objet à utiliser : le bâton de feu).

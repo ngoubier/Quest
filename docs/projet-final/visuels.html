@@ -107,7 +107,7 @@ tr:last-child td { border-bottom: 0; }
 
 <div class="wrap">
 <header class="hero">
-  <span class="eyebrow">Quest · projet final · plan à valider</span>
+  <span class="eyebrow">Quest · projet final · lot 1 réalisé</span>
   <h1>La Quête d'Alia</h1>
   <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
   <div class="story">
@@ -171,7 +171,7 @@ tr:last-child td { border-bottom: 0; }
 
 <section id="questions">
   <span class="eyebrow">À trancher ensemble</span>
-  <h2>Vos décisions</h2>
+  <h2>Décisions</h2>
   <div class="questions" id="qs"></div>
 </section>
 </div>
@@ -338,20 +338,20 @@ const MAPS = {
   "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
   "~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^~",
   "~^aaa..q....^^^^^^^^^^^^^^^...q....aa.^~",
-  "~^aa.......^^..........Z..^^.......w..^~",
+  "~^aa.......^^..........Z..^^..........^~",
   "~^.....F...^^..........S..^^...E......^~",
   "~^..q......^^.............^^.....q....^~",
   "~^.........^^^^^^^g^^^^^^^^^......aa..^~",
-  "~^...w.......cccccccccc...............^~",
+  "~^...........cccccccccc...............^~",
   "~^.q...........E.........q.....qqq....^~",
   "~^......aaa............HHHH...q.C.q...^~",
   "~^......aNa.....q......rrrr...q...q...^~",
   "~^......aaa...........HHdHH....qqq....^~",
-  "~^...E.........G...........w..........^~",
+  "~^...E.........G......................^~",
   "~^.qq.......cccccc.........N...F......^~",
   "~^.qq..q...........aa........$........^~",
   "~^.......E.........aa.........q.......^~",
-  "~^...........w..............aa......q.^~",
+  "~^..........................aa......q.^~",
   "~^.....q..........E.........aa....E...^~",
   "~^...aa..........................h....^~",
   "~^...aa...q.........P...........q.....^~",
@@ -482,7 +482,7 @@ const LEVELS = [
     ['Habitants', 'Coralie la sirène, la reine Marine, une tortue qui connaît tous les chemins.'],
     ['Nouvel objet', '<b>Trident</b>, offert par la reine Marine : il frappe loin, même à travers les algues.'],
     ['Monstres', 'Crabes, méduses (rapides), anguilles qui sortent des trous, poissons-lanternes dans le noir.'],
-    ['Astuces', ['<b>Nage</b> : on avance plus doucement, en glissant.','<b>Courants</b> qui entraînent le héros.','<b>Bulles d’air</b> pour remplir sa réserve d’air.','<b>Algues</b> qui cachent des passages, <b>coquillages-interrupteurs</b>, portes de corail.']],
+    ['Astuces', ['<b>Nage</b> : on avance plus doucement, en glissant.','<b>Courants</b> qui entraînent le héros.','<b>Bouteille d’oxygène</b> : un compte à rebours s’affiche. Si le niveau n’est pas fini à temps, on le recommence.','<b>Algues</b> qui cachent des passages, <b>coquillages-interrupteurs</b>, portes de corail.']],
     ['Mini-jeu', '<b>Le chant des coquillages</b> avec Coralie : répéter la suite de notes, de plus en plus longue.'],
     ['Boss', '<b>Le Kraken</b> : toucher chacun de ses tentacules au trident, puis sa tête, répondre, frapper.'],
    ]},
@@ -540,24 +540,24 @@ const FINAL = [
 ];
 
 const ROADMAP = [
- ['1', 'Fondations de l’aventure', 'Scène d’histoire (images + texte), carte du monde, niveaux qui se débloquent, bouton Objet, royaume qui se décolore, introduction réécrite, Morpion.', 'L'],
- ['2', 'Mont Givré', 'Thème neige, glace glissante, blocs qui glissent, braseros, bâton de feu (projectile), Le dernier glaçon, Yéti.', 'L'],
+ ['1 ✓', 'Fondations de l’aventure (fait)', 'Histoire en images, carte du monde, royaume qui se décolore, introduction réécrite (la carte du royaume), Morpion, ambiance médiévale seule.', 'L'],
+ ['2', 'Mont Givré (à suivre)', 'Thème neige, glace glissante, blocs qui glissent, braseros, bouton Objet et bâton de feu (projectile), Le dernier glaçon, Yéti.', 'L'],
  ['3', 'Forêt des Murmures', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
  ['4', 'Bourg-Lanterne', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
  ['5', 'Labyrinthe', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
  ['6', 'Désert des Mirages', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
- ['7', 'Abysses de Corail', 'Nage, courants, bulles d’air, trident, algues, Chant des coquillages, Kraken.', 'L'],
+ ['7', 'Abysses de Corail', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
  ['8', 'Volcan Noir et fin', 'Thème volcan, lave et geysers, armure, château, Morgor en 3 phases, scène de fin.', 'L'],
 ];
 
 const QUESTIONS = [
- ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Ces noms vous plaisent ?'],
- ['L’ordre des niveaux', 'Ordre libre après l’introduction (ma recommandation), ou ordre imposé ?'],
- ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre (recommandé), ou seulement quand les 6 sont réunies ?'],
- ['L’armure', '300 pièces, c’est le bon prix ? Les pièces gagnées avant le volcan comptent aussi.'],
- ['Sous l’eau', 'Une réserve d’air avec des bulles, ou pas de réserve du tout pour les plus petits ?'],
- ['Les ambiances', 'Station spatiale et Ville (touche Tab) : on les garde pour ce jeu, ou seulement le médiéval-fantastique ?'],
- ['Par où commencer', 'Lot 1 puis Mont Givré, comme dans la feuille de route ?'],
+ ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
+ ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
+ ['Par où commencer — décidé', 'Lot 1 (fait), puis le Mont Givré.'],
+ ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
+ ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
+ ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],
+ ['L’armure', '300 pièces, sauf avis contraire. Les pièces gagnées avant le volcan comptent aussi.'],
 ];
 
 // ------------------------------------------------------------------ dessin des tuiles
@@ -1006,7 +1006,7 @@ function buildPage() {
     <div class="arrow" aria-hidden="true">›</div>
     <div class="step"><b>8 · Volcan Noir</b>Réunir 300 pièces pour l'armure, traverser les terres brûlées, vaincre Morgor, délivrer Alia.</div>`;
   // légende
-  const LEG = [['P','Héros (arrivée)'],['N','Habitant'],['$','Marchand'],['G','Mini-jeu'],['E','Monstre'],['F','Monstre rapide'],['Z','Boss'],['S','Pierre magique'],['C','Coffre'],['K','Clé'],['O','Bloc à pousser'],['o','Dalle / interrupteur'],['l','Levier ou cible'],['g','Grille'],['k','Mur fissuré'],['|','Porte bleue'],['!','Porte rouge'],['u','Interrupteur cristal'],['x','Piques'],['+','Trou'],['i','Glace glissante'],['Y','Brasero'],['c','Courant marin'],['w','Bulle d’air'],['v','Geyser'],['L','Lave'],['W','Entrée de donjon'],['h','Cœur']];
+  const LEG = [['P','Héros (arrivée)'],['N','Habitant'],['$','Marchand'],['G','Mini-jeu'],['E','Monstre'],['F','Monstre rapide'],['Z','Boss'],['S','Pierre magique'],['C','Coffre'],['K','Clé'],['O','Bloc à pousser'],['o','Dalle / interrupteur'],['l','Levier ou cible'],['g','Grille'],['k','Mur fissuré'],['|','Porte bleue'],['!','Porte rouge'],['u','Interrupteur cristal'],['x','Piques'],['+','Trou'],['i','Glace glissante'],['Y','Brasero'],['c','Courant marin'],['v','Geyser'],['L','Lave'],['W','Entrée de donjon'],['h','Cœur']];
   const legKey = { S: 'neige', i: 'neige', Y: 'neige', c: 'ocean', w: 'ocean', v: 'volcan', L: 'volcan', u: 'labyrinthe', x: 'labyrinthe', '+': 'labyrinthe', '|': 'labyrinthe', '!': 'labyrinthe' };
   $('legend').innerHTML = '';
   LEG.forEach(([ch, txt]) => {

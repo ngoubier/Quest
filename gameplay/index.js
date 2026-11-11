@@ -29,3 +29,8 @@ export { PromptScene } from './ui/PromptScene.js';
 export { Boss } from './actors/Boss.js';
 export { Companion } from './actors/Companion.js';
 export { openExport, openImport, encodeTransfer, decodeTransfer } from './ui/transfer.js';
+export { WorldMapScene } from './ui/WorldMapScene.js';
+export { StoryScene } from './ui/StoryScene.js';
+export { MINIGAMES, createMinigame } from './minigames/index.js';
+export { TicTacToeScene } from './minigames/TicTacToeScene.js';
+export * as tictactoe from './minigames/tictactoe.js';

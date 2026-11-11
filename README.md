@@ -5,14 +5,14 @@ Un jeu d'aventure 2D dans l'esprit du *Zelda* original, construit en trois couch
 1. **Quest Engine** (`engine/`) — moteur 2D réutilisable (affichage, entrées, cartes, caméra, collisions, scènes, son, sauvegarde, thèmes).
 2. **Quest Gameplay** (`gameplay/`) — systèmes d'aventure réutilisables : combat, objets, quêtes, énigmes scolaires, boutique, sauvegarde.
    - **Contenu éducatif** (`content/quiz/`) — questions du CP au CM2, réutilisables par tous les jeux.
-3. **Le jeu** — contenu et histoire *(étape 3, à venir)*.
+3. **Le jeu** (`game/`) — *La Quête d'Alia* : délivrer la licorne du royaume d'Iris en réunissant 6 pierres magiques (niveau 1 jouable).
 
 ## Lancer les essais
 
 Aucune installation nécessaire hormis [Node.js](https://nodejs.org) :
 
 ```bash
-npm start      # puis ouvrir http://localhost:8080/ (liste des essais)
+npm start      # puis ouvrir http://localhost:8080/ (le jeu et les essais)
 npm test       # tests automatiques du moteur
 ```
 
@@ -35,7 +35,7 @@ npm test       # tests automatiques du moteur
 | Liste des quêtes | L (ou bouton Quêtes du bandeau) | — |
 | Annuler | K / Maj | B |
 | Menu pause | Entrée / Échap | Start |
-| Changer d'ambiance | Tab | Select |
+| Changer d'ambiance (essais seulement) | Tab | Select |
 | Débogage | F1 / ² | — |
 
 Sur téléphone, une manette tactile s'affiche automatiquement.
