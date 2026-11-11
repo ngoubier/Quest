@@ -381,17 +381,17 @@ const WRITER = {
   dialogue: [
     {
       do: [
-        { say: 'Bonjour {player} ! Je suis l’écrivain du village. Je te dicte des mots : touche « Écouter l’énigme », puis écris le mot. 2 {ws:coin} par mot juste !' },
+        { say: 'Bonjour {player} ! Je suis l’écrivain du village. Je te dicte un mot : touche « Écouter l’énigme », puis écris-le. 2 {ws:coin} s’il est juste !' },
         {
-          ask: 'Une dictée de 3 mots ?',
+          ask: 'Une dictée ?',
           choices: [
             {
               label: 'Oui',
               do: [
                 {
-                  quiz: { id: 'writer', subject: 'dictee', count: 3 },
+                  quiz: { id: 'writer', subject: 'dictee', count: 1 },
                   perCorrect: { give: 'coin', count: 2 },
-                  success: [{ say: 'Zéro faute, bravo !' }],
+                  success: [{ say: 'Parfait, aucune faute !' }],
                   failure: [{ say: 'L’orthographe, ça s’apprend petit à petit. Reviens plus tard !' }],
                 },
               ],

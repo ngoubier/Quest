@@ -304,19 +304,20 @@ export class AdventureScene extends Scene {
   quiz(spec, done, speaker) {
     const bank = this.cfg.questionBank;
     const st = this.state;
-    const count = spec.count ?? 3;
-    const canSpeak = Speech.available;
-    const okType = (q) => canSpeak || q.type !== 'dictation';
     // Le jeu choisit la matière (sauf PNJ spécialisé) : variété + insistance sur les points faibles.
-    const subjects = bank ? bank.subjects(st.profile?.age ?? 8).filter((x) => canSpeak || x !== 'dictee') : [];
+    // Les dictées marchent sur tous les appareils (voix, ou « dictée flash » si l'appareil ne parle pas).
+    const subjects = bank ? bank.subjects(st.profile?.age ?? 8) : [];
     const subject = spec.subject ?? (bank ? chooseSubject({ subjects, stats: st.quiz.stats, last: this._lastSubject }) : null);
     this._lastSubject = subject;
+    // Une dictée = un seul mot.
+    const count = subject === 'dictee' ? 1 : spec.count ?? 3;
+    const okType = () => true;
     const questions = [];
     const ids = new Set();
     const add = (q) => {
       if (questions.length < count && okType(q) && !ids.has(q.id)) (questions.push(q), ids.add(q.id));
     };
-    st.dueReviews(subject).slice(0, Math.max(0, count - 1)).forEach(add);
+    st.dueReviews(subject).slice(0, count === 1 ? 1 : count - 1).forEach(add);
     const seenOrder = new Map(st.quiz.seen.map((id, i) => [id, i]));
     const custom = this.customQuestions()
       .filter((q) => !subject || q.subject === subject)
@@ -324,7 +325,7 @@ export class AdventureScene extends Scene {
     if (custom.length && Math.random() < 0.7) add(custom[0]);
     if (bank) {
       bank
-        .pick({ age: st.effectiveAge(subject), subject, count: count - questions.length + 1, seen: st.quiz.seen, excludeTypes: canSpeak ? [] : ['dictation'] })
+        .pick({ age: st.effectiveAge(subject), subject, count: count - questions.length + 1, seen: st.quiz.seen, excludeTypes: [] })
         .forEach(add);
     }
     if (!questions.length) return this.say('Je n’ai pas de question pour toi aujourd’hui.', { speaker, onClose: () => done({ correct: 0, total: 0, results: [] }) });

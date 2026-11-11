@@ -29,9 +29,12 @@ export class QuizScene extends Scene {
       const c = this.game.canvas.getBoundingClientRect();
       const x = ((e.clientX - c.left) * this.game.width) / c.width;
       const y = ((e.clientY - c.top) * this.game.height) / c.height;
-      const b = this.listenButton;
-      if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
-        this._speak();
+      const inside = (b) => b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
+      if (inside(this.listenButton)) {
+        this._listen();
+        this._spokeByTap = true;
+      } else if (inside(this.flashButton)) {
+        this._flash();
         this._spokeByTap = true;
       }
     };
@@ -60,23 +63,44 @@ export class QuizScene extends Scene {
     } else {
       const numeric = q.type !== 'dictation' && /^[\d\s.,]+$/.test(String(q.answer));
       // Dictée : Tab (ou le bouton à l'écran) fait réécouter le mot.
-      const onKey = (e) => (q.type === 'dictation' && e.key === 'Tab' ? (this._speak(), true) : false);
+      const onKey = (e) => (q.type === 'dictation' && e.key === 'Tab' ? (this._listen(), true) : false);
+      this.flashT = 0;
+      this.triedVoice = false;
       this.field.open({ x: Math.round((this.game.width - 160) / 2), y: 142, w: 160, h: 18 }, { onSubmit: (v) => this._answer(v), onKey, placeholder: 'Ta réponse', inputMode: numeric ? 'decimal' : 'text' });
     }
   }
 
-  /** Texte prononcé pour une dictée. */
-  _speak() {
-    const q = this.q;
-    if (q.type !== 'dictation') return;
-    this.spoke = Speech.speak(q.say ?? `Écris le mot : ${q.answer}.`);
-    if (!this.spoke) this.noVoice = true;
+  /** L'appareil sait-il parler ? Sinon : « dictée flash » (le mot s'affiche 3 s puis disparaît). */
+  get voiceOk() {
+    return Speech.available;
+  }
+
+  /** Bouton principal : écouter (voix) ou voir le mot (dictée flash). */
+  _listen() {
+    if (this.q.type !== 'dictation') return;
+    if (!this.voiceOk) return this._flash();
+    this.spoke = Speech.speak(this.q.say ?? `Écris le mot : ${this.q.answer}.`);
+    this.triedVoice = true;
+    if (!this.spoke) this._flash();
+  }
+
+  _flash() {
+    if (this.q.type !== 'dictation') return;
+    this.flashT = 3;
+    this.spoke = true;
   }
 
   /** Bouton « Écouter l'énigme » (zone tactile, en pixels logiques). */
   get listenButton() {
     const W = this.game.width;
     return { x: Math.round(W / 2 - 64), y: 62, w: 128, h: 20 };
+  }
+
+  /** Secours : « Pas de son ? Voir le mot » (après un premier essai d'écoute). */
+  get flashButton() {
+    if (!this.voiceOk || !this.triedVoice) return null;
+    const W = this.game.width;
+    return { x: Math.round(W / 2 - 64), y: 86, w: 128, h: 12 };
   }
 
   _answer(value) {
@@ -97,9 +121,14 @@ export class QuizScene extends Scene {
     if (this.phase === 'ask') {
       if (this.q.type === 'dictation' && input.tappedIn(this.listenButton)) {
         input.consumeTaps();
-        if (!this._spokeByTap) this._speak(); // déjà prononcé dans le geste
+        if (!this._spokeByTap) this._listen(); // déjà fait dans le geste
+        this._spokeByTap = false;
+      } else if (this.q.type === 'dictation' && this.flashButton && input.tappedIn(this.flashButton)) {
+        input.consumeTaps();
+        if (!this._spokeByTap) this._flash();
         this._spokeByTap = false;
       }
+      if (this.flashT > 0) this.flashT -= dt;
       if (this.q.type === 'choice') {
         const n = this.options.length;
         if (input.pressed('up') || input.pressed('left')) (this.sel = (this.sel - 1 + n) % n), this.game.audio.play('menu_move');
@@ -182,14 +211,26 @@ export class QuizScene extends Scene {
       const pulse = this.phase === 'ask' && !this.spoke && Math.floor(this.game.time * 2) % 2 === 0;
       r.rect(b.x, b.y, b.w, b.h, pulse ? s.accent : s.border);
       r.rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, pulse ? s.box : s.box);
-      r.text('🔊 Écouter l’énigme', W / 2, b.y + 6, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
-      ty = b.y + b.h + 10;
-      if (this.noVoice) {
-        r.text('Ton appareil ne sait pas lire à voix haute.', W / 2, ty, { color: '#ff7a6a', size: 7, font: s.font, align: 'center' });
-        ty += 12;
+      r.text(this.voiceOk ? '🔊 Écouter l’énigme' : '👁 Voir le mot (3 s)', W / 2, b.y + 6, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
+      ty = b.y + b.h + 6;
+      const fb = this.flashButton;
+      if (fb) {
+        r.text('Pas de son ? 👁 Voir le mot', W / 2, fb.y + 2, { color: s.dim, size: 7, font: s.font, align: 'center' });
+        ty = fb.y + fb.h + 4;
+      }
+      if (this.flashT > 0 && this.phase === 'ask') {
+        // Le mot, bien visible, pendant 3 secondes
+        r.text(q.answer, W / 2, ty + 4, { color: s.text, size: 18, font: s.font, bold: true, align: 'center' });
+        ty += 30;
+      } else if (!this.voiceOk) {
+        for (const line of this._wrapped(r, 'Ton appareil ne sait pas parler : dictée flash ! Regarde bien le mot, il va disparaître, puis écris-le.', w - 24, 7)) {
+          r.text(line, W / 2, ty, { color: s.dim, size: 7, font: s.font, align: 'center' });
+          ty += 9;
+        }
       }
     }
-    for (const line of this._wrapped(r, q.prompt, w - 24, 9)) {
+    const prompt = q.type === 'dictation' && !this.voiceOk ? '' : q.prompt;
+    for (const line of prompt ? this._wrapped(r, prompt, w - 24, 9) : []) {
       r.text(line, W / 2, ty, { color: s.text, size: 9, font: s.font, align: 'center' });
       ty += 12;
     }
@@ -205,10 +246,18 @@ export class QuizScene extends Scene {
           r.text(o, W / 2, ty, { color: sel ? s.box : s.text, size: 8, font: s.font, align: 'center', bold: sel });
           ty += 15;
         });
-        r.text('Haut/Bas : choisir · Action : valider · B : je ne sais pas', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+        r.text(W < 240 ? 'Haut/Bas · A : valider · B : je ne sais pas' : 'Haut/Bas : choisir · Action : valider · B : je ne sais pas', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
       } else {
         this.field.place();
-        const hint = q.type === 'dictation' ? 'Touche le bouton (ou Tab) pour écouter · Entrée : valider' : 'Écris ta réponse puis Entrée (ou A) · B : je ne sais pas';
+        const narrow = W < 240;
+        const hint =
+          q.type === 'dictation'
+            ? narrow
+              ? (this.voiceOk ? 'Bouton : écouter' : 'Bouton : voir le mot') + ' · Entrée : valider'
+              : (this.voiceOk ? 'Touche le bouton (ou Tab) pour écouter' : 'Touche le bouton (ou Tab) pour voir le mot') + ' · Entrée : valider'
+            : narrow
+              ? 'Entrée ou A : valider · B : je ne sais pas'
+              : 'Écris ta réponse puis Entrée (ou A) · B : je ne sais pas';
         r.text(hint, W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
       }
       return;
