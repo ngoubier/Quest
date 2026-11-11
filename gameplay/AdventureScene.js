@@ -11,6 +11,10 @@ import { GameOverScene } from './ui/GameOverScene.js';
 import { ShopScene } from './ui/ShopScene.js';
 import { InventoryScene } from './ui/InventoryScene.js';
 import { QuizScene } from './quiz/QuizScene.js';
+import { chooseSubject } from './quiz/adaptive.js';
+import { check } from './script/conditions.js';
+import { EndScene } from './ui/EndScene.js';
+import { openParentSpace } from './ui/parents.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -25,6 +29,8 @@ import { QuizScene } from './quiz/QuizScene.js';
 //   startMap: 'overworld',
 //   hud:    { height: 16, counters: ['coin', 'key'] },
 //   questionBank: frenchSchoolBank(),          // énigmes scolaires (voir content/quiz)
+//   endWhen: { quest: 'main', status: 'done' }, // fin du jeu (débloque le bilan parents)
+//   reportWhen: 'end' | 'always',
 //   saveNamespace: 'mon-jeu',
 //   allowThemeSwitch: true,
 // })
@@ -49,7 +55,10 @@ export class AdventureScene extends Scene {
     this.offTheme = g.events.on('theme:change', (t) => this.world?.tilemap.setTileset(t.tileset));
     this.offDebug = g.debug.addInfo(() => this._debugLines());
     if (load && this.hasSave()) this._applySave(this.saves.load(1).data);
-    else this.loadMap(this.cfg.startMap);
+    else {
+      for (const [item, n] of Object.entries(this.cfg.startItems ?? {})) this.state.give(item, n);
+      this.loadMap(this.cfg.startMap);
+    }
   }
 
   exit() {
@@ -103,6 +112,8 @@ export class AdventureScene extends Scene {
     if (level !== this.level) {
       this.level = level;
       this.levelEntry = { ...this.entry };
+      // Photo de l'état à l'entrée du niveau : « recommencer » y revient.
+      this.levelSnapshot = this.state.toJSON();
     }
     this.warping = false;
     this.toasts = [];
@@ -127,8 +138,14 @@ export class AdventureScene extends Scene {
       return;
     }
 
+    this.state.playTime += dt;
     this.world.update(dt);
     this._checkRoomClear();
+    if (this.cfg.endWhen && !this.state.flag('game_finished') && check(this.cfg.endWhen, this.state)) {
+      this.state.setFlag('game_finished');
+      this.game.audio.play('quest_done');
+      return this.game.scenes.push(new EndScene(this, this.cfg.end));
+    }
     if (!this.warping && !this.world.camera.isTransitioning) {
       const h = this.hero;
       for (const w of this.warps) {
@@ -216,7 +233,11 @@ export class AdventureScene extends Scene {
   quiz(spec, done, speaker) {
     const bank = this.cfg.questionBank;
     const st = this.state;
-    const questions = bank ? bank.pick({ age: st.profile?.age ?? 8, subject: spec.subject ?? null, count: spec.count ?? 3, seen: st.quiz.seen }) : [];
+    const age = st.profile?.age ?? 8;
+    // Le jeu choisit la matière (sauf PNJ spécialisé) : variété + insistance sur les points faibles.
+    const subject = spec.subject ?? (bank ? chooseSubject({ subjects: bank.subjects(age), stats: st.quiz.stats, last: this._lastSubject }) : null);
+    this._lastSubject = subject;
+    const questions = bank ? bank.pick({ age, subject, count: spec.count ?? 3, seen: st.quiz.seen }) : [];
     if (!questions.length) return this.say('Je n’ai pas de question pour toi aujourd’hui.', { speaker, onClose: () => done({ correct: 0, total: 0, results: [] }) });
     this.game.scenes.push(
       new QuizScene({
@@ -263,20 +284,62 @@ export class AdventureScene extends Scene {
   }
 
   /**
-   * Recommencer le niveau : retour à son point de départ, vie pleine,
-   * et les monstres vaincus de ce niveau réapparaissent. Objets et quêtes sont conservés.
+   * Recommencer le niveau : tout revient comme à l'entrée du niveau (monstres, coffres,
+   * objets, quêtes, argent), vie pleine. On conserve seulement ce qui concerne
+   * l'apprentissage (statistiques de questions), le temps de jeu et le profil.
    */
   restartLevel() {
     this.game.scenes.fade(() => {
       const st = this.state;
-      const levelOf = (mapId) => this.cfg.maps[mapId]?.level ?? mapId;
-      for (const f of Object.keys(st.flags)) {
-        if (f.startsWith('killed:') && levelOf(f.slice(7).split(':')[0]) === this.level) st.setFlag(f, false);
-      }
-      st.heal(st.maxHp);
+      const keep = { quiz: st.quiz, playTime: st.playTime, profile: st.profile, hintsUsed: st.counter('hints_used') };
+      if (this.levelSnapshot) st.load(this.levelSnapshot);
+      Object.assign(st, { quiz: keep.quiz, playTime: keep.playTime, profile: keep.profile });
+      st.counters.hints_used = keep.hintsUsed;
+      st.hp = st.maxHp;
       const e = this.levelEntry;
+      const level = this.level;
+      this.level = null; // reprend une nouvelle photo identique
       this.loadMap(e.mapId, e);
+      this.level = level;
     });
+  }
+
+  // ------------------------------------------------------------------ indices
+  openHints() {
+    const g = this.game;
+    const active = this.quests.journal().filter((q) => q.status === 'active');
+    const st = this.state;
+    if (!active.length) return this.say('Aucune quête en cours.');
+    g.scenes.push(
+      new MenuScene({
+        title: `INDICES (il t’en reste ${st.count('hint')})`,
+        width: 230,
+        items: [
+          ...active.map((q) => ({
+            label: `${q.kind === 'main' ? '★ ' : ''}${q.title}`,
+            onSelect: (m) => {
+              m.close();
+              const seen = this.quests.revealedHints(q.id);
+              if (!this.quests.hasMoreHints(q.id)) {
+                return this.say(seen.length ? [...seen.map((h) => `💡 ${h}`)] : 'Pas d’indice pour cette étape. Relis ton journal !', { speaker: 'Indice' });
+              }
+              if (st.count('hint') <= 0) {
+                return this.say('Tu n’as plus d’indice. Gagne-en avec des quêtes faciles, ou achète-en chez le marchand.', { speaker: 'Indice' });
+              }
+              st.take('hint', 1);
+              g.audio.play('secret');
+              const h = this.quests.revealHint(q.id);
+              this.say([...seen.map((x) => `💡 ${x}`), `💡 ${h}`], { speaker: 'Indice' });
+            },
+          })),
+          { label: 'Retour', onSelect: (m) => m.close() },
+        ],
+      }),
+    );
+  }
+
+  openParentSpace() {
+    openParentSpace({ game: this.game, saves: this.saves, state: this.state, questDefs: this.cfg.quests ?? [], reportWhen: this.cfg.reportWhen ?? 'end' });
   }
 
   hasSave() {
@@ -307,6 +370,7 @@ export class AdventureScene extends Scene {
     const items = [
       { label: 'Reprendre', onSelect: (m) => m.close() },
       { label: 'Journal des quêtes', onSelect: (m) => (m.close(), g.scenes.push(new QuestLogScene(this))) },
+      { label: () => `Utiliser un indice (${this.state.count('hint')})`, onSelect: (m) => (m.close(), this.openHints()) },
       { label: 'Sac', onSelect: (m) => (m.close(), g.scenes.push(new InventoryScene(this))) },
       {
         label: 'Sauvegarder',
@@ -317,10 +381,7 @@ export class AdventureScene extends Scene {
       },
       { label: 'Charger', enabled: () => this.hasSave(), onSelect: (m) => (m.close(), this.loadGame()) },
     ];
-    items.push({
-      label: () => `Âge du joueur : ${this.state.profile.age} ans`,
-      onSelect: () => (this.state.profile.age = this.state.profile.age >= 10 ? 6 : this.state.profile.age + 1),
-    });
+    items.push({ label: 'Espace parents', onSelect: (m) => (m.close(), this.openParentSpace()) });
     if (this.cfg.allowThemeSwitch) items.push({ label: () => `Ambiance : ${g.themes.current.def.name}`, onSelect: () => (g.themes.next(), g.audio.play('switch')) });
     items.push(
       { label: () => `Débogage : ${g.debug.enabled ? 'oui' : 'non'}`, onSelect: () => g.debug.toggle() },

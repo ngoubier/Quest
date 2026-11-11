@@ -90,5 +90,5 @@ test('Statistiques de questions sauvegardées', () => {
   assert.deepEqual(s.quiz.seen, ['a'], 'les questions générées ne sont pas mémorisées');
   const copy = new GameState();
   copy.load(JSON.parse(JSON.stringify(s.toJSON())));
-  assert.deepEqual(copy.quiz, s.quiz);
+  assert.deepEqual(JSON.parse(JSON.stringify(copy.quiz)), JSON.parse(JSON.stringify(s.quiz)));
 });

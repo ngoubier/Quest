@@ -29,7 +29,7 @@ function key(c, x, y, col, s = 1) {
 const OBJECT_FRAMES = [
   'chest', 'chest_open', 'block', 'plate', 'plate_down', 'gate', 'locked', 'lever_off', 'lever_on',
   'coin', 'key', 'amulet', 'mushroom', 'heart', 'sword_down', 'sword_up', 'sword_side', 'poof_0', 'poof_1',
-  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container',
+  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container', 'planks', 'nails', 'tarte', 'hint',
 ];
 
 function objectsSheet(p) {
@@ -176,6 +176,33 @@ function objectsSheet(p) {
           heart(c, 1, 2, 2, p.heart, p.heartLight);
           P(c, 4, 4, 2, 2, '#fff');
           return;
+        case 'planks':
+          for (let i = 0; i < 3; i++) {
+            P(c, 1, 3 + i * 4, 14, 3, '#b07a40');
+            P(c, 1, 3 + i * 4, 14, 1, '#d8a060');
+            P(c, 3 + i * 3, 4 + i * 4, 1, 1, '#5a3a1c');
+          }
+          return;
+        case 'nails':
+          for (const x of [3, 7, 11]) {
+            P(c, x - 1, 3, 3, 2, '#c8c8d0');
+            P(c, x, 5, 1, 9, '#9a9aa8');
+          }
+          return;
+        case 'tarte':
+          P(c, 1, 8, 14, 5, '#c8803a');
+          P(c, 2, 6, 12, 3, '#e8b060');
+          P(c, 4, 7, 2, 1, '#8a4a2a');
+          P(c, 9, 7, 2, 1, '#8a4a2a');
+          P(c, 1, 12, 14, 1, '#8a5a2a');
+          return;
+        case 'hint':
+          P(c, 4, 1, 8, 9, p.hint);
+          P(c, 3, 3, 10, 5, p.hint);
+          P(c, 6, 10, 4, 3, '#9a9aa8');
+          P(c, 6, 13, 4, 1, '#6a6a78');
+          P(c, 6, 3, 2, 2, '#fff');
+          return;
         case 'blob_0':
         case 'blob_1': {
           const sq = name === 'blob_1' ? 1 : 0;
@@ -218,7 +245,7 @@ function iconsSheet(p) {
   return {
     frameW: 8,
     frameH: 8,
-    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key'],
+    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key', 'hint'],
     paint(c, name) {
       if (name.startsWith('heart')) {
         heart(c, 0, 1, 1, name === 'heart_empty' ? '#333' : p.heart, p.heartLight);
@@ -228,6 +255,12 @@ function iconsSheet(p) {
       }
       if (name === 'coin') return gem(c, 1, 0, p.coin, p.coinLight);
       if (name === 'key') return key(c, 0, 2, p.key);
+      if (name === 'hint') {
+        P(c, 2, 0, 4, 5, p.hint);
+        P(c, 1, 1, 6, 3, p.hint);
+        P(c, 3, 5, 2, 2, '#ccc');
+        P(c, 3, 1, 1, 1, '#fff');
+      }
     },
   };
 }
@@ -256,7 +289,7 @@ const EXTRA = {
       plate: '#b0a890', plateLight: '#d4ccb4', plateDark: '#6a6454', on: '#5aff5a', off: '#ff5a5a', coin: '#3ad46a', coinLight: '#b4ffc8', key: '#ffd35a',
       amulet: '#e83a5a', mushCap: '#d83a2a', mushStem: '#f4e8c8', heart: '#e8303a', heartLight: '#ff9aa0', blade: '#c8d0e0', hilt: '#8a5a2a',
       blob: '#5ac83a', blobDark: '#2a7a1a', flyer: '#6a3a8a', flyerWing: '#9a5aca', eye: '#ffde3a',
-      flowerA: '#ff6a8a', flowerB: '#ffffff', ribbon: '#e83a5a', ribbonDark: '#a8203a', potion: '#e8303a',
+      flowerA: '#ff6a8a', flowerB: '#ffffff', ribbon: '#e83a5a', ribbonDark: '#a8203a', potion: '#e8303a', hint: '#ffe066',
     },
     words: { coin: ['rubis', 'rubis'], key: ['clé', 'clés'], amulet: ['amulette', 'amulettes'], mushroom: ['champignon', 'champignons'], blob: ['gluant', 'gluants'], cave: 'la grotte', elder: "l'Ancien", potion: ['potion', 'potions'], flowers: ['fleurs', 'fleurs'] },
     bush: (c) => {
@@ -276,6 +309,9 @@ const EXTRA = {
       seller: { skin: '#c48a6a', hair: '#3a2a1a', eye: '#111', body: '#c43a3a', bodyDark: '#8a2a2a', legs: '#3a2a1a' },
       teacher: { skin: '#f2c49b', hair: '#5a2a1a', eye: '#222', body: '#3a5ac8', bodyDark: '#2a3a8a', legs: '#2a2a3a' },
       leon: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#7a3fa3', bodyDark: '#5a2a7a', legs: '#4a3020' },
+      carpenter: { skin: '#d9a07a', hair: '#5a3a1a', eye: '#111', body: '#8a5a2a', bodyDark: '#5a3a1a', legs: '#3a3a5a', hat: 'cap', hatColor: '#c43a3a', hatDark: '#8a2a2a' },
+      fisher: { skin: '#f2c49b', hair: '#ddd', eye: '#222', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#4a3a2a', hat: 'cap', hatColor: '#e8d080', hatDark: '#a89050' },
+      scholar: { skin: '#e8b88a', hair: '#888', eye: '#222', body: '#3a2a5a', bodyDark: '#2a1a3a', legs: '#2a1a3a', hat: 'hood', hatColor: '#3a2a5a' },
     },
   },
   space: {
@@ -284,7 +320,7 @@ const EXTRA = {
       plate: '#2a5a4a', plateLight: '#4aff9a', plateDark: '#1a2a2a', on: '#4aff9a', off: '#ff4a4a', coin: '#4ff0ff', coinLight: '#d8ffff', key: '#ffb84a',
       amulet: '#c84aff', mushCap: '#4aff9a', mushStem: '#2a5a4a', heart: '#ff4a8a', heartLight: '#ffaaca', blade: '#8affff', hilt: '#5a6478',
       blob: '#c84aff', blobDark: '#7a2aaa', flyer: '#8a93a7', flyerWing: '#ff5a3a', eye: '#ff3a3a',
-      flowerA: '#4ff0ff', flowerB: '#c84aff', ribbon: '#ffb84a', ribbonDark: '#c8801a', potion: '#4aff9a',
+      flowerA: '#4ff0ff', flowerB: '#c84aff', ribbon: '#ffb84a', ribbonDark: '#c8801a', potion: '#4aff9a', hint: '#ffe066',
     },
     words: { coin: ['crédit', 'crédits'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante', potion: ['kit de soin', 'kits de soin'], flowers: ['plantes hydroponiques', 'plantes hydroponiques'] },
     bush: (c) => {
@@ -302,6 +338,9 @@ const EXTRA = {
       seller: { skin: '#c48a6a', hair: '#ddd', eye: '#111', body: '#5a6478', bodyDark: '#3a4254', legs: '#333', hat: 'cap', hatColor: '#ffb84a', hatDark: '#c8801a' },
       teacher: { skin: '#f2c49b', hair: '#1a1a1a', eye: '#222', body: '#e8ecf4', bodyDark: '#a8b0c4', legs: '#2a3248' },
       leon: { skin: '#e8b88a', hair: '#c47a2a', eye: '#222', body: '#3a7ad8', bodyDark: '#2a5aa8', legs: '#333' },
+      carpenter: { skin: '#c48a6a', hair: '#222', eye: '#111', body: '#ffb84a', bodyDark: '#c8801a', legs: '#333', hat: 'helmet', hatColor: '#ffb84a', hatLight: '#ffd88a', visor: '#222' },
+      fisher: { skin: '#9adf9a', hair: '#2a6a2a', eye: '#000', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#333' },
+      scholar: { skin: '#f2c49b', hair: '#aaa', eye: '#222', body: '#5a3a8a', bodyDark: '#3a2a5a', legs: '#222' },
     },
   },
   city: {
@@ -310,7 +349,7 @@ const EXTRA = {
       plate: '#888', plateLight: '#bbb', plateDark: '#444', on: '#5aff5a', off: '#ff5a5a', coin: '#ffd35a', coinLight: '#fff2b4', key: '#c8c8d8',
       amulet: '#ff6aa8', mushCap: '#ff6aa8', mushStem: '#fff', heart: '#ff3a5a', heartLight: '#ffa0b0', blade: '#e8e8f0', hilt: '#222',
       blob: '#7a7a8a', blobDark: '#4a4a5a', flyer: '#9a9aa8', flyerWing: '#6a6a78', eye: '#ff6a3a',
-      flowerA: '#ff6aa8', flowerB: '#ffd35a', ribbon: '#3a7ad8', ribbonDark: '#1a4aa8', potion: '#ff3a5a',
+      flowerA: '#ff6aa8', flowerB: '#ffd35a', ribbon: '#3a7ad8', ribbonDark: '#1a4aa8', potion: '#ff3a5a', hint: '#ffe066',
     },
     words: { coin: ['euro', 'euros'], key: ['clé', 'clés'], amulet: ['médaillon', 'médaillons'], mushroom: ['ticket', 'tickets'], blob: ['rat', 'rats'], cave: 'le parking souterrain', elder: 'le Doyen', potion: ['trousse de secours', 'trousses de secours'], flowers: ['fleurs', 'fleurs'] },
     bush: (c) => {
@@ -328,6 +367,9 @@ const EXTRA = {
       seller: { skin: '#f2c49b', hair: '#7a4a1a', eye: '#222', body: '#ffd35a', bodyDark: '#c8a030', legs: '#333' },
       teacher: { skin: '#a8704a', hair: '#1a1a1a', eye: '#111', body: '#c84a80', bodyDark: '#8a2a5a', legs: '#2a2a3a' },
       leon: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#3a7ad8', bodyDark: '#2a5aa8', legs: '#333' },
+      carpenter: { skin: '#d9a07a', hair: '#333', eye: '#111', body: '#e8c547', bodyDark: '#b89520', legs: '#2a3a6a', hat: 'helmet', hatColor: '#ffd35a', hatLight: '#fff2b4', visor: '#333' },
+      fisher: { skin: '#a8704a', hair: '#ddd', eye: '#111', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#4a3a2a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
+      scholar: { skin: '#e8b88a', hair: '#888', eye: '#222', body: '#6a4a2a', bodyDark: '#4a2a1a', legs: '#333' },
     },
   },
 };

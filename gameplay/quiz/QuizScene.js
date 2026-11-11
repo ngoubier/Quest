@@ -51,7 +51,7 @@ export class QuizScene extends Scene {
     if (this.phase !== 'ask') return;
     const q = this.q;
     const ok = checkAnswer(q, value);
-    this.results.push({ id: q.id, subject: q.subject, ok, given: value });
+    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: q.image ? `${q.image} ${q.prompt}` : q.prompt, answer: q.answer });
     this.field.close();
     this.phase = 'feedback';
     this.t = 0;

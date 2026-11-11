@@ -1,7 +1,7 @@
 # Étape 3 — Quêtes, énigmes scolaires et économie
 
-> Statut : **énigmes et boutique à valider** · **quêtes : proposition à discuter** (§5).
-> Essai jouable : `demos/02-gameplay/` (même essai, enrichi).
+> Statut : **décisions prises** (voir §7) · nouvelle version à valider.
+> Essai jouable : `demos/02-gameplay/` (même essai, enrichi). Programme scolaire : `04-programme-scolaire.md`.
 
 ## 1. Décisions prises à l'étape 2
 
@@ -160,3 +160,57 @@ Chaque zone : **1 étape de la quête principale**, **2 à 4 quêtes secondaires
 **Niveaux**
 
 8. En recommençant un niveau, faut-il aussi **remettre à zéro les coffres et les objets** du niveau, ou les garder (actuel) ?
+
+## 7. Décisions (réponses du §6) et ce qui a été fait
+
+| Question | Décision | Réalisé |
+|---|---|---|
+| Ajouts de quêtes | **Tous** | ✓ voir tableau ci-dessous |
+| Quêtes par zone | **Variable selon la carte** | ✓ c'est une donnée de chaque carte |
+| Obligatoires ? | **Oui, avec des indices** | ✓ compteur d'indices, gagnés (quêtes faciles, diplômes) ou achetés |
+| Matière | **Choisie par le jeu** | ✓ variée, et plus souvent les matières les moins réussies |
+| Après un échec | **Attendre, ou payer** | ✓ délai en temps de jeu, ou payer pour réessayer tout de suite |
+| Bilan | **À la fin, pour les parents uniquement** | ✓ Espace parents protégé par un code à 4 chiffres |
+| Programme | **À proposer** | ✓ `04-programme-scolaire.md` + anglais + problèmes de maths |
+| Recommencer un niveau | **Remet aussi coffres et objets à zéro** | ✓ tout revient comme à l'entrée du niveau |
+
+### Les six types de quêtes, dans l'essai
+
+| Type | Exemple jouable | Mécanisme |
+|---|---|---|
+| **Troc en chaîne** | 3 champignons → la cuisinière donne une tarte → le pêcheur l'échange contre ses planches | actions `take` / `give` |
+| **Fabrication** | planches + clous → le charpentier répare le pont ; fleurs + ruban → Léon fait un bouquet | conditions `{ all: [...] }` |
+| **Embranchement** | le pêcheur : « une tarte » **ou** « tes questions » → l'objectif affiché change | objectif à variantes `goal: [{ when, text }]` |
+| **Professeurs à paliers** | l'historien (histoire : 3 / 8 / 15 bonnes réponses) ; la maîtresse décerne des diplômes (5 / 15 / 30) | condition `{ quizOk: 'histoire', gte: 8 }` |
+| **Ouvrir le monde** | le pont réparé apparaît sur la rivière : la grotte devient accessible | objet `tileswitch` |
+| **Indices** | menu pause → « Utiliser un indice » ; ils restent lisibles dans le journal | `hints: [...]` par étape |
+
+**Quête principale** de l'essai : l'Ancien → *le pont cassé* (obligatoire : troc + boutique + fabrication) → les souterrains → retour chez l'Ancien → **fin du jeu**.
+
+### Indices
+
+- Compteur dans le bandeau (ampoule). 1 indice au départ.
+- **Gagnés** : quêtes faciles (garde, Léon), diplômes de la maîtresse, paliers de l'historien. **Achetés** : 15 pièces chez le marchand.
+- Chaque étape de quête a des indices **progressifs** (du plus vague au plus précis). Un indice déjà révélé reste gratuit à relire.
+
+### Échec aux questions
+
+Si l'enfant n'atteint pas le score demandé, le PNJ demande d'**attendre** (45 à 60 s de jeu, réglable par PNJ)
+ou de **payer** (3 à 5 pièces) pour réessayer tout de suite.
+
+### Espace parents
+
+- Accessible depuis l'écran titre, le menu pause et l'écran de fin, **protégé par un code à 4 chiffres** choisi au premier accès.
+- **Bilan disponible à la fin du jeu** (réglage `reportWhen: 'end'`, ou `'always'` si vous préférez le voir en cours de partie).
+- Contenu : âge, temps de jeu, nombre de questions et taux de réussite, quêtes terminées, indices utilisés,
+  point fort / à travailler, **résultats par matière**, et **liste des erreurs à retravailler** (question + bonne réponse),
+  dont on retire celles corrigées ensuite.
+- Le réglage de l'**âge** est désormais dans l'Espace parents (plus dans le menu de l'enfant).
+
+## 8. Prochaines questions
+
+1. Le **délai** après un échec (45–60 s) et le **prix** pour réessayer (3–5 pièces) vous conviennent-ils ?
+2. Le bilan : faut-il pouvoir **l'exporter** (PDF, e-mail) ou l'écran suffit-il ?
+3. Plusieurs **enfants / profils** sur le même appareil ?
+4. Validez-vous le **programme** proposé (`04-programme-scolaire.md`) ? Matières à ajouter ou retirer ?
+5. Peut-on passer à l'**étape suivante** : concevoir le jeu lui-même (univers, histoire, zones) ?

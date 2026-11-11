@@ -3,11 +3,13 @@
 //   {ws:coin}       mot du thème au pluriel
 //   {item:mushroom} nombre possédé
 //   {counter:kills_blob}
+//   {quizOk:histoire}  bonnes réponses dans une matière
 export function formatText(text, { state, word }) {
-  return String(text).replace(/\{(w|ws|item|counter):([\w-]+)\}/g, (_, kind, key) => {
+  return String(text).replace(/\{(w|ws|item|counter|quizOk):([\w-]+)\}/g, (_, kind, key) => {
     if (kind === 'w') return word(key, false);
     if (kind === 'ws') return word(key, true);
     if (kind === 'item') return String(state.count(key));
+    if (kind === 'quizOk') return String(state.quiz?.stats?.[key]?.ok ?? 0);
     return String(state.counter(key));
   });
 }

@@ -9,6 +9,7 @@
 //   { quest: 'amulette', step: 1 }          quête active ET à l'étape 1 (0 = première)
 //   { hp: 2 }                               au moins 2 demi-cœurs
 //   { age: 8 }                              le joueur a au moins 8 ans (profil)
+//   { quizOk: 'histoire', gte: 5 }          au moins 5 bonnes réponses en histoire ('*' = toutes matières)
 //   { all: [...] }  { any: [...] }  { not: cond }   combinaisons
 //   [c1, c2]                                équivaut à { all: [c1, c2] }
 //   null / undefined                        toujours vrai
@@ -30,5 +31,10 @@ export function check(cond, state) {
   }
   if ('hp' in cond) return state.hp >= cond.hp;
   if ('age' in cond) return (state.profile?.age ?? 0) >= cond.age;
+  if ('quizOk' in cond) {
+    const stats = state.quiz?.stats ?? {};
+    const ok = cond.quizOk === '*' ? Object.values(stats).reduce((n, s) => n + s.ok, 0) : stats[cond.quizOk]?.ok ?? 0;
+    return ok >= (cond.gte ?? 1);
+  }
   throw new Error(`Condition inconnue : ${JSON.stringify(cond)}`);
 }

@@ -1,4 +1,4 @@
-import { Pickup, Chest, Npc, Sign, PushBlock, PressurePlate, Gate, LockedDoor, Lever } from './objects.js';
+import { Pickup, Chest, Npc, Sign, PushBlock, PressurePlate, Gate, LockedDoor, Lever, TileSwitch } from './objects.js';
 import { Enemy } from '../actors/Enemy.js';
 
 // Fabrique d'objets : associe un TYPE (nom de marqueur sur la carte) à un constructeur.
@@ -39,6 +39,7 @@ export function standardFactory() {
   f.register('gate', (s) => new Gate(s));
   f.register('locked', (s) => new LockedDoor(s));
   f.register('lever', (s) => new Lever(s));
+  f.register('tileswitch', (s) => new TileSwitch(s));
   f.register('enemy', (s) => new Enemy({ x: s.x, y: s.y, uid: s.uid, seed: s.tx * 31 + s.ty, ...s.props }));
   return f;
 }

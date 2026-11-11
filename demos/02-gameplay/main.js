@@ -2,7 +2,7 @@
 // Ce fichier ne fait que brancher les données (world.js) et les ambiances (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
 import { Game, Scene, MenuScene, TouchControls } from '../../engine/index.js';
-import { AdventureScene } from '../../gameplay/index.js';
+import { AdventureScene, GameState, openParentSpace } from '../../gameplay/index.js';
 import { THEMES, TILE_ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './world.js';
 import { frenchSchoolBank } from '../../content/quiz/index.js';
@@ -78,7 +78,11 @@ const makeAdventure = () =>
     quests: QUESTS,
     questionBank: frenchSchoolBank(),
     startMap: 'overworld',
-    hud: { height: HUD_H, counters: ['coin', 'key'] },
+    hud: { height: HUD_H, counters: ['coin', 'key', 'hint'] },
+    startItems: { hint: 1 },
+    endWhen: { quest: 'relic', status: 'done' },
+    end: { message: 'Bravo, tu as rapporté la relique !' },
+    reportWhen: 'end', // bilan parents disponible à la fin du jeu
     saveNamespace: 'quest-essai-2',
     allowThemeSwitch: true,
   });
@@ -88,17 +92,37 @@ class TitleScene extends Scene {
   enter() {
     this.adv = makeAdventure();
     this.hasSave = this.adv.saves.has(1);
-    this.choice = 0;
+    this.options = this.hasSave ? ['Nouvelle partie', 'Continuer', 'Espace parents'] : ['Nouvelle partie'];
+    this.choice = this.hasSave ? 1 : 0;
   }
 
   update() {
     const i = this.input;
     if (i.pressed('select')) (game.themes.next(), game.audio.play('switch'));
-    if (this.hasSave && (i.pressed('up') || i.pressed('down'))) (this.choice = 1 - this.choice), game.audio.play('menu_move');
+    const n = this.options.length;
+    if (i.pressed('up')) (this.choice = (this.choice - 1 + n) % n), game.audio.play('menu_move');
+    if (i.pressed('down')) (this.choice = (this.choice + 1) % n), game.audio.play('menu_move');
     if (i.pressed('action') || i.pressed('start')) {
       i.consume('action');
       game.audio.play('menu_ok');
-      if (this.hasSave && this.choice === 1) return game.scenes.fade(() => game.scenes.replace(this.adv, { load: true }));
+      const opt = this.options[this.choice];
+      if (opt === 'Continuer') return game.scenes.fade(() => game.scenes.replace(this.adv, { load: true }));
+      if (opt === 'Espace parents') {
+        const state = new GameState();
+        state.load(this.adv.saves.load(1).data.state);
+        return openParentSpace({
+          game,
+          saves: this.adv.saves,
+          state,
+          questDefs: QUESTS,
+          reportWhen: 'end',
+          onChange: (st) => {
+            const save = this.adv.saves.load(1).data;
+            save.state = st.toJSON();
+            this.adv.saves.save(1, save);
+          },
+        });
+      }
       // Nouvelle partie : on demande l'âge pour adapter les questions.
       const start = (age) => game.scenes.fade(() => game.scenes.replace(this.adv, { profile: { age } }));
       const CLASSES = { 6: 'CP', 7: 'CE1', 8: 'CE2', 9: 'CM1', 10: 'CM2' };
@@ -128,11 +152,10 @@ class TitleScene extends Scene {
       'F1 ou ² .......... débogage',
     ];
     lines.forEach((l, i) => r.text(l, 28, 74 + i * 12, { color: s.text, size: 8, font: s.font }));
-    const opts = this.hasSave ? ['Nouvelle partie', 'Continuer'] : ['Nouvelle partie'];
-    opts.forEach((o, i) => {
+    this.options.forEach((o, i) => {
       const sel = i === this.choice;
       const blink = !sel || Math.floor(game.time * 2) % 2 === 0;
-      if (blink) r.text(`${sel ? '▶ ' : '  '}${o}`, r.width / 2, 144 + i * 12, { color: sel ? s.accent : s.dim, size: 9, font: s.font, align: 'center' });
+      if (blink) r.text(`${sel ? '▶ ' : '  '}${o}`, r.width / 2, 138 + i * 11, { color: sel ? s.accent : s.dim, size: 9, font: s.font, align: 'center' });
     });
     r.text(`Ambiance : ${t.def.name}`, r.width / 2, 178, { color: s.dim, size: 7, font: s.font, align: 'center' });
   }

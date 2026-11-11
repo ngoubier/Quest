@@ -20,7 +20,8 @@ npm test       # tests automatiques du moteur
 
 - [Étape 1 — Le moteur](docs/01-moteur.md) : architecture, choix techniques, check-list de validation.
 - [Étape 2 — Le gameplay](docs/02-gameplay.md) : combat, objets, langage de conditions/actions, quêtes, énigmes.
-- [Étape 3 — Quêtes, énigmes scolaires et économie](docs/03-quetes-et-enigmes.md) : questions par âge, boutique, proposition de quêtes.
+- [Étape 3 — Quêtes, énigmes scolaires et économie](docs/03-quetes-et-enigmes.md) : questions par âge, boutique, indices, Espace parents.
+- [Programme scolaire proposé](docs/04-programme-scolaire.md) : notions par âge et par matière.
 
 ## Commandes
 

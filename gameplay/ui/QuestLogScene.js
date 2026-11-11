@@ -39,7 +39,12 @@ export class QuestLogScene extends Scene {
       ty += 11;
       if (q.goal) {
         r.text(`→ ${this.adv.format(q.goal)}`, x + 20, ty, { color: s.text, size: 7, font: s.font });
-        ty += 12;
+        ty += 11;
+        for (const h of q.hints ?? []) {
+          r.text(`💡 ${this.adv.format(h)}`, x + 26, ty, { color: s.accent, size: 6, font: s.font });
+          ty += 9;
+        }
+        ty += 2;
       } else ty += 3;
     }
   }

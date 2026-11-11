@@ -347,3 +347,28 @@ export class Lever extends WorldObject {
     objSheet(this).draw(r, this.state.flag(this.props.flag) ? 'lever_on' : 'lever_off', this.x - 2, this.y - 6);
   }
 }
+
+// ------------------------------------------------------------------ tuile qui change (pont réparé...)
+export class TileSwitch extends WorldObject {
+  /** props : { when: condition, to: 'path' } — remplace la tuile quand la condition devient vraie */
+  constructor({ x, y, uid, props }) {
+    super({ x, y, w: 16, h: 16, uid, props, tags: ['tileswitch'] });
+    this.visible = false;
+    this.applied = false;
+    this.first = true;
+  }
+
+  update() {
+    if (this.applied) return;
+    if (check(this.props.when, this.state)) {
+      const tm = this.world.tilemap;
+      tm.set('ground', Math.floor(this.x / tm.tileSize), Math.floor(this.y / tm.tileSize), this.props.to);
+      this.applied = true;
+      if (!this.first) {
+        this.world.game.audio.play('secret');
+        this.world.add(new Effect(this.cx, this.cy));
+      }
+    }
+    this.first = false;
+  }
+}

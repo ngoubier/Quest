@@ -112,12 +112,43 @@ const KINDS = {
   },
 };
 
+// Problèmes : petites histoires à comprendre avant de calculer.
+const NAMES = ['Léa', 'Tom', 'Inès', 'Hugo', 'Jade', 'Noah', 'Lina', 'Sami'];
+const THINGS = [['billes', '🔵'], ['bonbons', '🍬'], ['pommes', '🍎'], ['cartes', '🃏'], ['fleurs', '🌸']];
+KINDS.problemAdd = (rng) => {
+  const n = rng.pick(NAMES);
+  const [t] = rng.pick(THINGS);
+  const a = between(rng, 3, 30);
+  const b = between(rng, 2, 20);
+  return finish(rng, `${n} a ${a} ${t}. On lui en donne ${b}. Combien en a-t-${n === 'Tom' || n === 'Hugo' || n === 'Noah' || n === 'Sami' ? 'il' : 'elle'} maintenant ?`, a + b);
+};
+KINDS.problemSub = (rng) => {
+  const n = rng.pick(NAMES);
+  const [t] = rng.pick(THINGS);
+  const a = between(rng, 10, 40);
+  const b = between(rng, 2, a - 2);
+  const pr = n === 'Tom' || n === 'Hugo' || n === 'Noah' || n === 'Sami' ? 'il' : 'elle';
+  return finish(rng, `${n} a ${a} ${t}. ${pr === 'il' ? 'Il' : 'Elle'} en perd ${b}. Combien lui en reste-t-il ?`, a - b);
+};
+KINDS.problemMul = (rng) => {
+  const boxes = between(rng, 2, 9);
+  const per = between(rng, 2, 9);
+  const [t] = rng.pick(THINGS);
+  return finish(rng, `Il y a ${boxes} sacs de ${per} ${t}. Combien de ${t} en tout ?`, boxes * per);
+};
+KINDS.problemShare = (rng) => {
+  const kids = between(rng, 2, 6);
+  const per = between(rng, 2, 8);
+  const [t] = rng.pick(THINGS);
+  return finish(rng, `On partage ${kids * per} ${t} entre ${kids} enfants. Combien chacun en reçoit-il ?`, per, { spread: 3 });
+};
+
 const BY_AGE = {
   6: ['add10', 'sub10', 'count', 'compare20'],
-  7: ['add100', 'sub100', 'double', 'table2510', 'count'],
-  8: ['add1000', 'sub100', 'table5', 'half', 'double'],
-  9: ['table9', 'add1000', 'sub1000', 'div', 'half'],
-  10: ['table9', 'div', 'decimal', 'quarter', 'bigMul', 'sub1000'],
+  7: ['add100', 'sub100', 'double', 'table2510', 'count', 'problemAdd'],
+  8: ['add1000', 'sub100', 'table5', 'half', 'double', 'problemAdd', 'problemSub'],
+  9: ['table9', 'add1000', 'sub1000', 'div', 'half', 'problemSub', 'problemMul'],
+  10: ['table9', 'div', 'decimal', 'quarter', 'bigMul', 'sub1000', 'problemMul', 'problemShare'],
 };
 
 export const MATHS_GENERATOR = {

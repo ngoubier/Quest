@@ -19,3 +19,8 @@ export { InventoryScene } from './ui/InventoryScene.js';
 export { QuizScene } from './quiz/QuizScene.js';
 export { QuestionBank, SUBJECTS } from './quiz/QuestionBank.js';
 export { checkAnswer, normalize } from './quiz/answers.js';
+export { EndScene } from './ui/EndScene.js';
+export { openParentSpace, ReportScene, CodeScene } from './ui/parents.js';
+export { chooseSubject } from './quiz/adaptive.js';
+export { buildReport, formatPlayTime } from './quiz/report.js';
+export { formatDuration } from './script/actions.js';

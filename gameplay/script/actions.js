@@ -13,7 +13,8 @@ import { check } from './conditions.js';
 //   { heal: 2 | 'full' }  { maxHp: +2 }
 //   { sound: 'nom' }  { toast: 'texte' }
 //   { if: condition, then: [...], else: [...] }
-//   { quiz: { subject?: 'maths', count?: 3, pass?: 3 },      questions scolaires adaptées à l'âge
+//   { quiz: { subject?: 'maths', count?: 3, pass?: 3,        questions scolaires adaptées à l'âge
+//             cooldown?: 60, retryPrice?: 5 },                 après un échec : attendre (s de jeu) ou payer
 //     perCorrect?: { give: 'coin', count: 2 },                 récompense par bonne réponse
 //     success?: [...], failure?: [...] }                       selon que `pass` est atteint
 //   { shop: { id, title?, offers: [{ item, price, once? }] } } ouvre une boutique
@@ -42,12 +43,31 @@ function exec(a, ctx, next) {
   }
   if ('if' in a) return runActions(check(a.if, s) ? a.then : a.else, ctx, next);
   if ('quiz' in a) {
-    return ctx.quiz(a.quiz, (res) => {
-      const list = [];
-      if (a.perCorrect && res.correct > 0) list.push({ give: a.perCorrect.give, count: a.perCorrect.count * res.correct, announce: true });
-      const pass = a.quiz.pass ?? a.quiz.count ?? 3;
-      list.push(...[].concat((res.correct >= pass ? a.success : a.failure) ?? []));
-      runActions(list, ctx, next);
+    const spec = a.quiz;
+    const key = `quiz:${spec.id ?? ctx.speaker ?? 'quiz'}`;
+    const launch = () =>
+      ctx.quiz(spec, (res) => {
+        const list = [];
+        if (a.perCorrect && res.correct > 0) list.push({ give: a.perCorrect.give, count: a.perCorrect.count * res.correct, announce: true });
+        const passed = res.total > 0 && res.correct >= (spec.pass ?? spec.count ?? 3);
+        // Échec : il faudra attendre (en temps de jeu) ou payer pour réessayer.
+        if (!passed && res.total > 0 && spec.cooldown !== 0) s.setCooldown(key, spec.cooldown ?? 60);
+        list.push(...[].concat((passed ? a.success : a.failure) ?? []));
+        runActions(list, ctx, next);
+      });
+    const left = s.cooldownLeft(key);
+    if (left <= 0) return launch();
+    const price = spec.retryPrice ?? 5;
+    const cur = spec.currency ?? 'coin';
+    return ctx.ask(`Reviens dans ${formatDuration(left)}... ou paie ${price} {ws:${cur}} pour réessayer maintenant.`, {
+      speaker: ctx.speaker,
+      choices: [
+        {
+          label: `Payer ${price}`,
+          onSelect: () => (s.take(cur, price) ? launch() : ctx.say(`Tu n’as pas assez de {ws:${cur}}.`, { speaker: ctx.speaker, onClose: next })),
+        },
+        { label: 'Attendre', onSelect: () => next() },
+      ],
     });
   }
   if ('shop' in a) return ctx.shop(a.shop, next);
@@ -67,4 +87,9 @@ function exec(a, ctx, next) {
   else if ('call' in a) a.call(ctx);
   else throw new Error(`Action inconnue : ${JSON.stringify(a)}`);
   next();
+}
+
+/** 75 -> "2 min", 40 -> "40 s" */
+export function formatDuration(sec) {
+  return sec >= 60 ? `${Math.ceil(sec / 60)} min` : `${Math.ceil(sec)} s`;
 }

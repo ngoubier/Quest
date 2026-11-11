@@ -25,6 +25,10 @@ export const ITEMS = {
   flowers: { icon: 'flowers', word: 'flowers', name: 'Fleurs', max: 1 },
   ribbon: { icon: 'ribbon', name: 'Ruban', max: 1 },
   bouquet: { icon: 'bouquet', name: 'Bouquet', max: 1 },
+  planks: { icon: 'planks', name: 'Planches', max: 1 },
+  nails: { icon: 'nails', name: 'Clous', max: 1 },
+  tarte: { icon: 'tarte', name: 'Tarte', max: 1 },
+  hint: { icon: 'hint', name: 'Indice', plural: 'Indices', max: 99, sound: 'secret' },
 };
 
 // ----------------------------------------------------------------- QUÊTES
@@ -34,17 +38,55 @@ export const QUESTS = [
     kind: 'main',
     title: 'La relique perdue',
     steps: [
-      { goal: 'Explorer {w:cave} au sud-est', done: { item: 'amulet' } },
-      { goal: 'Retourner voir {w:elder}', done: { flag: 'relic_returned' } },
+      {
+        goal: 'Trouver un moyen d’atteindre {w:cave}',
+        done: 'bridge_built',
+        hints: ['{w:cave} est au sud-est, de l’autre côté de la rivière.', 'Le charpentier, au bord de la rivière, sait réparer le pont.'],
+      },
+      {
+        goal: 'Explorer {w:cave}',
+        done: { item: 'amulet' },
+        hints: ['Dans la salle de droite, pousse le bloc sur la dalle : la grille s’ouvrira.', 'Vaincs tous les monstres de la salle du haut : un coffre apparaîtra, avec une clé.'],
+      },
+      { goal: 'Retourner voir {w:elder}', done: { flag: 'relic_returned' }, hints: ['{w:elder} habite en haut à gauche du village.'] },
     ],
     rewards: [{ maxHp: 2 }, { toast: 'Ta vie maximale augmente !' }],
+  },
+  // Quête OBLIGATOIRE qui ouvre le monde : réparer le pont (fabrication + troc + embranchement).
+  {
+    id: 'bridge',
+    kind: 'main',
+    title: 'Le pont cassé',
+    steps: [
+      {
+        // Embranchement : l'objectif dépend du choix fait chez le pêcheur.
+        goal: [
+          { when: 'fisher_tarte', text: 'Échanger une tarte de la cuisinière contre les planches du pêcheur' },
+          { when: 'fisher_quiz', text: 'Réussir les questions du pêcheur pour avoir ses planches' },
+          { text: 'Trouver des planches' },
+        ],
+        done: { item: 'planks' },
+        hints: ['Le pêcheur, au bord du lac, a de vieilles planches.', 'Il les échange contre une tarte de la cuisinière... ou contre de bonnes réponses !'],
+      },
+      {
+        goal: 'Acheter des clous chez le marchand',
+        done: { item: 'nails' },
+        hints: ['Le marchand est au village. Pour gagner des {ws:coin}, réponds aux questions de la maîtresse.'],
+      },
+      { goal: 'Apporter planches et clous au charpentier', done: 'bridge_built', hints: ['Le charpentier attend au bord de la rivière, au sud.'] },
+    ],
+    rewards: [{ toast: 'Le pont est réparé !' }],
   },
   {
     id: 'harvest',
     kind: 'side',
     title: 'La recette de la cuisinière',
     steps: [
-      { goal: 'Trouver 3 {ws:mushroom} ({item:mushroom}/3)', done: { item: 'mushroom', count: 3 } },
+      {
+        goal: 'Trouver 3 {ws:mushroom} ({item:mushroom}/3)',
+        done: { item: 'mushroom', count: 3 },
+        hints: ['Un {w:mushroom} pousse près du lac.', 'Un autre est caché sous un buisson, au nord. Un dernier est dans le jardin fermé : frappe le levier !'],
+      },
       { goal: 'Les apporter à la cuisinière', done: { flag: 'harvest_given' } },
     ],
   },
@@ -53,7 +95,7 @@ export const QUESTS = [
     kind: 'side',
     title: 'Nettoyer les champs',
     steps: [
-      { goal: 'Vaincre 3 {ws:blob} ({counter:kills_blob}/3)', done: { counter: 'kills_blob', gte: 3 } },
+      { goal: 'Vaincre 3 {ws:blob} ({counter:kills_blob}/3)', done: { counter: 'kills_blob', gte: 3 }, hints: ['Il y en a dans les champs, autour du village.'] },
       { goal: 'Retourner voir le garde', done: { flag: 'hunt_reported' } },
     ],
   },
@@ -69,7 +111,7 @@ export const QUESTS = [
       { goal: 'Offrir le bouquet à la cuisinière', done: { flag: 'bouquet_delivered' } },
       { goal: 'Annoncer la réponse à Léon', done: { flag: 'bouquet_thanked' } },
     ],
-    rewards: [{ give: 'coin', count: 25 }, { give: 'potion' }, { toast: 'Récompense : 25 {ws:coin} + {w:potion}' }],
+    rewards: [{ give: 'coin', count: 25 }, { give: 'hint' }, { toast: 'Récompense : 25 {ws:coin} + 1 indice' }],
   },
 ];
 
@@ -86,7 +128,7 @@ const ELDER = {
         {
           ask: 'Peux-tu m’aider ?',
           choices: [
-            { label: 'Oui', do: [{ startQuest: 'relic' }, { say: "Merci ! L'entrée est au sud-est, derrière les rochers. Sois prudent." }] },
+            { label: 'Oui', do: [{ startQuest: 'relic' }, { say: "Merci ! L'entrée est au sud-est, de l'autre côté de la rivière. Sois prudent." }] },
             { label: 'Pas maintenant', do: [{ say: 'Je comprends... Reviens me voir si tu changes d’avis.' }] },
           ],
         },
@@ -96,7 +138,8 @@ const ELDER = {
       when: [{ quest: 'relic', status: 'active' }, { item: 'amulet' }],
       do: [{ say: ['Tu as réussi ! Mon {w:amulet} !', 'Je n’ai rien de plus précieux à t’offrir que ma bénédiction...'] }, { take: 'amulet' }, { setFlag: 'relic_returned' }],
     },
-    { when: { quest: 'relic', status: 'active' }, do: [{ say: "L'entrée est au sud-est. Dans les souterrains, observe bien chaque salle : il y a souvent un mécanisme." }] },
+    { when: [{ quest: 'relic', status: 'active' }, { not: 'bridge_built' }], do: [{ say: 'Le pont est cassé ? Va voir le charpentier, au bord de la rivière.' }] },
+    { when: { quest: 'relic', status: 'active' }, do: [{ say: "Dans les souterrains, observe bien chaque salle : il y a souvent un mécanisme." }] },
     { do: [{ say: 'Grâce à toi, le village est en paix.' }] },
   ],
 };
@@ -128,7 +171,22 @@ const COOK = {
     },
     {
       when: { quest: 'harvest', step: 1 },
-      do: [{ say: 'Parfait, les voilà ! Voici ta récompense.' }, { take: 'mushroom', count: 3 }, { setFlag: 'harvest_given' }, { give: 'coin', count: 30, announce: true }],
+      do: [
+        { say: 'Parfait, les voilà ! Voici ta récompense.' },
+        { take: 'mushroom', count: 3 },
+        { setFlag: 'harvest_given' },
+        { give: 'coin', count: 15, announce: true },
+        { if: 'fisher_tarte', then: [{ say: 'Et voici une tarte aux champignons pour le pêcheur !' }, { give: 'tarte', announce: true }] },
+      ],
+    },
+    {
+      // Troc : si on a promis une tarte au pêcheur après avoir fini la recette.
+      when: [{ quest: 'harvest', status: 'done' }, 'fisher_tarte', { not: { item: 'tarte' } }, { not: { item: 'planks' } }, { not: 'bridge_built' }],
+      do: [{ say: 'Une tarte pour le pêcheur ? Avec plaisir !' }, { give: 'tarte', announce: true }],
+    },
+    {
+      when: [{ quest: 'harvest', status: 'none' }, 'fisher_tarte'],
+      do: [{ say: 'Une tarte ? Il me faut d’abord 3 {ws:mushroom} !' }, { startQuest: 'harvest' }],
     },
     { when: { quest: 'harvest', status: 'active' }, do: [{ say: 'Tu en as {item:mushroom} sur 3. Pense à couper les buissons !' }] },
     { do: [{ say: 'Ma recette est un succès. Merci encore !' }] },
@@ -152,45 +210,144 @@ const GUARD = {
         },
       ],
     },
-    { when: { quest: 'hunt', step: 1 }, do: [{ say: 'Beau travail !' }, { setFlag: 'hunt_reported' }, { give: 'coin', count: 20, announce: true }] },
+    { when: { quest: 'hunt', step: 1 }, do: [{ say: 'Beau travail ! Voici un indice, garde-le pour quand tu seras bloqué.' }, { setFlag: 'hunt_reported' }, { give: 'hint', announce: true }, { give: 'coin', count: 10 }] },
     { when: { quest: 'hunt', status: 'active' }, do: [{ say: 'Encore un effort : {counter:kills_blob} sur 3.' }] },
     { do: [{ say: 'Les champs sont calmes grâce à toi.' }] },
   ],
 };
 
 // Maîtresse : questions à volonté, 2 pièces par bonne réponse (source d'argent).
-const quizChoice = (label, subject) => ({
-  label,
-  do: [
-    {
-      quiz: { subject, count: 3 },
-      perCorrect: { give: 'coin', count: 2 },
-      success: [{ say: 'Trois sur trois, bravo !' }],
-      failure: [{ say: 'Continue de t’entraîner, tu vas progresser !' }],
-    },
-  ],
+// Le JEU choisit la matière (variée, en insistant sur les points faibles).
+// Paliers (diplômes) selon le nombre total de bonnes réponses.
+const diploma = (n, flag, title, reward) => ({
+  when: [{ quizOk: '*', gte: n }, { not: flag }],
+  do: [{ say: `Tu as déjà ${n} bonnes réponses : voici ton diplôme « ${title} » !` }, { setFlag: flag }, ...reward],
 });
 const TEACHER = {
   type: 'npc',
   name: 'Maîtresse',
   sprite: 'teacher',
   dialogue: [
+    diploma(5, 'diploma_1', 'Élève curieux', [{ give: 'hint', announce: true }]),
+    diploma(15, 'diploma_2', 'Élève brillant', [{ give: 'hint', count: 2, announce: true }]),
+    diploma(30, 'diploma_3', 'Petit génie', [{ give: 'heart_container', announce: true }]),
     {
       do: [
         { say: 'Bonjour ! Chaque bonne réponse à mes questions te rapporte 2 {ws:coin}.' },
         {
-          ask: 'Quelle matière choisis-tu ?',
+          ask: 'On commence ?',
           choices: [
-            quizChoice('Mathématiques', 'maths'),
-            quizChoice('Français', 'francais'),
-            quizChoice('Histoire', 'histoire'),
-            quizChoice('Géographie', 'geographie'),
-            quizChoice('Sciences', 'sciences'),
+            {
+              label: 'Oui',
+              do: [
+                {
+                  quiz: { id: 'teacher', count: 3, cooldown: 45, retryPrice: 3 },
+                  perCorrect: { give: 'coin', count: 2 },
+                  success: [{ say: 'Trois sur trois, bravo !' }],
+                  failure: [{ say: 'Continue de t’entraîner ! Reviens un peu plus tard pour une nouvelle série.' }],
+                },
+              ],
+            },
             { label: 'Plus tard', do: [{ say: 'À bientôt !' }] },
           ],
         },
       ],
     },
+  ],
+};
+
+// Historien : professeur SPÉCIALISÉ (histoire), avec des paliers de maîtrise.
+const tier = (n, flag, title, reward) => ({
+  when: [{ quizOk: 'histoire', gte: n }, { not: flag }],
+  do: [{ say: `Te voilà « ${title} » ! Voici ta récompense.` }, { setFlag: flag }, ...reward],
+});
+const HISTORIAN = {
+  type: 'npc',
+  name: 'Historien',
+  sprite: 'scholar',
+  dialogue: [
+    tier(3, 'hist_tier_1', 'Apprenti historien', [{ give: 'hint', announce: true }]),
+    tier(8, 'hist_tier_2', 'Historien confirmé', [{ give: 'coin', count: 20, announce: true }]),
+    tier(15, 'hist_tier_3', 'Grand historien', [{ give: 'potion', announce: true }]),
+    {
+      do: [
+        { say: 'L’histoire, c’est ma passion ! Paliers : 3, 8 et 15 bonnes réponses. Tu en as {quizOk:histoire}.' },
+        {
+          ask: 'Une série de questions d’histoire ?',
+          choices: [
+            {
+              label: 'Oui',
+              do: [
+                {
+                  quiz: { id: 'historian', subject: 'histoire', count: 3, pass: 2 },
+                  perCorrect: { give: 'coin', count: 1 },
+                  success: [{ say: 'Excellent ! Reviens me voir pour monter de palier.' }],
+                  failure: [{ say: 'L’histoire demande de la patience. Reviens plus tard !' }],
+                },
+              ],
+            },
+            { label: 'Non', do: [{ say: 'Le passé t’attendra.' }] },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+// Pêcheur : TROC et EMBRANCHEMENT — ses planches contre une tarte, ou contre de bonnes réponses.
+const FISHER = {
+  type: 'npc',
+  name: 'Pêcheur',
+  sprite: 'fisher',
+  dialogue: [
+    {
+      when: [{ item: 'tarte' }, { not: { item: 'planks' } }, { not: 'bridge_built' }],
+      do: [{ say: 'Une tarte aux champignons ! Marché conclu, voici mes planches.' }, { take: 'tarte' }, { give: 'planks', announce: true }],
+    },
+    {
+      when: [{ quest: 'bridge', step: 0 }, 'fisher_quiz'],
+      do: [
+        {
+          quiz: { id: 'fisher', count: 3, pass: 2 },
+          success: [{ say: 'Tu en sais des choses ! Les planches sont à toi.' }, { give: 'planks', announce: true }],
+          failure: [{ say: 'Pas assez... Tu peux revenir plus tard, ou m’apporter une tarte.' }, { clearFlag: 'fisher_quiz' }],
+        },
+      ],
+    },
+    {
+      when: [{ quest: 'bridge', step: 0 }, { not: 'fisher_tarte' }],
+      do: [
+        { say: 'Mes vieilles planches ? Je veux bien te les céder... mais pas pour rien !' },
+        {
+          ask: 'Que me proposes-tu ?',
+          choices: [
+            { label: 'Une tarte', do: [{ setFlag: 'fisher_tarte' }, { say: 'Une tarte de la cuisinière ? Miam ! Rapporte-m’en une.' }] },
+            { label: 'Tes questions', do: [{ setFlag: 'fisher_quiz' }, { say: 'Réponds juste à 2 questions sur 3. Parle-moi quand tu es prêt !' }] },
+          ],
+        },
+      ],
+    },
+    { when: [{ quest: 'bridge', step: 0 }, 'fisher_tarte'], do: [{ say: 'J’attends ma tarte ! La cuisinière en fait de délicieuses... avec des {ws:mushroom}.' }] },
+    { do: [{ say: 'Ça mord bien aujourd’hui.' }] },
+  ],
+};
+
+// Charpentier : FABRICATION — planches + clous = pont réparé (ouvre l'accès à la grotte).
+const CARPENTER = {
+  type: 'npc',
+  name: 'Charpentier',
+  sprite: 'carpenter',
+  dialogue: [
+    {
+      when: { quest: 'bridge', status: 'none' },
+      do: [{ say: ['Le pont vers {w:cave} s’est effondré !', 'Pour le réparer, il me faut des planches et des clous.'] }, { startQuest: 'bridge' }],
+    },
+    {
+      when: [{ item: 'planks' }, { item: 'nails' }, { not: 'bridge_built' }],
+      do: [{ say: 'Parfait ! Un peu de patience... Voilà, le pont est comme neuf !' }, { take: 'planks' }, { take: 'nails' }, { setFlag: 'bridge_built' }],
+    },
+    { when: { quest: 'bridge', status: 'active' }, do: [{ say: 'Il me faut des planches ({item:planks}/1) et des clous ({item:nails}/1).' }] },
+    { do: [{ say: 'Mon pont tiendra cent ans !' }] },
   ],
 };
 
@@ -211,7 +368,7 @@ const GARDENER = {
               label: 'Oui',
               do: [
                 {
-                  quiz: { count: 3, pass: 2 },
+                  quiz: { id: 'gardener', count: 3, pass: 2 },
                   success: [{ say: 'Bravo ! Voici mes plus belles {w:flowers}.' }, { give: 'flowers', announce: true }],
                   failure: [{ say: 'Presque ! Reviens essayer quand tu veux.' }],
                 },
@@ -241,6 +398,8 @@ const SELLER = {
             title: 'Boutique du village',
             offers: [
               { item: 'ribbon', price: 5 },
+              { item: 'nails', price: 10 },
+              { item: 'hint', price: 15 },
               { item: 'potion', price: 20 },
               { item: 'heart_container', price: 60, once: true },
             ],
@@ -298,13 +457,13 @@ export const MAPS = {
       '#..........,...........,....~~~~~~~~~~.#',
       '#.####.....####.............~~~~~~~~~~.#',
       '#.####..N..####..bbb.........~~~~~~~~..#',
-      '#.####.....####..bnb...........~~~~....#',
+      '#.####.....####..bnb.......Y...~~~~....#',
       '#....A.....M.....b.b...................#',
       '#==P===========================......c.#',
       '#......=..............,..........m.....#',
       '#..S...=..G..V....E....................#',
       '#......=.......................F.......#',
-      '#..,...=...........bb.......,..........#',
+      '#..,.H.=...........bb.......,..........#',
       '#......=...........bb..................#',
       '#..K...=.......ooooooo..J......E.......#',
       '#......=.......o.....o.................#',
@@ -314,9 +473,9 @@ export const MAPS = {
       '#......=....L.U...............########.#',
       '#......=.......=..............########.#',
       '#......=========..............###D####.#',
-      '#...........................h..T.=.....#',
-      '#..,......E.................======.....#',
-      '#.................................,....#',
+      '#.........................~~~~~~~X~~~~~#',
+      '#..,......E.................======.T...#',
+      '#.......................h....R....,....#',
       '########################################',
     ],
     objects: {
@@ -326,10 +485,14 @@ export const MAPS = {
       V: SELLER,
       J: GARDENER,
       K: TEACHER,
+      H: HISTORIAN,
+      Y: FISHER,
+      R: CARPENTER,
+      X: { type: 'tileswitch', tile: 'water', to: 'path', when: 'bridge_built' },
       G: GUARD,
       S: { type: 'sign', text: ['Bienvenue au village !', 'Parle aux habitants (Action) pour obtenir des quêtes. Entrée ouvre le menu et le journal des quêtes.'] },
       U: { type: 'sign', text: 'Jardin fermé. Le levier ouvre la grille : frappe-le avec ton arme !' },
-      T: { type: 'sign', text: 'Danger : {w:cave}. Les monstres y rôdent.' },
+      T: { type: 'sign', text: 'Danger : {w:cave}, au-delà du pont. Les monstres y rôdent.' },
       m: { type: 'pickup', item: 'mushroom' },
       n: { type: 'pickup', item: 'mushroom', hidden: true, tile: 'bush' },
       c: { type: 'pickup', item: 'coin', count: 5 },

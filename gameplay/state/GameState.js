@@ -7,7 +7,8 @@ import { EventBus } from '../../engine/index.js';
 //  - hp/maxHp  : vie du héros, en demi-cœurs (6 = 3 cœurs)
 //  - quests    : progression  ex. { amulette: { status: 'active', step: 1 } }
 //  - profile   : le joueur    ex. { age: 8 } (adapte la difficulté des questions)
-//  - quiz      : questions déjà vues et statistiques par matière
+//  - quiz      : questions déjà vues, statistiques par matière, erreurs à retravailler
+//  - playTime  : temps de jeu (s) ; cooldowns : délais d'attente (en temps de jeu)
 // Chaque modification émet 'change' : les quêtes et les énigmes se réévaluent.
 
 export class GameState {
@@ -24,7 +25,18 @@ export class GameState {
     this.hp = maxHp;
     this.quests = {};
     this.profile = this.profile ?? { age: 8 };
-    this.quiz = { seen: [], stats: {} };
+    this.quiz = { seen: [], stats: {}, missed: {} };
+    this.playTime = 0;
+    this.cooldowns = {};
+  }
+
+  // --- délais (ex. attendre avant de retenter des questions)
+  setCooldown(key, seconds) {
+    this.cooldowns[key] = this.playTime + seconds;
+  }
+
+  cooldownLeft(key) {
+    return Math.max(0, (this.cooldowns[key] ?? 0) - this.playTime);
   }
 
   // --- questions scolaires
@@ -37,6 +49,16 @@ export class GameState {
       const st = (this.quiz.stats[r.subject] ??= { ok: 0, total: 0 });
       st.total++;
       if (r.ok) st.ok++;
+      // Erreurs à retravailler (pour le bilan des parents).
+      const key = r.id ?? r.prompt;
+      const m = this.quiz.missed[key];
+      if (!r.ok) this.quiz.missed[key] = { prompt: r.prompt, answer: r.answer, subject: r.subject, wrong: (m?.wrong ?? 0) + 1, fixed: false, at: this.playTime };
+      else if (m) m.fixed = true;
+    }
+    const keys = Object.keys(this.quiz.missed);
+    if (keys.length > 60) {
+      keys.sort((a, b) => this.quiz.missed[a].at - this.quiz.missed[b].at);
+      for (const k of keys.slice(0, keys.length - 60)) delete this.quiz.missed[k];
     }
     if (this.quiz.seen.length > 300) this.quiz.seen = this.quiz.seen.slice(-300);
     this._changed('quiz');
@@ -118,12 +140,14 @@ export class GameState {
 
   // --- sauvegarde
   toJSON() {
-    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz });
+    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns });
   }
 
   load(data) {
     this.reset(data.maxHp);
-    Object.assign(this, structuredClone(data));
+    const d = structuredClone(data);
+    d.quiz = { seen: [], stats: {}, missed: {}, ...d.quiz };
+    Object.assign(this, d);
     this._changed('load');
   }
 }

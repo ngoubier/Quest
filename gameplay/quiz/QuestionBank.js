@@ -19,6 +19,7 @@ export const SUBJECTS = {
   histoire: 'Histoire',
   geographie: 'Géographie',
   sciences: 'Sciences',
+  anglais: 'Anglais',
 };
 
 export class QuestionBank {
