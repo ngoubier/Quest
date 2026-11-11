@@ -118,7 +118,9 @@ export class DialogScene extends Scene {
       const cw = Math.min(w, Math.max(...this.choices.map((c) => r.measure(c.label, s.fontSize, s.font))) + 28);
       const ch = this.choices.length * lh + 10;
       const cx = x + w - cw;
-      const cy = y - ch - 4;
+      // Au-dessus de l'onglet du nom (s'il y en a un), sans sortir de l'écran.
+      const tabH = this.speaker ? s.fontSize + 7 : 0;
+      const cy = Math.max(2, y - ch - 4 - tabH);
       r.rect(cx, cy, cw, ch, s.box);
       r.strokeRect(cx, cy, cw, ch, s.border);
       this.choices.forEach((c, i) => {

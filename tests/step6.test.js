@@ -85,3 +85,17 @@ test('Dictées sans voix : assez de mots illustrés à chaque âge', () => {
     assert.ok(picked[0].image);
   }
 });
+
+test('Vie quotidienne : questions fixes et générées (heure, monnaie) pour chaque âge', async () => {
+  const { QUOTIDIEN_GENERATOR } = await import('../content/quiz/index.js');
+  const bank = frenchSchoolBank();
+  const rng = (await import('../engine/index.js')).createRng(5);
+  for (let age = 6; age <= 10; age++) {
+    const qs = bank.pick({ age, subject: 'quotidien', count: 3, rng });
+    assert.equal(qs.length, 3, `${age} ans`);
+    for (const q of qs) assert.equal(q.subject, 'quotidien');
+    const g = QUOTIDIEN_GENERATOR.make(rng, age);
+    assert.equal(g.subject, 'quotidien');
+    assert.ok(g.image?.clock || g.image?.money, 'heure ou monnaie');
+  }
+});

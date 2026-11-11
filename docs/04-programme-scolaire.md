@@ -34,6 +34,17 @@ Légende : ✓ déjà dans le jeu · ○ proposé, à écrire
 | **9 ans** | ✓ Gaulois, Romains · ✓ Égypte · ✓ Charlemagne | ✓ fleuves · ✓ montagnes · ✓ océans, mers | ✓ mammifères · ✓ corps humain · ✓ états de l'eau |
 | **10 ans** | ✓ Louis XIV · ✓ 1789 · ✓ Gutenberg · ✓ 1969 · ✓ République, symboles | ✓ capitales européennes · ✓ régions de France | ✓ système solaire · ✓ énergie, électricité |
 
+## Vie quotidienne (nouveau)
+
+| Âge | Notions |
+|---|---|
+| **6–7 ans** | ✓ jours, saisons · ✓ traverser la rue, casque à vélo · ✓ hygiène · ✓ aliments, réfrigérateur · ✓ compter des pièces |
+| **8 ans** | ✓ heures, minutes · ✓ lire l'heure (demies, quarts) · ✓ billets · ✓ numéros d'urgence (112, 18) · ✓ balance, thermomètre |
+| **9–10 ans** | ✓ semaines, jours de l'année · ✓ lire l'heure (5 min) · ✓ rendre la monnaie, centimes · ✓ SAMU (15) |
+
+La **maîtresse** laisse l'enfant choisir son thème : Histoire, Géographie, Mathématiques, Vie quotidienne, Français.
+Les autres personnages choisissent pour lui (variété + points faibles).
+
 ## Anglais (nouveau)
 
 | Âge | Notions |

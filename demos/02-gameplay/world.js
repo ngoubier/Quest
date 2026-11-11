@@ -252,6 +252,18 @@ const diploma = (n, flag, title, reward) => ({
   when: [{ quizOk: '*', gte: n }, { not: flag }],
   do: [{ say: `Tu as déjà ${n} bonnes réponses : voici ton diplôme « ${title} » !` }, { setFlag: flag }, ...reward],
 });
+// La maîtresse laisse l'enfant CHOISIR le thème (les autres PNJ choisissent pour lui).
+const teacherTheme = (label, subject) => ({
+  label,
+  do: [
+    {
+      quiz: { id: 'teacher', subject, count: 3, retryPrice: 5 },
+      perCorrect: { give: 'coin', count: 2 },
+      success: [{ say: 'Trois sur trois, bravo !' }],
+      failure: [{ say: 'Continue de t’entraîner ! Reviens un peu plus tard pour une nouvelle série.' }],
+    },
+  ],
+});
 const TEACHER = {
   type: 'npc',
   name: 'Mme Lili, la maîtresse',
@@ -265,19 +277,13 @@ const TEACHER = {
       do: [
         { say: 'Bonjour {player} ! Chaque bonne réponse à mes questions te rapporte 2 {ws:coin}.' },
         {
-          ask: 'On commence ?',
+          ask: 'Quel thème choisis-tu ?',
           choices: [
-            {
-              label: 'Oui',
-              do: [
-                {
-                  quiz: { id: 'teacher', count: 3, retryPrice: 5 },
-                  perCorrect: { give: 'coin', count: 2 },
-                  success: [{ say: 'Trois sur trois, bravo !' }],
-                  failure: [{ say: 'Continue de t’entraîner ! Reviens un peu plus tard pour une nouvelle série.' }],
-                },
-              ],
-            },
+            teacherTheme('Histoire', 'histoire'),
+            teacherTheme('Géographie', 'geographie'),
+            teacherTheme('Mathématiques', 'maths'),
+            teacherTheme('Vie quotidienne', 'quotidien'),
+            teacherTheme('Français', 'francais'),
             { label: 'Plus tard', do: [{ say: 'À bientôt !' }] },
           ],
         },

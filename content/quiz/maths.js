@@ -232,3 +232,8 @@ export const MATHS_GENERATOR = {
     return KINDS[rng.pick(kinds)](rng);
   },
 };
+
+/** Fabrique une question d'un type donné (utilisé par d'autres matières, ex. vie quotidienne). */
+export function makeKind(kind, rng) {
+  return KINDS[kind](rng);
+}

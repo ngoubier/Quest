@@ -21,6 +21,7 @@ export const SUBJECTS = {
   sciences: 'Sciences',
   anglais: 'Anglais',
   dictee: 'Dictée',
+  quotidien: 'Vie quotidienne',
 };
 
 export class QuestionBank {
