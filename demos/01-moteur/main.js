@@ -15,7 +15,7 @@ const HUD_H = 16;
 const style = document.createElement('style');
 style.textContent = `
   html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none}
-  #quest{display:flex;flex-direction:column;height:100dvh;width:100vw}
+  #quest{display:flex;flex-direction:column;height:100%;width:100%}
   #screen{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
   #screen canvas{outline:none}
 `;
