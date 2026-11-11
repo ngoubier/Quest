@@ -28,11 +28,11 @@ export class InventoryScene extends Scene {
     if (i.pressed('right')) this.sel = (this.sel + 1) % n;
     if (i.pressed('up')) this.sel = (this.sel - COLS + n) % n;
     if (i.pressed('down')) this.sel = (this.sel + COLS) % n;
-    if (i.pressed('action')) {
+    if (i.validated()) {
       i.consume('action');
       const entry = this.items[this.sel];
       if (entry) this._actions(entry[0]);
-    } else if (i.pressed('secondary') || i.pressed('start') || i.pressed('bag')) {
+    } else if (i.cancelled() || i.pressed('bag')) {
       i.consume('start');
       this.close();
     }

@@ -63,19 +63,19 @@ export class DialogScene extends Scene {
         this._lastBlip = whole;
         this.game.audio.play(this.sound);
       }
-      if (input.pressed('action')) this.shown = this.total;
+      if (input.validated()) this.shown = this.total;
     } else if (this._choosing) {
       const n = this.choices.length;
       if (input.pressed('up')) (this.choice = (this.choice - 1 + n) % n), this.game.audio.play('menu_move');
       if (input.pressed('down')) (this.choice = (this.choice + 1) % n), this.game.audio.play('menu_move');
-      if (input.pressed('action')) {
+      if (input.validated()) {
         input.consume('action');
         this.game.audio.play('menu_ok');
         this.close();
         this.choices[this.choice].onSelect?.();
         return;
       }
-    } else if (input.pressed('action') || input.pressed('secondary')) {
+    } else if (input.validated() || input.pressed('secondary')) {
       if (!this._isLast) {
         this.index++;
         this._startScreen();

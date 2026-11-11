@@ -2,7 +2,7 @@
 // Ce fichier ne fait que brancher les données (world.js) et l’ambiance (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
 import { Game, Scene, MenuScene, TouchControls, detectDisplay, clamp } from '../../engine/index.js';
-import { AdventureScene, openParentSpace, PromptScene } from '../../gameplay/index.js';
+import { AdventureScene, openParentSpace, PromptScene, MessageScene } from '../../gameplay/index.js';
 import { THEMES, TILE_ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './world.js';
 import { frenchSchoolBank } from '../../content/quiz/index.js';
@@ -128,7 +128,7 @@ class TitleScene extends Scene {
   /** Options recalculées à chaque image (un profil peut avoir été ajouté ou supprimé). */
   get options() {
     const list = this.profiles.list().map((p) => ({ label: `${p.name} (${p.age} ans)`, profile: p }));
-    if (!this.profiles.isFull) list.push({ label: '+ Nouveau joueur', action: 'new' });
+    list.push({ label: '+ Nouveau joueur', action: 'new' });
     if (this.profiles.list().length) list.push({ label: 'Espace parents', action: 'parents' });
     return list;
   }
@@ -173,7 +173,10 @@ class TitleScene extends Scene {
     i.consume('action');
     game.audio.play('menu_ok');
     const opt = opts[this.choice];
-    if (opt.action === 'new') return this.newPlayer();
+    if (opt.action === 'new') {
+      if (this.profiles.isFull) return game.scenes.push(new MessageScene(`${this.profiles.max} joueurs au maximum. Un parent peut supprimer un profil dans l’Espace parents.`));
+      return this.newPlayer();
+    }
     if (opt.action === 'parents') {
       return openParentSpace({ game, saves: this.adv.saves, profiles: this.profiles, questDefs: QUESTS, reportWhen: 'end' });
     }
@@ -217,12 +220,19 @@ class TitleScene extends Scene {
       ? ['Croix : bouger · A : parler, frapper', 'Start : menu · B : annuler']
       : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac'];
     lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
-    const n = this.options.length;
-    r.text('Qui joue ?', r.width / 2, Math.min(92, r.height - 42 - n * 12), { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
-    this.options.forEach((o, i) => {
+    // Liste qui défile si elle est longue (jusqu'à 8 joueurs + 2 options) ;
+    // le nombre de lignes visibles suit la hauteur de l'écran (mobile en paysage : plus basse).
+    const opts = this.options;
+    const visible = clamp(Math.floor((r.height - 20 - 108) / 12), 3, 5);
+    r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
+    const first = Math.max(0, Math.min(this.choice - 2, opts.length - visible));
+    if (first > 0) r.text('▲', r.width / 2, 100, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    if (first + visible < opts.length) r.text('▼', r.width / 2, 108 + visible * 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    opts.slice(first, first + visible).forEach((o, k) => {
+      const i = first + k;
       const sel = i === this.choice;
       const blink = !sel || Math.floor(game.time * 2) % 2 === 0;
-      if (blink) r.text(`${sel ? '▶ ' : '  '}${o.label}`, r.width / 2, Math.min(108, r.height - 26 - n * 12) + i * 12, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, align: 'center' });
+      if (blink) r.text(`${sel ? '▶ ' : '  '}${o.label}`, r.width / 2, 108 + k * 12, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, align: 'center' });
     });
     r.text(`Affichage : ${display.name}`, r.width / 2, r.height - 10, { color: s.dim, size: 7, font: s.font, align: 'center' });
   }

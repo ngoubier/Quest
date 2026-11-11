@@ -292,45 +292,6 @@ const TEACHER = {
   ],
 };
 
-// Historien : professeur SPÉCIALISÉ (histoire), avec des paliers de maîtrise.
-const tier = (n, flag, title, reward) => ({
-  when: [{ quizOk: 'histoire', gte: n }, { not: flag }],
-  do: [{ say: `Te voilà « ${title} » ! Voici ta récompense.` }, { setFlag: flag }, ...reward],
-});
-const HISTORIAN = {
-  type: 'npc',
-  name: 'Edmond, l’historien',
-  role: 'quiz',
-  sprite: 'scholar',
-  dialogue: [
-    tier(3, 'hist_tier_1', 'Apprenti historien', [{ give: 'hint', announce: true }]),
-    tier(8, 'hist_tier_2', 'Historien confirmé', [{ give: 'coin', count: 20, announce: true }]),
-    tier(15, 'hist_tier_3', 'Grand historien', [{ give: 'potion', announce: true }]),
-    {
-      do: [
-        { say: 'L’histoire, c’est ma passion ! Paliers : 3, 8 et 15 bonnes réponses. Tu en as {quizOk:histoire}.' },
-        {
-          ask: 'Une série de questions d’histoire ?',
-          choices: [
-            {
-              label: 'Oui',
-              do: [
-                {
-                  quiz: { id: 'historian', subject: 'histoire', count: 3, pass: 2 },
-                  perCorrect: { give: 'coin', count: 1 },
-                  success: [{ say: 'Excellent ! Reviens me voir pour monter de palier.' }],
-                  failure: [{ say: 'L’histoire demande de la patience. Reviens plus tard !' }],
-                },
-              ],
-            },
-            { label: 'Non', do: [{ say: 'Le passé t’attendra.' }] },
-          ],
-        },
-      ],
-    },
-  ],
-};
-
 // Pêcheur : TROC et EMBRANCHEMENT — ses planches contre une tarte, ou contre de bonnes réponses.
 const FISHER = {
   type: 'npc',
@@ -546,7 +507,7 @@ export const MAPS = {
       '#......=..............,..........m.....#',
       '#..S...=..G.......E....................#',
       '#......=.......................F.......#',
-      '#..,.H.=...........bb.......,..........#',
+      '#..,...=...........bb.......,..........#',
       '#......=...........bb..................#',
       '#..K...=.......ooooooo..J......E.......#',
       '#....O.=.......o.....o.................#',
@@ -568,7 +529,6 @@ export const MAPS = {
       J: GARDENER,
       K: TEACHER,
       O: WRITER,
-      H: HISTORIAN,
       Y: FISHER,
       R: CARPENTER,
       X: { type: 'tileswitch', tile: 'bridge_broken', to: 'bridge', when: 'bridge_built' },

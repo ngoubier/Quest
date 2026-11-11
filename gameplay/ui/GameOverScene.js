@@ -15,7 +15,7 @@ export class GameOverScene extends MenuScene {
 
   // Pas d'annulation possible : il faut choisir.
   update(dt) {
-    if (this.input.pressed('secondary') || this.input.pressed('start')) return;
+    if (this.input.cancelled()) return;
     super.update(dt);
   }
 

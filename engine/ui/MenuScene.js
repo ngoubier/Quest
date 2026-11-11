@@ -36,14 +36,14 @@ export class MenuScene extends Scene {
       this.index = (this.index + 1) % n;
       this.game.audio.play('menu_move');
     }
-    if (input.pressed('action')) {
+    if (input.validated()) {
       const it = this.items[this.index];
       input.consume('action');
       if (this._enabled(it)) {
         this.game.audio.play('menu_ok');
         it.onSelect?.(this);
       } else this.game.audio.play('menu_no');
-    } else if (input.pressed('secondary') || input.pressed('start')) {
+    } else if (input.cancelled()) {
       input.consume('start');
       this.close();
       this.onCancel?.();

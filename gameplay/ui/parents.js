@@ -202,7 +202,7 @@ export function openParentSpace({ game, saves, profiles, questDefs = [], reportW
         label: 'Importer une partie',
         onSelect: () =>
           openImport(game, (obj) => {
-            if (profiles.isFull) return 'Il y a déjà 4 profils : supprimez-en un d’abord.';
+            if (profiles.isFull) return `Il y a déjà ${profiles.max} profils : supprimez-en un d’abord.`;
             const names = profiles.list().map((x) => x.name);
             let name = obj.profile.name;
             for (let i = 2; names.includes(name); i++) name = `${obj.profile.name} ${i}`;
@@ -346,11 +346,11 @@ export class ReportScene extends Scene {
     const i = this.input;
     if (i.pressed('right') || i.pressed('down')) this.page = Math.min(this.pages - 1, this.page + 1);
     if (i.pressed('left') || i.pressed('up')) this.page = Math.max(0, this.page - 1);
-    if (i.pressed('secondary') || i.pressed('start') || (i.pressed('action') && this.page === this.pages - 1)) {
+    if (i.cancelled() || (i.validated() && this.page === this.pages - 1)) {
       i.consume('action');
       i.consume('start');
       this.close();
-    } else if (i.pressed('action')) this.page++;
+    } else if (i.validated()) this.page++;
     i.consume('action');
   }
 

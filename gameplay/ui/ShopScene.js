@@ -58,11 +58,11 @@ export class ShopScene extends Scene {
       this.qty = Math.min(max, Math.max(1, this.qty + (i.pressed('right') ? 1 : -1)));
       this.game.audio.play('menu_move');
     }
-    if (i.pressed('action')) {
+    if (i.validated()) {
       i.consume('action');
       if (!o) return this._leave();
       this._buy(o);
-    } else if (i.pressed('secondary') || i.pressed('start')) {
+    } else if (i.cancelled()) {
       i.consume('start');
       this._leave();
     }

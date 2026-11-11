@@ -230,7 +230,7 @@ export class QuizScene extends Scene {
         const n = this.options.length;
         if (input.pressed('up') || input.pressed('left')) (this.sel = (this.sel - 1 + n) % n), this.game.audio.play('menu_move');
         if (input.pressed('down') || input.pressed('right')) (this.sel = (this.sel + 1) % n), this.game.audio.play('menu_move');
-        if (input.pressed('action') && this.t > 0.2) this._answer(this.options[this.sel]);
+        if (input.validated() && this.t > 0.2) this._answer(this.options[this.sel]);
         if (input.pressed('hint')) this._hint();
       } else if (input.pressed('action') && this.t > 0.2) {
         // Bouton A tactile : valide ce qui est écrit.

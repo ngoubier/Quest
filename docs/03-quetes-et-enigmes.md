@@ -181,7 +181,7 @@ Chaque zone : **1 étape de la quête principale**, **2 à 4 quêtes secondaires
 | **Troc en chaîne** | 3 champignons → la cuisinière donne une tarte → le pêcheur l'échange contre ses planches | actions `take` / `give` |
 | **Fabrication** | planches + clous → le charpentier répare le pont ; fleurs + ruban → Léon fait un bouquet | conditions `{ all: [...] }` |
 | **Embranchement** | le pêcheur : « une tarte » **ou** « tes questions » → l'objectif affiché change | objectif à variantes `goal: [{ when, text }]` |
-| **Professeurs à paliers** | l'historien (histoire : 3 / 8 / 15 bonnes réponses) ; la maîtresse décerne des diplômes (5 / 15 / 30) | condition `{ quizOk: 'histoire', gte: 8 }` |
+| **Professeurs à paliers** | la maîtresse décerne des diplômes (5 / 15 / 30 bonnes réponses) ; un professeur par matière reste possible (l'historien a été retiré : la maîtresse gère l'histoire) | condition `{ quizOk: 'histoire', gte: 8 }` |
 | **Ouvrir le monde** | le pont réparé apparaît sur la rivière : la grotte devient accessible | objet `tileswitch` |
 | **Indices** | menu pause → « Utiliser un indice » ; ils restent lisibles dans le journal | `hints: [...]` par étape |
 
@@ -190,7 +190,7 @@ Chaque zone : **1 étape de la quête principale**, **2 à 4 quêtes secondaires
 ### Indices
 
 - Compteur dans le bandeau (ampoule). 1 indice au départ.
-- **Gagnés** : quêtes faciles (garde, Léon), diplômes de la maîtresse, paliers de l'historien. **Achetés** : 15 pièces chez le marchand.
+- **Gagnés** : quêtes faciles (garde, Léon), diplômes de la maîtresse. **Achetés** : 15 pièces chez le marchand.
 - Chaque étape de quête a des indices **progressifs** (du plus vague au plus précis). Un indice déjà révélé reste gratuit à relire.
 
 ### Échec aux questions

@@ -2,7 +2,7 @@
 // Liste stockée sous la clé 'profiles' ; la partie d'un profil sous `p-<id>`.
 
 export class ProfileStore {
-  constructor(saves, { max = 4 } = {}) {
+  constructor(saves, { max = 8 } = {}) {
     this.saves = saves;
     this.max = max;
   }
