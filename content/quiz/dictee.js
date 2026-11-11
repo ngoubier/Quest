@@ -11,7 +11,7 @@ const WORDS = {
 export const QUESTIONS_DICTEE = Object.entries(WORDS).flatMap(([age, words]) =>
   words.map((w) => ({
     id: `dict-${w}`,
-    subject: 'francais',
+    subject: 'dictee',
     ages: [Number(age), Math.min(10, Number(age) + 1)],
     type: 'dictation',
     prompt: 'Écoute l’énigme, puis écris le mot.',

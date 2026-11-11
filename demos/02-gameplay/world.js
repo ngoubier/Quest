@@ -373,6 +373,37 @@ const CARPENTER = {
   ],
 };
 
+// Écrivain public : uniquement des DICTÉES (le jeu prononce un mot, l'enfant l'écrit).
+const WRITER = {
+  type: 'npc',
+  name: 'Écrivain',
+  sprite: 'writer',
+  dialogue: [
+    {
+      do: [
+        { say: 'Bonjour {player} ! Je suis l’écrivain du village. Je te dicte des mots : touche « Écouter l’énigme », puis écris le mot. 2 {ws:coin} par mot juste !' },
+        {
+          ask: 'Une dictée de 3 mots ?',
+          choices: [
+            {
+              label: 'Oui',
+              do: [
+                {
+                  quiz: { id: 'writer', subject: 'dictee', count: 3 },
+                  perCorrect: { give: 'coin', count: 2 },
+                  success: [{ say: 'Zéro faute, bravo !' }],
+                  failure: [{ say: 'L’orthographe, ça s’apprend petit à petit. Reviens plus tard !' }],
+                },
+              ],
+            },
+            { label: 'Plus tard', do: [{ say: 'Ma plume t’attend.' }] },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 // Jardinière : donne des fleurs si on réussit 2 questions sur 3.
 const GARDENER = {
   type: 'npc',
@@ -493,7 +524,7 @@ export const MAPS = {
       '#..,.H.=...........bb.......,..........#',
       '#......=...........bb..................#',
       '#..K...=.......ooooooo..J......E.......#',
-      '#......=.......o.....o.................#',
+      '#....O.=.......o.....o.................#',
       '#......=.......o..m..o..W..bbb.........#',
       '#..E...=.......o.....o.....bcb.........#',
       '#......=.......ooogooo.........kkkkkk..#',
@@ -511,6 +542,7 @@ export const MAPS = {
       N: LEON,
       J: GARDENER,
       K: TEACHER,
+      O: WRITER,
       H: HISTORIAN,
       Y: FISHER,
       R: CARPENTER,

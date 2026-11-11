@@ -308,7 +308,8 @@ export class AdventureScene extends Scene {
     const canSpeak = Speech.available;
     const okType = (q) => canSpeak || q.type !== 'dictation';
     // Le jeu choisit la matière (sauf PNJ spécialisé) : variété + insistance sur les points faibles.
-    const subject = spec.subject ?? (bank ? chooseSubject({ subjects: bank.subjects(st.profile?.age ?? 8), stats: st.quiz.stats, last: this._lastSubject }) : null);
+    const subjects = bank ? bank.subjects(st.profile?.age ?? 8).filter((x) => canSpeak || x !== 'dictee') : [];
+    const subject = spec.subject ?? (bank ? chooseSubject({ subjects, stats: st.quiz.stats, last: this._lastSubject }) : null);
     this._lastSubject = subject;
     const questions = [];
     const ids = new Set();

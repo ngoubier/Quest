@@ -22,11 +22,26 @@ export class QuizScene extends Scene {
 
   enter() {
     this.field = new TextField(this.game);
+    // Safari (iPhone, iPad) n'accepte la voix que si elle est lancée PENDANT le toucher :
+    // on écoute donc le toucher directement, sans attendre la boucle de jeu.
+    this._onPointer = (e) => {
+      if (this.phase !== 'ask' || this.q.type !== 'dictation') return;
+      const c = this.game.canvas.getBoundingClientRect();
+      const x = ((e.clientX - c.left) * this.game.width) / c.width;
+      const y = ((e.clientY - c.top) * this.game.height) / c.height;
+      const b = this.listenButton;
+      if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
+        this._speak();
+        this._spokeByTap = true;
+      }
+    };
+    this.game.canvas.addEventListener('pointerdown', this._onPointer);
     this._start(0);
   }
 
   exit() {
     this.field.close();
+    this.game.canvas.removeEventListener('pointerdown', this._onPointer);
     Speech.stop();
   }
 
@@ -82,7 +97,8 @@ export class QuizScene extends Scene {
     if (this.phase === 'ask') {
       if (this.q.type === 'dictation' && input.tappedIn(this.listenButton)) {
         input.consumeTaps();
-        this._speak();
+        if (!this._spokeByTap) this._speak(); // déjà prononcé dans le geste
+        this._spokeByTap = false;
       }
       if (this.q.type === 'choice') {
         const n = this.options.length;

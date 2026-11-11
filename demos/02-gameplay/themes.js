@@ -389,6 +389,7 @@ const EXTRA = {
       carpenter: { skin: '#d9a07a', hair: '#5a3a1a', eye: '#111', body: '#8a5a2a', bodyDark: '#5a3a1a', legs: '#3a3a5a', hat: 'cap', hatColor: '#c43a3a', hatDark: '#8a2a2a' },
       fisher: { skin: '#f2c49b', hair: '#ddd', eye: '#222', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#4a3a2a', hat: 'cap', hatColor: '#e8d080', hatDark: '#a89050' },
       scholar: { skin: '#e8b88a', hair: '#888', eye: '#222', body: '#3a2a5a', bodyDark: '#2a1a3a', legs: '#2a1a3a', hat: 'hood', hatColor: '#3a2a5a' },
+      writer: { skin: '#f2c49b', hair: '#5a3a1a', eye: '#222', body: '#2a6a5a', bodyDark: '#1a4a3a', legs: '#3a2a1a', hat: 'cap', hatColor: '#8a2a2a', hatDark: '#5a1a1a' },
     },
   },
   space: {
@@ -418,6 +419,7 @@ const EXTRA = {
       carpenter: { skin: '#c48a6a', hair: '#222', eye: '#111', body: '#ffb84a', bodyDark: '#c8801a', legs: '#333', hat: 'helmet', hatColor: '#ffb84a', hatLight: '#ffd88a', visor: '#222' },
       fisher: { skin: '#9adf9a', hair: '#2a6a2a', eye: '#000', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#333' },
       scholar: { skin: '#f2c49b', hair: '#aaa', eye: '#222', body: '#5a3a8a', bodyDark: '#3a2a5a', legs: '#222' },
+      writer: { skin: '#c48a6a', hair: '#222', eye: '#111', body: '#2a6a5a', bodyDark: '#1a4a3a', legs: '#333' },
     },
   },
   city: {
@@ -447,6 +449,7 @@ const EXTRA = {
       carpenter: { skin: '#d9a07a', hair: '#333', eye: '#111', body: '#e8c547', bodyDark: '#b89520', legs: '#2a3a6a', hat: 'helmet', hatColor: '#ffd35a', hatLight: '#fff2b4', visor: '#333' },
       fisher: { skin: '#a8704a', hair: '#ddd', eye: '#111', body: '#2a6a9a', bodyDark: '#1a4a6a', legs: '#4a3a2a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
       scholar: { skin: '#e8b88a', hair: '#888', eye: '#222', body: '#6a4a2a', bodyDark: '#4a2a1a', legs: '#333' },
+      writer: { skin: '#f2c49b', hair: '#c47a2a', eye: '#222', body: '#2a6a5a', bodyDark: '#1a4a3a', legs: '#2a2a3a', hat: 'cap', hatColor: '#1a1a1a', hatDark: '#000' },
     },
   },
 };

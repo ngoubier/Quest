@@ -145,7 +145,7 @@ export function openParentSpace({ game, saves, profiles, questDefs = [], reportW
         maxLength: 40,
         fieldWidth: 200,
         onOk: (word) => {
-          addCustom(p, { subject: 'francais', type: 'dictation', prompt: 'Écoute l’énigme, puis écris le mot.', say: `Écris le mot : ${word}.`, answer: word });
+          addCustom(p, { subject: 'dictee', type: 'dictation', prompt: 'Écoute l’énigme, puis écris le mot.', say: `Écris le mot : ${word}.`, answer: word });
           done();
         },
       }),

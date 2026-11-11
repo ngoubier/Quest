@@ -45,7 +45,9 @@ test('Dictée : orthographe exacte, accents compris', () => {
   assert.ok(checkAnswer(apo, "aujourd'hui"));
   // La banque peut exclure les dictées (appareil sans voix).
   const bank = frenchSchoolBank();
-  for (let i = 0; i < 20; i++) assert.ok(bank.pick({ age: 8, subject: 'francais', count: 3, excludeTypes: ['dictation'] }).every((x) => x.type !== 'dictation'));
+  assert.ok(bank.subjects(8).includes('dictee'), 'matière Dictée disponible');
+  assert.ok(bank.pick({ age: 8, subject: 'dictee', count: 3 }).every((x) => x.type === 'dictation'));
+  assert.equal(bank.pick({ age: 8, subject: 'dictee', count: 3, excludeTypes: ['dictation'] }).length, 0);
 });
 
 test('Transfert de partie : code aller-retour, code abîmé refusé', async () => {

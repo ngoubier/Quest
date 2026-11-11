@@ -56,7 +56,7 @@
 | 3 | Oui | ✓ une question ratée revient 1 jour plus tard, puis 3, puis 7 ; maîtrisée après 3 révisions réussies |
 | 4 | Plus tard | — |
 | 5 | Oui, dans l’Espace parents | ✓ par enfant : dictées (mot prononcé) et questions écrites (matière, question, réponse) |
-| 6 | Oui | ✓ ~60 mots de dictée du CP au CM2 + ceux des parents |
+| 6 | Oui | ✓ ~60 mots de dictée du CP au CM2 + ceux des parents ; matière « Dictée » à part entière (le jeu la propose comme les autres) et **un écrivain au village qui ne fait que des dictées** ; voix lancée dans le geste (exigé par Safari sur iPhone/iPad) |
 | 7 | Non | — |
 | 8–11, 13 | Plus tard | — |
 | 12 | Oui | ✓ boss des souterrains (Roi Gluant / Robot Géant / Rat Géant) : bouclier → question → bouclier baissé 6 s, 2 coups max ; vaincu, il libère la relique |
