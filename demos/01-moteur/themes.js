@@ -5,12 +5,15 @@
 // Rôles de tuiles que la démo utilise : chaque thème doit tous les fournir.
 export const TILE_ROLES = ['floor', 'floor_alt', 'path', 'wall', 'obstacle', 'water', 'door', 'floor_in'];
 
+import { detailCount } from '../../engine/index.js';
+
 export const P = (ctx, x, y, w, h, c) => {
   ctx.fillStyle = c;
   ctx.fillRect(x, y, w, h);
 };
 export const speckle = (ctx, rng, n, colors, size = 1) => {
-  for (let i = 0; i < n; i++) P(ctx, rng.int(0, 15), rng.int(0, 15), size, size, rng.pick(colors));
+  // Sur mobile (profil simplifié), deux fois moins de mouchetures : l'image est plus calme.
+  for (let i = 0; i < detailCount(n); i++) P(ctx, rng.int(0, 15), rng.int(0, 15), size, size, rng.pick(colors));
 };
 export const bricks = (ctx, base, mortar, hi) => {
   P(ctx, 0, 0, 16, 16, mortar);

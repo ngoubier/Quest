@@ -5,6 +5,8 @@ import { clamp, lerp, easeInOut } from '../core/math.js';
 //  - 'rooms'  : écran fixe par "salle", défilement animé quand on change de salle
 //               (comme le Zelda original). Si l'écran est plus petit que la salle
 //               (téléphone), la caméra suit le héros sans sortir de la salle.
+//               Si l'écran est plus grand que la salle (PC grand écran), la salle est
+//               centrée et on aperçoit les salles voisines sur les côtés.
 
 export class Camera {
   constructor({ width, height, bounds = null, mode = 'follow', roomWidth = width, roomHeight = height, scrollDuration = 0.75 }) {
@@ -51,7 +53,7 @@ export class Camera {
   /** Position de la caméra dans une salle : centrée sur la cible, bornée à la salle. */
   _inRoom(room, px, py) {
     const rr = this.roomRect(room);
-    const fit = (p, size, start, len) => (size >= len ? start : clamp(p - size / 2, start, start + len - size));
+    const fit = (p, size, start, len) => (size >= len ? start - Math.floor((size - len) / 2) : clamp(p - size / 2, start, start + len - size));
     return { x: fit(px, this.width, rr.x, rr.w), y: fit(py, this.height, rr.y, rr.h) };
   }
 
@@ -71,8 +73,10 @@ export class Camera {
     this.x = px - this.width / 2;
     this.y = py - this.height / 2;
     if (this.bounds) {
-      this.x = clamp(this.x, 0, Math.max(0, this.bounds.w - this.width));
-      this.y = clamp(this.y, 0, Math.max(0, this.bounds.h - this.height));
+      // Carte plus petite que l'écran : elle est centrée.
+      const fit = (p, size, len) => (size >= len ? -Math.floor((size - len) / 2) : clamp(p, 0, len - size));
+      this.x = fit(this.x, this.width, this.bounds.w);
+      this.y = fit(this.y, this.height, this.bounds.h);
     }
   }
 

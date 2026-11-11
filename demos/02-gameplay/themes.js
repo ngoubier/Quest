@@ -1,6 +1,8 @@
 // Ambiances de l'essai n°2 : on reprend celles de l'essai n°1 et on y ajoute
 // ce que le gameplay demande (buissons, objets, monstres, icônes, vocabulaire).
 import { THEMES as BASE, TILE_ROLES as BASE_ROLES, P, humanoid } from '../01-moteur/themes.js';
+import { detailCount } from '../../engine/index.js';
+import { humanoidHD, grassHD, pathHD, waterHD, bricksHD, treeHD, bushHD, chestHD, coinHD } from './hd.js';
 
 export const TILE_ROLES = [
   ...BASE_ROLES,
@@ -357,6 +359,12 @@ function chars(people, sign) {
       const [who, dir, step] = name.split('_');
       humanoid(c, dir, Number(step), people[who]);
     },
+    // PC : personnages redessinés en haute définition (le panneau est agrandi automatiquement)
+    paintHD(c, name) {
+      if (name === 'sign') return false;
+      const [who, dir, step] = name.split('_');
+      humanoidHD(c, dir, Number(step), people[who]);
+    },
   };
 }
 
@@ -576,8 +584,8 @@ const BETTER_TILES = {
       variants: 3,
       paint: (c, { rng, variant }) => {
         P(c, 0, 0, 16, 16, '#4c9a3c');
-        for (let i = 0; i < 10; i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick(['#3d8530', '#5fb04c']));
-        for (let i = 0; i < 2 + variant; i++) tuft(c, rng.int(0, 13), rng.int(1, 13), i % 2 ? '#3a7f2c' : '#6bbf4e');
+        for (let i = 0; i < detailCount(10); i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick(['#3d8530', '#5fb04c']));
+        for (let i = 0; i < detailCount(2 + variant); i++) tuft(c, rng.int(0, 13), rng.int(1, 13), i % 2 ? '#3a7f2c' : '#6bbf4e');
         if (variant === 2) (P(c, rng.int(2, 13), rng.int(2, 13), 1, 1, '#ffe066'), P(c, rng.int(2, 13), rng.int(2, 13), 1, 1, '#ffffff'));
       },
     },
@@ -585,7 +593,7 @@ const BETTER_TILES = {
       variants: 2,
       paint: (c, { rng }) => {
         P(c, 0, 0, 16, 16, '#c9a266');
-        for (let i = 0; i < 9; i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick(['#b08950', '#dcb97f']));
+        for (let i = 0; i < detailCount(9); i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick(['#b08950', '#dcb97f']));
         for (let i = 0; i < 2; i++) {
           const x = rng.int(1, 12);
           const y = rng.int(1, 12);
@@ -698,7 +706,7 @@ function stoneWall(c, rng, k) {
 
 function stoneFloor(c, rng, k, variant) {
   P(c, 0, 0, 16, 16, k.floor);
-  for (let i = 0; i < 14; i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick([k.floorDark, k.floorLight]));
+  for (let i = 0; i < detailCount(14); i++) P(c, rng.int(0, 15), rng.int(0, 15), 1, 1, rng.pick([k.floorDark, k.floorLight]));
   for (let i = 0; i < 2 + variant; i++) {
     const x = rng.int(1, 12);
     const y = rng.int(1, 13);
@@ -1157,6 +1165,34 @@ function bridgeTiles(k) {
   };
 }
 
+// ------------------------------------------------------------ tuiles haute définition (PC)
+const HD_TILES = {
+  medieval: {
+    floor: (c, o) => grassHD(c, o),
+    floor_alt: (c, o) => grassHD(c, { ...o, variant: 2 }),
+    path: (c, o) => pathHD(c, o),
+    water: (c, o) => waterHD(c, o, { base: '#2f63c9', deep: '#2a58b8', light: '#9ac0f8' }),
+    wall: (c, o) => bricksHD(c, '#8a8478', '#4f4a42', '#a9a294', o.rng),
+    obstacle: (c, o) => treeHD(c, o),
+    bush: (c, o) => bushHD(c, o),
+  },
+  city: {
+    floor_alt: (c, o) => grassHD(c, o, '#5aa04a'),
+    water: (c, o) => waterHD(c, o, { base: '#2a7f8f', deep: '#24707e', light: '#8ad4e0' }),
+    wall: (c, o) => {
+      bricksHD(c, '#9a4a3a', '#6e3328', '#b0604c', o.rng);
+      // fenêtre : cadre, vitre en dégradé, reflet, rebord
+      P(c, 7, 7, 18, 16, '#2a3a4a');
+      P(c, 9, 9, 14, 12, '#7ab0d8');
+      P(c, 9, 15, 14, 6, '#6aa0c8');
+      P(c, 15, 9, 2, 12, '#2a3a4a');
+      P(c, 10, 10, 3, 3, '#e0f0fc');
+      P(c, 10, 13, 1, 2, '#c8e4f8');
+      P(c, 6, 23, 20, 2, '#d0c8b8');
+    },
+  },
+};
+
 export const THEMES = BASE.map((t) => {
   const x = EXTRA[t.id];
   const pal = { ...x.pal, pet: PETS[t.id] };
@@ -1175,13 +1211,21 @@ export const THEMES = BASE.map((t) => {
   // Ombres portées sous les murs, obstacles et buissons ; écume au bord de l'eau.
   for (const k of ['wall', 'obstacle', 'bush']) tiles[k] = { ...tiles[k], props: { ...(tiles[k].props ?? {}), shadow: true } };
   tiles.water = { ...tiles.water, props: { ...(tiles.water.props ?? {}), edge: EDGES[t.id] } };
+  // PC : tuiles redessinées en haute définition (les autres sont agrandies automatiquement)
+  for (const [k, paintHD] of Object.entries(HD_TILES[t.id] ?? {})) tiles[k] = { ...tiles[k], paintHD };
+  const objects = objectsSheet(pal);
+  objects.paintHD = (c, name) => {
+    if (name === 'chest' || name === 'chest_open') return chestHD(c, name === 'chest_open', pal);
+    if (name === 'coin') return coinHD(c, pal);
+    return false;
+  };
   return {
     ...t,
     words: { ...x.words, ...MORE_WORDS[t.id] },
     tiles,
     sprites: {
       chars: { ...chars({ player: PLAYERS[t.id], ...x.people }, SIGNS[t.id]), outline: '#141414' },
-      objects: { ...objectsSheet(pal), outline: '#141414' },
+      objects: { ...objects, outline: '#141414' },
       icons: iconsSheet(x.pal),
       boss: bossSheet(...BOSSES[t.id]),
     },

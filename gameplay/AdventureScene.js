@@ -571,8 +571,29 @@ export class AdventureScene extends Scene {
   }
 
   // ------------------------------------------------------------------ dessin
+  /**
+   * Écran plus large que la salle (PC) : les salles voisines restent visibles mais
+   * assombries, pour que l'enfant sache toujours où il joue.
+   */
+  _dimOtherRooms(r) {
+    const cam = this.world.camera;
+    const vp = this.world.viewport;
+    if (cam.mode !== 'rooms' || (vp.w <= cam.roomWidth && vp.h <= cam.roomHeight)) return;
+    const rr = cam.roomRect();
+    const x0 = Math.round(vp.x + rr.x - cam.x);
+    const y0 = Math.round(vp.y + rr.y - cam.y);
+    const x1 = x0 + rr.w;
+    const y1 = y0 + rr.h;
+    const shade = (x, y, w, h) => w > 0 && h > 0 && r.rect(x, y, w, h, 'rgba(0,0,0,0.55)');
+    shade(vp.x, vp.y, x0 - vp.x, vp.h);
+    shade(x1, vp.y, vp.x + vp.w - x1, vp.h);
+    shade(Math.max(vp.x, x0), vp.y, Math.min(x1, vp.x + vp.w) - Math.max(vp.x, x0), y0 - vp.y);
+    shade(Math.max(vp.x, x0), y1, Math.min(x1, vp.x + vp.w) - Math.max(vp.x, x0), vp.y + vp.h - y1);
+  }
+
   draw(r) {
     this.world.draw(r);
+    this._dimOtherRooms(r);
     this._hudButtons = drawHud(r, this, this.cfg.hud);
     const t = this.toasts[0];
     if (t) {

@@ -69,6 +69,9 @@ export class Renderer {
     const c = this.ctx;
     dx = Math.round(dx);
     dy = Math.round(dy);
+    // Image plus fine que l'écran (HD sur un petit écran) : on la réduit proprement.
+    const shrink = dw * this.scale < sw;
+    if (shrink) c.imageSmoothingEnabled = true;
     if (flipX) {
       c.save();
       c.translate(dx + dw, dy);
@@ -76,6 +79,7 @@ export class Renderer {
       c.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
       c.restore();
     } else c.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+    if (shrink) c.imageSmoothingEnabled = false;
   }
 
   _font(size, font, bold) {
