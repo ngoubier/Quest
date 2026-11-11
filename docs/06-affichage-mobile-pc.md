@@ -29,11 +29,26 @@ adaptés à l'appareil**. Le jeu choisit tout seul ; on peut forcer un profil da
 
 - **Images 2 fois plus fines** que la grille du jeu (32×32 pixels pour une case de 16×16).
 - **Redessinés à la main en HD** :
-  - les **personnages** (héros et habitants) : visages avec yeux,
-    reflets et joues, ceinture, ombrage de la tunique, chaussures, cheveux en mèches ;
-  - herbe (brins, fleurs), chemin (cailloux), eau (vaguelettes, reflets),
-    murs de briques, arbres et buissons (feuillage en grappes) ;
-  - **objets** : coffre (planches, ferrures, serrure), pièce d'euro.
+  - **le héros**, unique : capuche à longue pointe, cape rouge, épée dans le dos, bourse,
+    bottes. On le reconnaît de face, de dos et de profil ;
+  - **les habitants**, chacun avec un signe distinctif : barbe blanche (l'Ancien), tablier et
+    moustache (le marchand), armure et casque à crête (le garde), lunettes (la maîtresse,
+    l'érudit), boîte à outils et marteau (le charpentier), écharpe et plume (l'écrivain),
+    taches de rousseur (Léon), cheveux longs… Grands yeux, joues, ombrages, pas animés ;
+  - **les monstres** : gluant (gelée brillante, reflets, gouttes), chauve-souris (ailes
+    membraneuses), et **le Roi Gluant** (64×64, couronne à joyaux, bouclier en bulle irisée) ;
+    le chiot compagnon ;
+  - **les objets** : coffre, pièce, clé, cœurs, potion, épée, fleurs et bouquet, ruban,
+    champignon, amulette, pomme, gâteau, tarte, planches, clous, ampoule d'indice, grand sac,
+    bloc, dalle, grille, porte verrouillée, levier, nuage de fumée ;
+  - **les bâtiments** : toit de chaume en bottes de paille, façade à colombages avec fenêtre
+    à carreaux et jardinière, porte en planches avec pentures et lanterne, porte de maison
+    en arche, falaise, entrée de grotte ;
+  - **l'intérieur du magasin** : parquet, murs en planches, étagères (bouteilles, bocaux,
+    pots), comptoir et caisse ;
+  - **la grotte** : sol et murs de pierre, rochers, torches animées, sortie ; **le pont**
+    (cassé et réparé) ;
+  - **le terrain** : herbe, chemin, eau, murs de briques, arbres et buissons.
 - **Tout le reste** est agrandi automatiquement : lissage des diagonales, puis finition HD
   (lumière douce venant d'en haut à gauche, grain fin, bord des silhouettes légèrement
   assombri pour donner du volume).
@@ -59,6 +74,6 @@ adaptés à l'appareil**. Le jeu choisit tout seul ; on peut forcer un profil da
 
 ## À décider ensemble
 
-1. Redessiner en HD **le reste** (monstres, boss, magasin, grotte, pont, icônes) ?
+1. Redessiner aussi en HD les **icônes du bandeau** et les **panneaux** (encore agrandis automatiquement) ?
 2. Sur mobile, préférez-vous les **contours épais** partout, ou seulement autour du héros et des monstres ?
 3. Sur PC, vue large à **20 tuiles**, ou garder **16** (plus « Zelda d'origine ») ?

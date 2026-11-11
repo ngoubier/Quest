@@ -1,9 +1,11 @@
 // Dessins HAUTE DÉFINITION (profil PC) : 32×32 pixels d'image pour une case de 16×16.
+// Ce fichier : outils de dessin, terrain (herbe, chemin, eau, briques, arbres), coffre, pièce.
+// Voir aussi hd-people.js (personnages, monstres), hd-objects.js, hd-buildings.js.
 // Mêmes silhouettes et mêmes emplacements que le pixel art d'origine (la logique ne change
 // pas), mais 4 fois plus de pixels : ombrages, reflets, brins d'herbe, briques, visages.
 // Tout ce qui n'a pas de version HD ici est agrandi automatiquement (Scale2x + finition).
 
-const P = (c, x, y, w, h, col) => {
+export const P = (c, x, y, w, h, col) => {
   c.fillStyle = col;
   c.fillRect(x, y, w, h);
 };
@@ -16,136 +18,24 @@ export function tint(hex, f) {
 }
 
 /** Rectangle aux coins arrondis (1 pixel retiré à chaque coin). */
-function R(c, x, y, w, h, col) {
+export function R(c, x, y, w, h, col) {
   P(c, x + 1, y, w - 2, h, col);
   P(c, x, y + 1, w, h - 2, col);
 }
 
 /** Disque plein, pixel par pixel. */
-function disc(c, cx, cy, r, col) {
+export function disc(c, cx, cy, r, col) {
   for (let y = -r; y <= r; y++) {
     const w = Math.floor(Math.sqrt(r * r - y * y) + 0.35);
     P(c, cx - w, cy + y, w * 2 + 1, 1, col);
   }
 }
 
-// ------------------------------------------------------------------ personnages
-/** Personnage 32×32 (même gabarit que humanoid() en 16×16). */
-export function humanoidHD(c, dir, step, col) {
-  const skin = col.skin;
-  const skinDark = tint(skin, -0.18);
-  const body = col.body;
-  const bodyDark = col.bodyDark;
-  const bodyLight = tint(body, 0.25);
-  const legs = col.legs;
-  const shoe = tint(legs, -0.45);
-  const hair = col.hair;
-  const hairDark = tint(hair, -0.3);
-  const hairLight = tint(hair, 0.3);
-
-  // ombre au sol
-  P(c, 9, 30, 14, 2, 'rgba(0,0,0,.28)');
-  P(c, 7, 30, 18, 1, 'rgba(0,0,0,.18)');
-
-  // jambes et chaussures
-  if (dir === 'side') {
-    const a = step ? 2 : 0;
-    P(c, 10 + a, 24, 4, 5, legs);
-    P(c, 10 + a, 29, 5, 2, shoe);
-    P(c, 18 - a, 24, 4, 5, col.legsDark || tint(legs, -0.15));
-    P(c, 18 - a, 29, 5, 2, shoe);
-  } else {
-    const l = step ? 6 : 4;
-    const r = step ? 4 : 6;
-    P(c, 10, 24, 4, l - 1, legs);
-    P(c, 10, 23 + l, 4, 2, shoe);
-    P(c, 18, 24, 4, r - 1, legs);
-    P(c, 18, 23 + r, 4, 2, shoe);
-    P(c, 13, 24, 1, l - 1, tint(legs, -0.2));
-    P(c, 21, 24, 1, r - 1, tint(legs, -0.2));
-  }
-
-  // corps (tunique) : lumière à gauche, ombre à droite, ceinture
-  R(c, 8, 14, 16, 10, body);
-  P(c, 9, 15, 2, 7, bodyLight);
-  P(c, 21, 15, 2, 8, bodyDark);
-  P(c, 8, 22, 16, 2, bodyDark);
-  P(c, 8, 20, 16, 1, tint(bodyDark, -0.25));
-  if (dir === 'down') {
-    P(c, 15, 19, 2, 3, '#e8d070');
-    P(c, 14, 14, 4, 2, tint(body, -0.12)); // col
-  }
-  if (dir === 'side') {
-    // bras le long du corps
-    R(c, 14, 16 + (step ? 2 : 0), 5, 6, bodyDark);
-    P(c, 14, 21 + (step ? 2 : 0), 4, 2, skin);
-  } else {
-    const a = step ? 2 : 0;
-    const b = step ? 0 : 2;
-    P(c, 6, 15 + a, 2, 5, body);
-    P(c, 6, 20 + a, 2, 2, skin);
-    P(c, 24, 15 + b, 2, 5, bodyDark);
-    P(c, 24, 20 + b, 2, 2, skinDark);
-  }
-
-  // tête
-  R(c, 10, 2, 12, 12, skin);
-  P(c, 20, 3, 2, 10, skinDark);
-  if (dir === 'down') {
-    P(c, 10, 2, 12, 4, hair);
-    P(c, 10, 6, 2, 4, hair);
-    P(c, 20, 6, 2, 4, hair);
-    P(c, 12, 3, 6, 1, hairLight);
-    P(c, 14, 5, 1, 2, hairDark);
-    P(c, 17, 5, 1, 1, hairDark);
-    // yeux : blanc + pupille + reflet
-    P(c, 12, 8, 3, 3, '#ffffff');
-    P(c, 18, 8, 3, 3, '#ffffff');
-    P(c, 13, 8, 2, 3, col.eye);
-    P(c, 18, 8, 2, 3, col.eye);
-    P(c, 13, 8, 1, 1, '#ffffff');
-    P(c, 18, 8, 1, 1, '#ffffff');
-    P(c, 11, 11, 2, 1, 'rgba(255,110,110,.45)'); // joues
-    P(c, 20, 11, 2, 1, 'rgba(255,110,110,.45)');
-    P(c, 15, 12, 3, 1, tint(skin, -0.35)); // bouche
-  } else if (dir === 'up') {
-    R(c, 10, 2, 12, 10, hair);
-    P(c, 12, 3, 7, 1, hairLight);
-    for (const x of [12, 15, 18]) P(c, x, 6, 1, 5, hairDark);
-  } else {
-    P(c, 10, 2, 12, 4, hair);
-    R(c, 10, 5, 6, 7, hair);
-    P(c, 12, 3, 6, 1, hairLight);
-    P(c, 11, 7, 1, 4, hairDark);
-    P(c, 18, 8, 2, 3, '#ffffff');
-    P(c, 19, 8, 1, 3, col.eye);
-    P(c, 22, 9, 1, 2, skin); // nez
-    P(c, 19, 12, 2, 1, tint(skin, -0.35));
-    P(c, 15, 8, 2, 3, skinDark); // oreille
-  }
-
-  // couvre-chef
-  const hc = col.hatColor;
-  if (col.hat === 'hood') {
-    const hd = tint(hc, -0.25);
-    R(c, 8, 0, 16, 4, hc);
-    P(c, 9, 0, 10, 1, tint(hc, 0.25));
-    P(c, 8, 3, 16, 1, hd);
-    if (dir === 'side') (R(c, 3, 2, 7, 4, hc), P(c, 3, 5, 6, 1, hd));
-    else if (dir === 'up') (R(c, 12, 0, 8, 8, hc), P(c, 18, 1, 2, 7, hd));
-    else (R(c, 22, 2, 5, 4, hc), P(c, 22, 5, 4, 1, hd));
-  } else if (col.hat === 'helmet') {
-    R(c, 8, 0, 16, 14, hc);
-    P(c, 9, 0, 14, 2, col.hatLight);
-    P(c, 21, 2, 2, 11, tint(hc, -0.2));
-    if (dir === 'down') (R(c, 10, 4, 12, 6, col.visor), P(c, 11, 5, 4, 1, tint(col.visor, 0.55)), P(c, 11, 6, 2, 1, tint(col.visor, 0.35)));
-    if (dir === 'side') (R(c, 16, 4, 8, 6, col.visor), P(c, 17, 5, 3, 1, tint(col.visor, 0.55)));
-    if (dir === 'up') P(c, 13, 4, 6, 1, tint(hc, -0.15));
-  } else if (col.hat === 'cap') {
-    R(c, 10, 0, 12, 4, hc);
-    P(c, 12, 1, 4, 1, tint(hc, 0.3));
-    if (dir === 'down') P(c, 10, 4, 12, 2, col.hatDark);
-    if (dir === 'side') P(c, 20, 4, 6, 2, col.hatDark);
+/** Ellipse pleine (rx, ry en pixels), pixel par pixel. */
+export function ellipse(c, cx, cy, rx, ry, col) {
+  for (let y = -ry; y <= ry; y++) {
+    const w = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))) + 0.35);
+    P(c, cx - w, cy + y, w * 2 + 1, 1, col);
   }
 }
 

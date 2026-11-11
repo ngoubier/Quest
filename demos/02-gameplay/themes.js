@@ -2,7 +2,10 @@
 // ce que le gameplay demande (buissons, objets, monstres, icônes, vocabulaire).
 import { THEMES as BASE, TILE_ROLES as BASE_ROLES, P, humanoid } from '../01-moteur/themes.js';
 import { detailCount } from '../../engine/index.js';
-import { humanoidHD, grassHD, pathHD, waterHD, bricksHD, treeHD, bushHD, chestHD, coinHD } from './hd.js';
+import { grassHD, pathHD, waterHD, bricksHD, treeHD, bushHD } from './hd.js';
+import { characterHD, LOOKS, blobHD, flyerHD, bossHD, petHD } from './hd-people.js';
+import { objectHD } from './hd-objects.js';
+import { roofHD, eaveHD, shopfrontHD, shopEntranceHD, cliffHD, caveMouthHD, houseDoorHD, shopTilesHD, caveTilesHD, bridgeTilesHD } from './hd-buildings.js';
 
 export const TILE_ROLES = [
   ...BASE_ROLES,
@@ -359,11 +362,12 @@ function chars(people, sign) {
       const [who, dir, step] = name.split('_');
       humanoid(c, dir, Number(step), people[who]);
     },
-    // PC : personnages redessinés en haute définition (le panneau est agrandi automatiquement)
+    // PC : personnages redessinés en haute définition, chacun avec son signe distinctif
+    // (le panneau est agrandi automatiquement)
     paintHD(c, name) {
       if (name === 'sign') return false;
       const [who, dir, step] = name.split('_');
-      humanoidHD(c, dir, Number(step), people[who]);
+      characterHD(c, dir, Number(step), people[who], LOOKS[who]);
     },
   };
 }
@@ -900,6 +904,17 @@ const HD_TILES = {
     wall: (c, o) => bricksHD(c, '#8a8478', '#4f4a42', '#a9a294', o.rng),
     obstacle: (c, o) => treeHD(c, o),
     bush: (c, o) => bushHD(c, o),
+    // bâtiments
+    door: (c, o) => houseDoorHD(c, o),
+    awning: (c, o) => roofHD(c, o),
+    roof_eave: (c, o) => eaveHD(c, o),
+    shopfront: (c, o) => shopfrontHD(c, o),
+    shop_entrance: (c, o) => shopEntranceHD(c, o),
+    cliff: (c, o) => cliffHD(c, o),
+    cave_mouth: (c, o) => caveMouthHD(c, o),
+    ...shopTilesHD(CAVE_SHOP.medieval.shop),
+    ...caveTilesHD(CAVE_SHOP.medieval.cave),
+    ...bridgeTilesHD(BRIDGES.medieval),
   },
 };
 
@@ -925,10 +940,12 @@ export const THEMES = BASE.map((t) => {
   for (const [k, paintHD] of Object.entries(HD_TILES[t.id] ?? {})) tiles[k] = { ...tiles[k], paintHD };
   const objects = objectsSheet(pal);
   objects.paintHD = (c, name) => {
-    if (name === 'chest' || name === 'chest_open') return chestHD(c, name === 'chest_open', pal);
-    if (name === 'coin') return coinHD(c, pal);
-    return false;
+    if (name.startsWith('blob_')) return blobHD(c, name === 'blob_1', pal);
+    if (name.startsWith('flyer_')) return flyerHD(c, name === 'flyer_0', pal);
+    if (name.startsWith('pet_')) return petHD(c, pal.pet, name === 'pet_1');
+    return objectHD(c, name, pal);
   };
+  const [bossKind, bossPal] = BOSSES[t.id];
   return {
     ...t,
     words: { ...x.words, ...MORE_WORDS[t.id] },
@@ -937,7 +954,7 @@ export const THEMES = BASE.map((t) => {
       chars: { ...chars({ player: PLAYERS[t.id], ...x.people }, SIGNS[t.id]), outline: '#141414' },
       objects: { ...objects, outline: '#141414' },
       icons: iconsSheet(x.pal),
-      boss: bossSheet(...BOSSES[t.id]),
+      boss: { ...bossSheet(bossKind, bossPal), paintHD: (c, name) => bossHD(c, name, bossPal) },
     },
   };
 });
