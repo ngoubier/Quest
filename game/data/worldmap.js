@@ -214,6 +214,8 @@ export function paintWorld(r, box, state) {
 export const WORLD_MAP = {
   title: 'Royaume d’Iris',
   when: 'world_open',
+  // Pour essayer les niveaux sans refaire l'introduction : menu pause → « Débogage : oui » (ou adresse terminée par #essai).
+  unlocked: (adv) => adv.game.debug.enabled || globalThis.location?.hash === '#essai',
   lockedText: 'La route du royaume... Sans la carte, tu te perdrais. Va d’abord voir l’Ancien.',
   nodes: WORLD_NODES,
   paint: paintWorld,

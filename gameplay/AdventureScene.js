@@ -451,7 +451,7 @@ export class AdventureScene extends Scene {
   /** La carte du monde est-elle disponible ? */
   get hasWorldMap() {
     const wm = this.cfg.worldMap;
-    return !!wm && check(wm.when, this.state);
+    return !!wm && (check(wm.when, this.state) || !!wm.unlocked?.(this)); // unlocked : raccourci d'essai fourni par le jeu
   }
 
   /**
