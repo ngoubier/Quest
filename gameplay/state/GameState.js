@@ -28,6 +28,7 @@ export class GameState {
     this.quiz = { seen: [], stats: {}, missed: {} };
     this.playTime = 0;
     this.cooldowns = {};
+    this.bagSize = 10;
   }
 
   // --- délais (ex. attendre avant de retenter des questions)
@@ -140,7 +141,7 @@ export class GameState {
 
   // --- sauvegarde
   toJSON() {
-    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns });
+    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns, bagSize: this.bagSize });
   }
 
   load(data) {

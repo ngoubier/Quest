@@ -2,7 +2,7 @@
 // Ce fichier ne fait que brancher les données (world.js) et les ambiances (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
 import { Game, Scene, MenuScene, TouchControls } from '../../engine/index.js';
-import { AdventureScene, GameState, openParentSpace } from '../../gameplay/index.js';
+import { AdventureScene, openParentSpace, PromptScene } from '../../gameplay/index.js';
 import { THEMES, TILE_ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './world.js';
 import { frenchSchoolBank } from '../../content/quiz/index.js';
@@ -80,6 +80,8 @@ const makeAdventure = () =>
     startMap: 'overworld',
     hud: { height: HUD_H, counters: ['coin', 'key', 'hint'] },
     startItems: { hint: 1 },
+    bagSize: 10, // places dans le sac (le grand sac du magasin passe à 20)
+    quizCooldown: 600, // attente après un échec : 10 min (réglable dans l'Espace parents)
     endWhen: { quest: 'relic', status: 'done' },
     end: { message: 'Bravo, tu as rapporté la relique !' },
     reportWhen: 'end', // bilan parents disponible à la fin du jeu
@@ -87,53 +89,94 @@ const makeAdventure = () =>
     allowThemeSwitch: true,
   });
 
-// ------------------------------------------------------------------ écran titre
+// ------------------------------------------------------------------ écran titre (profils)
+const CLASSES = { 6: 'CP', 7: 'CE1', 8: 'CE2', 9: 'CM1', 10: 'CM2' };
+
 class TitleScene extends Scene {
   enter() {
     this.adv = makeAdventure();
-    this.hasSave = this.adv.saves.has(1);
-    this.options = this.hasSave ? ['Nouvelle partie', 'Continuer', 'Espace parents'] : ['Nouvelle partie'];
-    this.choice = this.hasSave ? 1 : 0;
+    this.profiles = this.adv.profiles;
+    this.choice = 0;
+  }
+
+  /** Options recalculées à chaque image (un profil peut avoir été ajouté ou supprimé). */
+  get options() {
+    const list = this.profiles.list().map((p) => ({ label: `${p.name} (${p.age} ans)`, profile: p }));
+    if (!this.profiles.isFull) list.push({ label: '+ Nouveau joueur', action: 'new' });
+    if (this.profiles.list().length) list.push({ label: 'Espace parents', action: 'parents' });
+    return list;
+  }
+
+  start(p, load) {
+    if (!load) this.adv.saves.remove(this.profiles.slot(p.id)); // nouvelle partie : l'ancienne est effacée
+    game.scenes.fade(() =>
+      game.scenes.replace(this.adv, load ? { load: true, slot: this.profiles.slot(p.id) } : { profile: { id: p.id, name: p.name, age: p.age } }),
+    );
+  }
+
+  newPlayer() {
+    game.scenes.push(
+      new PromptScene({
+        title: 'Comment t’appelles-tu ?',
+        message: 'Écris ton prénom puis Entrée.',
+        placeholder: 'Prénom',
+        onOk: (name) =>
+          game.scenes.push(
+            new MenuScene({
+              title: `Quel âge as-tu, ${name} ?`,
+              width: 170,
+              items: Object.entries(CLASSES).map(([age, cls]) => ({
+                label: `${age} ans (${cls})`,
+                onSelect: () => this.start(this.profiles.add({ name, age: Number(age) }), false),
+              })),
+            }),
+          ),
+      }),
+    );
   }
 
   update() {
     const i = this.input;
+    const opts = this.options;
+    const n = opts.length;
+    this.choice = Math.min(this.choice, n - 1);
     if (i.pressed('select')) (game.themes.next(), game.audio.play('switch'));
-    const n = this.options.length;
     if (i.pressed('up')) (this.choice = (this.choice - 1 + n) % n), game.audio.play('menu_move');
     if (i.pressed('down')) (this.choice = (this.choice + 1) % n), game.audio.play('menu_move');
-    if (i.pressed('action') || i.pressed('start')) {
-      i.consume('action');
-      game.audio.play('menu_ok');
-      const opt = this.options[this.choice];
-      if (opt === 'Continuer') return game.scenes.fade(() => game.scenes.replace(this.adv, { load: true }));
-      if (opt === 'Espace parents') {
-        const state = new GameState();
-        state.load(this.adv.saves.load(1).data.state);
-        return openParentSpace({
-          game,
-          saves: this.adv.saves,
-          state,
-          questDefs: QUESTS,
-          reportWhen: 'end',
-          onChange: (st) => {
-            const save = this.adv.saves.load(1).data;
-            save.state = st.toJSON();
-            this.adv.saves.save(1, save);
-          },
-        });
-      }
-      // Nouvelle partie : on demande l'âge pour adapter les questions.
-      const start = (age) => game.scenes.fade(() => game.scenes.replace(this.adv, { profile: { age } }));
-      const CLASSES = { 6: 'CP', 7: 'CE1', 8: 'CE2', 9: 'CM1', 10: 'CM2' };
-      game.scenes.push(
-        new MenuScene({
-          title: 'Quel âge as-tu ?',
-          width: 150,
-          items: Object.entries(CLASSES).map(([age, cls]) => ({ label: `${age} ans (${cls})`, onSelect: () => start(Number(age)) })),
-        }),
-      );
+    if (!(i.pressed('action') || i.pressed('start'))) return;
+    i.consume('action');
+    game.audio.play('menu_ok');
+    const opt = opts[this.choice];
+    if (opt.action === 'new') return this.newPlayer();
+    if (opt.action === 'parents') {
+      return openParentSpace({ game, saves: this.adv.saves, profiles: this.profiles, questDefs: QUESTS, reportWhen: 'end' });
     }
+    const p = opt.profile;
+    if (!this.profiles.hasGame(p.id)) return this.start(p, false);
+    game.scenes.push(
+      new MenuScene({
+        title: p.name,
+        width: 190,
+        items: [
+          { label: 'Continuer la partie', onSelect: () => this.start(p, true) },
+          {
+            label: 'Recommencer du début',
+            onSelect: () =>
+              game.scenes.push(
+                new MenuScene({
+                  title: 'Effacer la partie et recommencer ?',
+                  width: 220,
+                  items: [
+                    { label: 'Non', onSelect: (m) => m.close() },
+                    { label: 'Oui, recommencer', onSelect: () => this.start(p, false) },
+                  ],
+                }),
+              ),
+          },
+          { label: 'Retour', onSelect: (m) => m.close() },
+        ],
+      }),
+    );
   }
 
   draw(r) {
@@ -142,22 +185,17 @@ class TitleScene extends Scene {
     const roles = ['floor', 'floor', 'floor_alt', 'path', 'floor'];
     for (let y = 0; y < r.height; y += TS) for (let x = 0; x < r.width; x += TS) t.tileset.draw(r, t.tileset.id(roles[((x * 7 + y * 3) / TS) % roles.length]), x, y, game.time);
     r.withAlpha(0.72, () => r.rect(0, 0, r.width, r.height, '#000'));
-    r.text('QUEST', r.width / 2, 22, { color: s.accent, size: 22, font: s.font, bold: true, align: 'center', shadow: '#000' });
-    r.text('Essai n°2 — le gameplay', r.width / 2, 50, { color: s.text, size: 9, font: s.font, align: 'center' });
-    const lines = [
-      'Flèches / ZQSD ... se déplacer',
-      'Espace ........... parler / frapper',
-      'Entrée ........... menu, journal, sauvegarde',
-      'Tab .............. changer d’ambiance',
-      'F1 ou ² .......... débogage',
-    ];
-    lines.forEach((l, i) => r.text(l, 28, 74 + i * 12, { color: s.text, size: 8, font: s.font }));
+    r.text('QUEST', r.width / 2, 14, { color: s.accent, size: 22, font: s.font, bold: true, align: 'center', shadow: '#000' });
+    r.text('Essai n°2 — le gameplay', r.width / 2, 42, { color: s.text, size: 9, font: s.font, align: 'center' });
+    const lines = ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · I : sac · Tab : ambiance'];
+    lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
+    r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
     this.options.forEach((o, i) => {
       const sel = i === this.choice;
       const blink = !sel || Math.floor(game.time * 2) % 2 === 0;
-      if (blink) r.text(`${sel ? '▶ ' : '  '}${o}`, r.width / 2, 138 + i * 11, { color: sel ? s.accent : s.dim, size: 9, font: s.font, align: 'center' });
+      if (blink) r.text(`${sel ? '▶ ' : '  '}${o.label}`, r.width / 2, 108 + i * 12, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, align: 'center' });
     });
-    r.text(`Ambiance : ${t.def.name}`, r.width / 2, 178, { color: s.dim, size: 7, font: s.font, align: 'center' });
+    r.text(`Ambiance : ${t.def.name}`, r.width / 2, 182, { color: s.dim, size: 7, font: s.font, align: 'center' });
   }
 }
 

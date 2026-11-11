@@ -18,6 +18,29 @@ function gem(c, x, y, col, light) {
   P(c, x + 1, y + 5, 4, 1, col);
   P(c, x + 2, y + 6, 2, 1, col);
 }
+// Pièce d'euro : disque doré, bord foncé, reflet, et un petit « € ».
+function euroCoin(c, x, y, d, p) {
+  const r = d / 2;
+  for (let j = 0; j < d; j++) {
+    for (let i = 0; i < d; i++) {
+      const dx = i + 0.5 - r;
+      const dy = j + 0.5 - r;
+      const dist = Math.hypot(dx, dy);
+      if (dist > r) continue;
+      P(c, x + i, y + j, 1, 1, dist > r - 1 ? p.coinDark : dx + dy < -r * 0.6 ? p.coinLight : p.coin);
+    }
+  }
+  if (d >= 10) {
+    const ex = x + Math.floor(r) - 2;
+    const ey = y + Math.floor(r) - 3;
+    P(c, ex + 1, ey, 3, 1, p.coinDark);
+    P(c, ex, ey + 1, 1, 4, p.coinDark);
+    P(c, ex + 1, ey + 5, 3, 1, p.coinDark);
+    P(c, ex - 1, ey + 2, 4, 1, p.coinDark);
+    P(c, ex - 1, ey + 3, 4, 1, p.coinDark);
+  }
+}
+
 function key(c, x, y, col, s = 1) {
   P(c, x, y, 3 * s, 3 * s, col);
   P(c, x + s, y + s, s, s, 'rgba(0,0,0,.6)');
@@ -29,7 +52,7 @@ function key(c, x, y, col, s = 1) {
 const OBJECT_FRAMES = [
   'chest', 'chest_open', 'block', 'plate', 'plate_down', 'gate', 'locked', 'lever_off', 'lever_on',
   'coin', 'key', 'amulet', 'mushroom', 'heart', 'sword_down', 'sword_up', 'sword_side', 'poof_0', 'poof_1',
-  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container', 'planks', 'nails', 'tarte', 'hint',
+  'blob_0', 'blob_1', 'flyer_0', 'flyer_1', 'flowers', 'ribbon', 'bouquet', 'potion', 'heart_container', 'planks', 'nails', 'tarte', 'hint', 'apple', 'cake', 'big_bag',
 ];
 
 function objectsSheet(p) {
@@ -95,7 +118,7 @@ function objectsSheet(p) {
           return;
         }
         case 'coin':
-          gem(c, 5, 4, p.coin, p.coinLight);
+          euroCoin(c, 2, 2, 12, p);
           return;
         case 'key':
           key(c, 1, 5, p.key, 2);
@@ -196,6 +219,29 @@ function objectsSheet(p) {
           P(c, 9, 7, 2, 1, '#8a4a2a');
           P(c, 1, 12, 14, 1, '#8a5a2a');
           return;
+        case 'apple':
+          P(c, 7, 1, 2, 3, '#6a4220');
+          P(c, 9, 2, 3, 2, '#3a8a2a');
+          P(c, 3, 4, 10, 10, '#d8302a');
+          P(c, 2, 6, 12, 6, '#d8302a');
+          P(c, 4, 5, 2, 2, '#ff9a8a');
+          return;
+        case 'cake':
+          P(c, 2, 8, 12, 6, '#e8c890');
+          P(c, 2, 6, 12, 3, '#ff8ab0');
+          P(c, 2, 11, 12, 1, '#ff8ab0');
+          P(c, 7, 2, 2, 4, '#fff');
+          P(c, 7, 1, 2, 1, '#ffb030');
+          return;
+        case 'big_bag':
+          P(c, 5, 1, 6, 2, p.bagDark);
+          P(c, 3, 2, 2, 3, p.bagDark);
+          P(c, 11, 2, 2, 3, p.bagDark);
+          P(c, 1, 5, 14, 10, p.bag);
+          P(c, 1, 5, 14, 2, p.bagDark);
+          P(c, 6, 8, 4, 3, p.bagDark);
+          P(c, 7, 9, 2, 1, '#ffd35a');
+          return;
         case 'hint':
           P(c, 4, 1, 8, 9, p.hint);
           P(c, 3, 3, 10, 5, p.hint);
@@ -245,7 +291,7 @@ function iconsSheet(p) {
   return {
     frameW: 8,
     frameH: 8,
-    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key', 'hint'],
+    frames: ['heart_full', 'heart_half', 'heart_empty', 'coin', 'key', 'hint', 'bag'],
     paint(c, name) {
       if (name.startsWith('heart')) {
         heart(c, 0, 1, 1, name === 'heart_empty' ? '#333' : p.heart, p.heartLight);
@@ -253,7 +299,16 @@ function iconsSheet(p) {
         if (name === 'heart_half') P(c, 3, 1, 1, 6, '#333');
         return;
       }
-      if (name === 'coin') return gem(c, 1, 0, p.coin, p.coinLight);
+      if (name === 'coin') return euroCoin(c, 0, 0, 8, p);
+      if (name === 'bag') {
+        P(c, 2, 0, 4, 1, p.bagDark);
+        P(c, 1, 1, 1, 2, p.bagDark);
+        P(c, 6, 1, 1, 2, p.bagDark);
+        P(c, 0, 3, 8, 5, p.bag);
+        P(c, 0, 3, 8, 1, p.bagDark);
+        P(c, 3, 4, 2, 2, p.bagDark);
+        return;
+      }
       if (name === 'key') return key(c, 0, 2, p.key);
       if (name === 'hint') {
         P(c, 2, 0, 4, 5, p.hint);
@@ -286,12 +341,12 @@ const EXTRA = {
   medieval: {
     pal: {
       chest: '#a8672a', chestDark: '#5a3414', metal: '#d8c070', metalDark: '#7a6a3a', block: '#9a9488', blockLight: '#c4beb2', blockDark: '#5a564e',
-      plate: '#b0a890', plateLight: '#d4ccb4', plateDark: '#6a6454', on: '#5aff5a', off: '#ff5a5a', coin: '#3ad46a', coinLight: '#b4ffc8', key: '#ffd35a',
+      plate: '#b0a890', plateLight: '#d4ccb4', plateDark: '#6a6454', on: '#5aff5a', off: '#ff5a5a', coin: '#e8b830', coinLight: '#fff0a0', coinDark: '#9a6a10', bag: '#a8703a', bagDark: '#6a4220', key: '#ffd35a',
       amulet: '#e83a5a', mushCap: '#d83a2a', mushStem: '#f4e8c8', heart: '#e8303a', heartLight: '#ff9aa0', blade: '#c8d0e0', hilt: '#8a5a2a',
       blob: '#5ac83a', blobDark: '#2a7a1a', flyer: '#6a3a8a', flyerWing: '#9a5aca', eye: '#ffde3a',
       flowerA: '#ff6a8a', flowerB: '#ffffff', ribbon: '#e83a5a', ribbonDark: '#a8203a', potion: '#e8303a', hint: '#ffe066',
     },
-    words: { coin: ['rubis', 'rubis'], key: ['clé', 'clés'], amulet: ['amulette', 'amulettes'], mushroom: ['champignon', 'champignons'], blob: ['gluant', 'gluants'], cave: 'la grotte', elder: "l'Ancien", potion: ['potion', 'potions'], flowers: ['fleurs', 'fleurs'] },
+    words: { coin: ['euro', 'euros'], key: ['clé', 'clés'], amulet: ['amulette', 'amulettes'], mushroom: ['champignon', 'champignons'], blob: ['gluant', 'gluants'], cave: 'la grotte', elder: "l'Ancien", potion: ['potion', 'potions'], flowers: ['fleurs', 'fleurs'] },
     bush: (c) => {
       P(c, 0, 0, 16, 16, '#4c9a3c');
       P(c, 2, 3, 12, 11, '#3f8a36');
@@ -317,12 +372,12 @@ const EXTRA = {
   space: {
     pal: {
       chest: '#5a6a8a', chestDark: '#2a3248', metal: '#4ff0ff', metalDark: '#2a7a8a', block: '#6a7488', blockLight: '#9aa4b8', blockDark: '#3a4254',
-      plate: '#2a5a4a', plateLight: '#4aff9a', plateDark: '#1a2a2a', on: '#4aff9a', off: '#ff4a4a', coin: '#4ff0ff', coinLight: '#d8ffff', key: '#ffb84a',
+      plate: '#2a5a4a', plateLight: '#4aff9a', plateDark: '#1a2a2a', on: '#4aff9a', off: '#ff4a4a', coin: '#e8b830', coinLight: '#fff0a0', coinDark: '#9a6a10', bag: '#a8703a', bagDark: '#6a4220', key: '#ffb84a',
       amulet: '#c84aff', mushCap: '#4aff9a', mushStem: '#2a5a4a', heart: '#ff4a8a', heartLight: '#ffaaca', blade: '#8affff', hilt: '#5a6478',
       blob: '#c84aff', blobDark: '#7a2aaa', flyer: '#8a93a7', flyerWing: '#ff5a3a', eye: '#ff3a3a',
       flowerA: '#4ff0ff', flowerB: '#c84aff', ribbon: '#ffb84a', ribbonDark: '#c8801a', potion: '#4aff9a', hint: '#ffe066',
     },
-    words: { coin: ['crédit', 'crédits'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante', potion: ['kit de soin', 'kits de soin'], flowers: ['plantes hydroponiques', 'plantes hydroponiques'] },
+    words: { coin: ['euro', 'euros'], key: ['carte d’accès', 'cartes d’accès'], amulet: ['cristal de données', 'cristaux de données'], mushroom: ['cellule d’énergie', 'cellules d’énergie'], blob: ['xéno-gelée', 'xéno-gelées'], cave: "l'épave", elder: 'la Commandante', potion: ['kit de soin', 'kits de soin'], flowers: ['plantes hydroponiques', 'plantes hydroponiques'] },
     bush: (c) => {
       P(c, 0, 0, 16, 16, '#3a4254');
       P(c, 3, 4, 10, 10, '#5a3a1a');
@@ -346,7 +401,7 @@ const EXTRA = {
   city: {
     pal: {
       chest: '#3a6ab8', chestDark: '#1a3a6a', metal: '#e8e8e8', metalDark: '#888', block: '#c8a070', blockLight: '#e8c8a0', blockDark: '#7a5a3a',
-      plate: '#888', plateLight: '#bbb', plateDark: '#444', on: '#5aff5a', off: '#ff5a5a', coin: '#ffd35a', coinLight: '#fff2b4', key: '#c8c8d8',
+      plate: '#888', plateLight: '#bbb', plateDark: '#444', on: '#5aff5a', off: '#ff5a5a', coin: '#e8b830', coinLight: '#fff0a0', coinDark: '#9a6a10', bag: '#a8703a', bagDark: '#6a4220', key: '#c8c8d8',
       amulet: '#ff6aa8', mushCap: '#ff6aa8', mushStem: '#fff', heart: '#ff3a5a', heartLight: '#ffa0b0', blade: '#e8e8f0', hilt: '#222',
       blob: '#7a7a8a', blobDark: '#4a4a5a', flyer: '#9a9aa8', flyerWing: '#6a6a78', eye: '#ff6a3a',
       flowerA: '#ff6aa8', flowerB: '#ffd35a', ribbon: '#3a7ad8', ribbonDark: '#1a4aa8', potion: '#ff3a5a', hint: '#ffe066',

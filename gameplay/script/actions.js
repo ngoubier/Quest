@@ -14,7 +14,8 @@ import { check } from './conditions.js';
 //   { sound: 'nom' }  { toast: 'texte' }
 //   { if: condition, then: [...], else: [...] }
 //   { quiz: { subject?: 'maths', count?: 3, pass?: 3,        questions scolaires adaptées à l'âge
-//             cooldown?: 60, retryPrice?: 5 },                 après un échec : attendre (s de jeu) ou payer
+//             cooldown?: 600, retryPrice?: 5 },                après un échec : attendre (s de jeu) ou payer
+//                                                          (défaut : réglage des parents, 10 min)
 //     perCorrect?: { give: 'coin', count: 2 },                 récompense par bonne réponse
 //     success?: [...], failure?: [...] }                       selon que `pass` est atteint
 //   { shop: { id, title?, offers: [{ item, price, once? }] } } ouvre une boutique
@@ -51,7 +52,7 @@ function exec(a, ctx, next) {
         if (a.perCorrect && res.correct > 0) list.push({ give: a.perCorrect.give, count: a.perCorrect.count * res.correct, announce: true });
         const passed = res.total > 0 && res.correct >= (spec.pass ?? spec.count ?? 3);
         // Échec : il faudra attendre (en temps de jeu) ou payer pour réessayer.
-        if (!passed && res.total > 0 && spec.cooldown !== 0) s.setCooldown(key, spec.cooldown ?? 60);
+        if (!passed && res.total > 0 && spec.cooldown !== 0) s.setCooldown(key, spec.cooldown ?? ctx.quizCooldown ?? 600);
         list.push(...[].concat((passed ? a.success : a.failure) ?? []));
         runActions(list, ctx, next);
       });

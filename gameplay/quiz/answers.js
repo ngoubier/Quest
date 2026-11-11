@@ -22,11 +22,30 @@ export function normalize(str, { accents = false, articles = false } = {}) {
  * Question : { type: 'choice' | 'text', answer, accept?: [...], strictAccents?: bool, image? }
  * Pour un QCM, `given` est le texte du choix sélectionné.
  */
+/** Nombre écrit par l'enfant, unité tolérée : "3,70 €" -> 3.7, "16 cm" -> 16. Sinon null. */
+export function parseNumber(str) {
+  const m = String(str ?? '')
+    .trim()
+    .toLowerCase()
+    .match(/^(-?[\d\s]*[.,]?\d+)\s*(€|euros?|cm|mm|km|m|kg|g|min|h|%|°c)?$/);
+  if (!m) return null;
+  const n = Number(m[1].replace(/\s/g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Question : { type: 'choice' | 'text', answer, accept?: [...], strictAccents?: bool, image? }
+ * Pour un QCM, `given` est le texte du choix sélectionné.
+ */
 export function checkAnswer(q, given) {
   if (given == null) return false;
   if (q.type === 'choice') return String(given) === String(q.answer);
+  const expected = [q.answer, ...(q.accept ?? [])];
+  // Réponse numérique : comparaison par valeur (3,7 = 3,70 = 3.7 €).
+  const g = parseNumber(given);
+  if (g !== null && expected.some((a) => parseNumber(a) === g)) return true;
   const opts = { accents: !!q.strictAccents, articles: q.articles ?? true };
-  const g = normalize(given, opts);
-  if (!g) return false;
-  return [q.answer, ...(q.accept ?? [])].some((a) => normalize(a, opts) === g);
+  const gn = normalize(given, opts);
+  if (!gn) return false;
+  return expected.some((a) => normalize(a, opts) === gn);
 }

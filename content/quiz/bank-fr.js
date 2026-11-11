@@ -126,5 +126,42 @@ export const QUESTIONS_FR = [
   C('sci-coeur', 'sciences', [9, 10], 'Quel organe fait circuler le sang dans le corps ?', ['le cœur', 'l’estomac', 'les poumons'], 'le cœur'),
 ];
 
+
+// ------------------------------------------------------------ AJOUTS (notions du programme proposé)
+const T2 = (id, subject, ages, prompt, answer, extra = {}) => ({ id, subject, ages, type: 'text', prompt, answer, ...extra });
+const C2 = (id, subject, ages, prompt, choices, answer, extra = {}) => ({ id, subject, ages, type: 'choice', prompt, choices, answer, ...extra });
+QUESTIONS_FR.push(
+  // Français
+  C2('fr-muette-chat', 'francais', [6, 7], 'Quelle lettre ne s’entend pas dans « chat » ?', ['c', 'h', 'a', 't'], 't', { explain: 'Le « t » final est muet.' }),
+  C2('fr-muette-loup', 'francais', [6, 7], 'Quelle lettre ne s’entend pas dans « loup » ?', ['l', 'o', 'p'], 'p'),
+  T2('fr-fem-lion', 'francais', [7, 8], 'Un lion, une …', 'lionne'),
+  T2('fr-fem-boulanger', 'francais', [7, 8], 'Un boulanger, une …', 'boulangère', { strictAccents: true }),
+  T2('fr-fem-chien', 'francais', [7, 8], 'Un chien, une …', 'chienne'),
+  C2('fr-syn-rapide', 'francais', [9, 10], 'Quel mot veut dire la même chose que « rapide » ?', ['vite', 'lent', 'calme'], 'vite'),
+  C2('fr-syn-maison', 'francais', [9, 10], 'Quel mot veut dire la même chose que « maison » ?', ['habitation', 'jardin', 'voiture'], 'habitation'),
+  C2('fr-famille-dent', 'francais', [9, 10], 'Quel mot est de la même famille que « dent » ?', ['dentiste', 'danser', 'dindon'], 'dentiste'),
+  C2('fr-famille-terre', 'francais', [9, 10], 'Quel mot est de la même famille que « terre » ?', ['terrain', 'tirer', 'taire'], 'terrain'),
+  C2('fr-ces-ses-1', 'francais', [10, 10], 'Il range … affaires.', ['ses', 'ces'], 'ses', { explain: '« ses » = les siennes.' }),
+  C2('fr-ces-ses-2', 'francais', [10, 10], '… fleurs sont belles. (celles-là)', ['Ces', 'Ses'], 'Ces', { explain: '« ces » montre : ces fleurs-là.' }),
+  C2('fr-ou-1', 'francais', [10, 10], '… vas-tu ?', ['Où', 'Ou'], 'Où', { explain: '« où » avec accent indique un lieu.' }),
+  C2('fr-ou-2', 'francais', [10, 10], 'Tu veux du thé … du café ?', ['ou', 'où'], 'ou', { explain: '« ou » = ou bien.' }),
+  C2('fr-accord-1', 'francais', [10, 10], 'Les … chats dorment.', ['petits', 'petit', 'petites'], 'petits'),
+  C2('fr-accord-2', 'francais', [10, 10], 'Des fleurs …', ['rouges', 'rouge', 'rougent'], 'rouges'),
+  // Histoire — la République
+  T2('hist-marianne', 'histoire', [10, 10], 'Comment s’appelle la femme qui représente la République française ?', 'Marianne'),
+  C2('hist-devise', 'histoire', [9, 10], 'Quelle est la devise de la France ?', ['Liberté, Égalité, Fraternité', 'Un pour tous, tous pour un', 'Paix et Travail'], 'Liberté, Égalité, Fraternité'),
+  C2('hist-14-juillet', 'histoire', [8, 10], 'Quel jour est la fête nationale française ?', ['le 14 juillet', 'le 1er mai', 'le 25 décembre'], 'le 14 juillet'),
+  C2('hist-hymne', 'histoire', [9, 10], 'Comment s’appelle l’hymne national français ?', ['La Marseillaise', 'Frère Jacques', 'Au clair de la lune'], 'La Marseillaise'),
+  // Géographie — régions
+  C2('geo-regions', 'geographie', [10, 10], 'Combien de régions compte la France métropolitaine ?', ['13', '22', '101'], '13'),
+  C2('geo-rennes', 'geographie', [10, 10], 'Rennes est la grande ville de quelle région ?', ['la Bretagne', 'la Normandie', 'la Corse'], 'la Bretagne'),
+  C2('geo-marseille', 'geographie', [9, 10], 'Marseille est au bord de quelle mer ?', ['la Méditerranée', 'la Manche', 'la mer du Nord'], 'la Méditerranée'),
+  C2('geo-ile', 'geographie', [9, 10], 'Quelle île française se trouve en mer Méditerranée ?', ['la Corse', 'la Réunion', 'la Martinique'], 'la Corse'),
+  // Sciences — énergie, électricité
+  C2('sci-renouvelable', 'sciences', [10, 10], 'Laquelle de ces énergies est renouvelable ?', ['le soleil', 'le pétrole', 'le charbon'], 'le soleil'),
+  C2('sci-conducteur', 'sciences', [9, 10], 'Quel matériau laisse passer l’électricité ?', ['le métal', 'le bois', 'le plastique'], 'le métal'),
+  C2('sci-pile', 'sciences', [9, 10], 'Pour allumer une ampoule avec une pile, il faut…', ['un circuit fermé', 'un circuit ouvert', 'de l’eau'], 'un circuit fermé'),
+);
+
 // Les questions de conjugaison exigent l'orthographe exacte, accents compris.
 for (const q of QUESTIONS_FR) if (q.id.startsWith('conj-') && q.type === 'text') q.strictAccents = true;

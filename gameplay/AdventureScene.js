@@ -15,6 +15,7 @@ import { chooseSubject } from './quiz/adaptive.js';
 import { check } from './script/conditions.js';
 import { EndScene } from './ui/EndScene.js';
 import { openParentSpace } from './ui/parents.js';
+import { ProfileStore, parentSettings } from './profiles.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -24,7 +25,11 @@ import { openParentSpace } from './ui/parents.js';
 //                     objects: { 'A': { type: 'npc', tile: 'floor', ...props } },
 //                     roomClear: [{ room: [x, y], flag: 'salle_videe' }] } },
 //   legend: { '.': 'floor', '#': 'wall', 'P': { tile: 'path', marker: 'start' } },  // commun aux cartes
-//   items:  { coin: { icon: 'coin', word: 'coin', max: 999 }, heart: { icon: 'heart', instant: (adv) => adv.state.heal(2) } },
+//   items:  { coin: { icon: 'coin', word: 'coin', max: 999, bag: false },   // bag:false = hors du sac (compteur)
+//             apple: { icon: 'apple', name: 'Pomme', use: (adv) => ... },     // utilisable depuis le sac
+//             planks: { ..., quest: true },                                    // objet de quête : ne se jette pas
+//             heart: { icon: 'heart', instant: (adv) => adv.state.heal(2) } },
+//   bagSize: 10,                               // places dans le sac au départ
 //   quests: [ ... ],
 //   startMap: 'overworld',
 //   hud:    { height: 16, counters: ['coin', 'key'] },
@@ -43,19 +48,28 @@ export class AdventureScene extends Scene {
     super();
     this.cfg = { tileSize: 16, hud: { height: 16, counters: ['coin', 'key'] }, factory: standardFactory(), ...config };
     this.saves = new SaveStore(this.cfg.saveNamespace ?? 'quest');
+    this.profiles = new ProfileStore(this.saves);
+    this.slot = 1;
     this.toasts = [];
   }
 
   // ------------------------------------------------------------------ cycle de vie
-  enter({ load = false, profile = null } = {}) {
+  /**
+   * @param {{ load?: boolean, profile?: {id?, name?, age}, slot?: string }} data
+   *   slot : emplacement de sauvegarde (un par profil d'enfant)
+   */
+  enter({ load = false, profile = null, slot = null } = {}) {
+    if (slot) this.slot = slot;
+    else if (profile?.id) this.slot = this.profiles.slot(profile.id);
     const g = this.game;
     this.state = new GameState({ maxHp: this.cfg.startHp ?? 6 });
     if (profile) this.state.profile = { ...profile };
     this.quests = new QuestSystem(this.actionContext(), this.cfg.quests ?? []);
     this.offTheme = g.events.on('theme:change', (t) => this.world?.tilemap.setTileset(t.tileset));
     this.offDebug = g.debug.addInfo(() => this._debugLines());
-    if (load && this.hasSave()) this._applySave(this.saves.load(1).data);
+    if (load && this.hasSave()) this._applySave(this.saves.load(this.slot).data);
     else {
+      this.state.bagSize = this.cfg.bagSize ?? 10;
       for (const [item, n] of Object.entries(this.cfg.startItems ?? {})) this.state.give(item, n);
       this.loadMap(this.cfg.startMap);
     }
@@ -65,6 +79,15 @@ export class AdventureScene extends Scene {
     this.offTheme();
     this.offDebug();
     this.quests.dispose();
+  }
+
+  /** Zone tactile du bouton Sac (fournie par le bandeau). */
+  get bagButton() {
+    return this._bagButton ?? { x: 0, y: 0, w: 0, h: 0 };
+  }
+
+  set bagButton(r) {
+    this._bagButton = r;
   }
 
   get viewport() {
@@ -131,6 +154,10 @@ export class AdventureScene extends Scene {
   update(dt) {
     const input = this.input;
     if (input.pressed('start')) return this.openMenu();
+    if (input.pressed('bag') || input.tappedIn(this.bagButton)) {
+      input.consumeTaps();
+      return this.openBag();
+    }
     if (this.cfg.allowThemeSwitch && input.pressed('select')) {
       const t = this.game.themes.next();
       this.game.audio.play('switch');
@@ -184,7 +211,9 @@ export class AdventureScene extends Scene {
       say: (text, opts) => this.say(text, opts),
       ask: (q, opts) => this.ask(q, opts),
       toast: (t) => this.toast(t),
-      collect: (item, n) => this.collect(item, n),
+      // Les objets donnés par les PNJ / quêtes sont toujours acceptés (jamais perdus).
+      collect: (item, n) => this.collect(item, n, { force: true }),
+      quizCooldown: this.parentSettings().cooldown ?? this.cfg.quizCooldown ?? 600,
       quiz: (spec, done) => this.quiz(spec, done, speaker),
       shop: (spec, done) => this.game.scenes.push(new ShopScene(this, spec, done)),
       announce: (item, n, next) => this.announce(item, n, next),
@@ -251,12 +280,52 @@ export class AdventureScene extends Scene {
     );
   }
 
-  /** Donne un objet (ou applique son effet immédiat : cœur qui soigne...). */
-  collect(item, n = 1, { feedback = false } = {}) {
+  // ------------------------------------------------------------------ sac
+  /** L'objet occupe-t-il une place dans le sac ? (pas l'argent, les clés, les indices...) */
+  inBag(item) {
+    const d = this.itemDef(item);
+    return d.bag !== false && !d.instant;
+  }
+
+  bagItems() {
+    return Object.entries(this.state.items).filter(([id, n]) => n > 0 && this.inBag(id));
+  }
+
+  bagCapacity() {
+    return this.state.bagSize ?? this.cfg.bagSize ?? 10;
+  }
+
+  /** Reste-t-il de la place ? Un objet déjà présent s'empile dans sa case. */
+  canStore(item) {
+    if (!this.inBag(item) || this.state.count(item) > 0) return true;
+    return this.bagItems().length < this.bagCapacity();
+  }
+
+  /**
+   * Donne un objet (ou applique son effet immédiat : cœur qui soigne...).
+   * Renvoie false si le sac est plein (sauf `force`, pour les objets de quête donnés par un PNJ).
+   */
+  collect(item, n = 1, { feedback = false, force = false } = {}) {
     const def = this.itemDef(item);
+    if (!force && !this.canStore(item)) {
+      this.toast('Ton sac est plein !');
+      this.game.audio.play('menu_no');
+      return false;
+    }
     if (def.instant) def.instant(this, n);
     else this.state.give(item, n, def.max ?? Infinity);
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
+    return true;
+  }
+
+  openBag() {
+    this.game.audio.play('menu_ok');
+    this.game.scenes.push(new InventoryScene(this));
+  }
+
+  /** Réglages choisis par les parents (code, délai après un échec...). */
+  parentSettings() {
+    return parentSettings(this.saves);
   }
 
   announce(item, n, next) {
@@ -339,20 +408,29 @@ export class AdventureScene extends Scene {
   }
 
   openParentSpace() {
-    openParentSpace({ game: this.game, saves: this.saves, state: this.state, questDefs: this.cfg.quests ?? [], reportWhen: this.cfg.reportWhen ?? 'end' });
+    openParentSpace({
+      game: this.game,
+      saves: this.saves,
+      profiles: this.profiles,
+      questDefs: this.cfg.quests ?? [],
+      reportWhen: this.cfg.reportWhen ?? 'end',
+      defaultCooldown: this.cfg.quizCooldown ?? 600,
+      live: this.state.profile?.id ? { profileId: this.state.profile.id, state: this.state } : null,
+    });
   }
 
   hasSave() {
-    return this.saves.has(1);
+    return this.saves.has(this.slot);
   }
 
   saveGame() {
     const h = this.hero;
-    return this.saves.save(1, { state: this.state.toJSON(), mapId: this.mapId, x: h.x, y: h.y, facing: h.facing, theme: this.game.themes.current.def.id });
+    if (this.state.profile?.id) this.profiles.update(this.state.profile.id, { age: this.state.profile.age });
+    return this.saves.save(this.slot, { state: this.state.toJSON(), mapId: this.mapId, x: h.x, y: h.y, facing: h.facing, theme: this.game.themes.current.def.id });
   }
 
   loadGame() {
-    const s = this.saves.load(1);
+    const s = this.saves.load(this.slot);
     if (!s) return;
     this.game.scenes.fade(() => this._applySave(s.data));
   }
@@ -371,7 +449,7 @@ export class AdventureScene extends Scene {
       { label: 'Reprendre', onSelect: (m) => m.close() },
       { label: 'Journal des quêtes', onSelect: (m) => (m.close(), g.scenes.push(new QuestLogScene(this))) },
       { label: () => `Utiliser un indice (${this.state.count('hint')})`, onSelect: (m) => (m.close(), this.openHints()) },
-      { label: 'Sac', onSelect: (m) => (m.close(), g.scenes.push(new InventoryScene(this))) },
+      { label: () => `Sac (${this.bagItems().length}/${this.bagCapacity()})`, onSelect: (m) => (m.close(), this.openBag()) },
       {
         label: 'Sauvegarder',
         onSelect: (m) => {
@@ -405,7 +483,7 @@ export class AdventureScene extends Scene {
   // ------------------------------------------------------------------ dessin
   draw(r) {
     this.world.draw(r);
-    drawHud(r, this, this.cfg.hud);
+    this.bagButton = drawHud(r, this, this.cfg.hud);
     const t = this.toasts[0];
     if (t) {
       const s = this.game.style;

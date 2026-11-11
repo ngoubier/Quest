@@ -55,8 +55,9 @@ export class Pickup extends WorldObject {
     if (this.hidden) return;
     const hero = this.adv.hero;
     if (hero && rectsOverlap(this, hero)) {
+      // Sac plein : l'objet reste au sol.
+      if (!this.adv.collect(this.props.item, this.props.count ?? 1, { feedback: true })) return;
       if (this.uid && this.props.persist !== false) this.state.setFlag(`taken:${this.uid}`);
-      this.adv.collect(this.props.item, this.props.count ?? 1, { feedback: true });
       this.kill();
     }
   }
@@ -102,6 +103,9 @@ export class Chest extends WorldObject {
   }
 
   talk() {
+    if (!this.adv.canStore(this.props.item)) {
+      return runActions([{ say: 'Ton sac est plein ! Libère une place avant d’ouvrir ce coffre.' }], this.adv.actionContext());
+    }
     this.state.setFlag(`opened:${this.uid}`);
     this.world.game.audio.play('chest');
     runActions([{ give: this.props.item, count: this.props.count ?? 1, announce: true }], this.adv.actionContext());

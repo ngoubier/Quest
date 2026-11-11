@@ -1,5 +1,6 @@
-// Bandeau d'informations : cœurs à gauche, compteurs d'objets à droite.
-// Icônes 8x8 attendues (planche 'icons') : heart_full, heart_half, heart_empty, et une par objet affiché.
+// Bandeau d'informations : cœurs à gauche, bouton Sac au centre, compteurs à droite.
+// Icônes 8x8 attendues (planche 'icons') : heart_full, heart_half, heart_empty, bag, et une par compteur.
+// Renvoie la zone du bouton Sac (pour le toucher / clic).
 
 export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'] } = {}) {
   const game = adv.game;
@@ -17,6 +18,15 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'] } = {}
     icons.draw(r, frame, 4 + i * 9, 4);
   }
 
+  // Bouton Sac : icône + places occupées.
+  const bx = 104;
+  const used = adv.bagItems().length;
+  const cap = adv.bagCapacity();
+  r.rect(bx, 2, 44, 12, s.border);
+  r.rect(bx + 1, 3, 42, 10, s.box);
+  icons.draw(r, 'bag', bx + 3, 4);
+  r.text(`${used}/${cap}`, bx + 13, 4, { color: used >= cap ? '#ff7a6a' : s.text, size: 7, font: s.font });
+
   // Compteurs, alignés à droite.
   let x = r.width - 4;
   for (const item of [...counters].reverse()) {
@@ -28,4 +38,5 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'] } = {}
     icons.draw(r, item, x, 4);
     x -= 8;
   }
+  return { x: bx - 4, y: 0, w: 52, h: height };
 }

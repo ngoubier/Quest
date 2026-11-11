@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkAnswer, normalize, QuestionBank, GameState, runActions, createRngForTests } from './helpers.js';
+import { checkAnswer, normalize, parseNumber, QuestionBank, GameState, runActions, createRngForTests } from './helpers.js';
 import { frenchSchoolBank, QUESTIONS_FR, MATHS_GENERATOR } from '../content/quiz/index.js';
 
 test('Réponses : tolérance sur la forme, pas sur le fond', () => {
@@ -18,6 +18,11 @@ test('Réponses : tolérance sur la forme, pas sur le fond', () => {
   assert.ok(!checkAnswer({ type: 'choice', answer: 'a', choices: ['a', 'à'] }, 'à'));
   assert.ok(!checkAnswer({ type: 'text', answer: 'chat' }, null));
   assert.equal(normalize('  Le  Mont Blanc ! ', { articles: true }), 'mont blanc');
+  // Réponses numériques : par valeur, unité tolérée.
+  assert.ok(checkAnswer({ type: 'text', answer: '3,70' }, '3,7 €'));
+  assert.ok(checkAnswer({ type: 'text', answer: '3,70' }, '3.70 euros'));
+  assert.ok(checkAnswer({ type: 'text', answer: '16' }, '16 cm'));
+  assert.ok(!checkAnswer({ type: 'text', answer: '16' }, '61'));
 });
 
 test('Banque : toutes les questions sont valides et chaque âge a de quoi jouer', () => {
@@ -58,7 +63,21 @@ test('Maths générées : la réponse attendue est juste (vérifiée par calcul)
       }
       const half = q.prompt.match(/moitié de (\d+)/);
       if (half) assert.equal(Number(q.answer), Number(half[1]) / 2);
-      if (q.image) assert.equal([...q.image].length, Number(q.answer));
+      if (typeof q.image === 'string') assert.equal([...q.image].length, Number(q.answer));
+      if (q.image?.money && q.prompt.startsWith('Combien d’euros')) {
+        const cents = q.image.money.reduce((t, v) => t + Math.round(v * 100), 0);
+        assert.equal(Math.round(parseNumber(q.answer) * 100), cents, q.answer);
+      }
+      if (q.image?.clock) {
+        const [h, m] = q.image.clock;
+        assert.equal(q.answer, m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`);
+        assert.equal(new Set(q.choices).size, q.choices.length, 'choix distincts');
+      }
+      const pct = q.prompt.match(/(\d+) % de (\d+)/);
+      if (pct) assert.equal(Number(q.answer), (Number(pct[1]) * Number(pct[2])) / 100);
+      const per = q.prompt.match(/rectangle de (\d+) cm sur (\d+) cm \(en cm\)/);
+      if (per) assert.equal(Number(q.answer), 2 * (Number(per[1]) + Number(per[2])));
+      if (q.type === 'choice') assert.equal(new Set(q.choices).size, q.choices.length, `choix distincts : ${q.prompt}`);
     }
   }
 });

@@ -148,3 +148,22 @@ test('Essai : le pont est obligatoire pour atteindre la grotte', () => {
   assert.equal(reach(false), false, 'sans pont, la grotte est inaccessible');
   assert.equal(reach(true), true, 'avec le pont, elle est accessible');
 });
+
+test('Profils : plusieurs enfants, chacun sa sauvegarde', async () => {
+  const { ProfileStore } = await import('../gameplay/index.js');
+  const { SaveStore } = await import('../engine/index.js');
+  const mem = new Map();
+  const saves = new SaveStore('t', { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v), removeItem: (k) => mem.delete(k) });
+  const ps = new ProfileStore(saves, { max: 2 });
+  const lea = ps.add({ name: '  Léa ', age: 7 });
+  const tom = ps.add({ name: 'Tom', age: 9 });
+  assert.equal(lea.name, 'Léa');
+  assert.ok(ps.isFull);
+  saves.save(ps.slot(lea.id), { x: 1 });
+  assert.ok(ps.hasGame(lea.id) && !ps.hasGame(tom.id));
+  ps.update(tom.id, { age: 10 });
+  assert.equal(ps.get(tom.id).age, 10);
+  ps.remove(lea.id);
+  assert.equal(ps.list().length, 1);
+  assert.ok(!saves.has(ps.slot(lea.id)), 'la partie est supprimée avec le profil');
+});

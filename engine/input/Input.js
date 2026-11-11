@@ -11,6 +11,7 @@ export const DEFAULT_BINDINGS = {
   secondary: ['KeyK', 'ShiftLeft', 'ShiftRight'],
   start: ['Enter', 'Escape'],
   select: ['Tab'],
+  bag: ['KeyI'],
   debug: ['F1', 'Backquote'],
 };
 
@@ -24,6 +25,7 @@ export const DEFAULT_PAD_BINDINGS = {
   secondary: [1, 2],
   start: [9],
   select: [8],
+  bag: [3],
 };
 
 export class Input {
@@ -38,6 +40,8 @@ export class Input {
     this.prev = new Map();
     this.justPressed = new Set();
     this.padDeadzone = 0.5;
+    this.taps = []; // touchers/clics de ce pas, en pixels logiques
+    this._taps = [];
     this._rebuildKeyMap();
     if (target) this.attach(target);
   }
@@ -102,8 +106,24 @@ export class Input {
     return active;
   }
 
+  /** Enregistre un toucher / clic (coordonnées logiques du jeu). */
+  addTap(x, y) {
+    this._taps.push({ x, y });
+  }
+
+  /** Vrai si un toucher / clic a eu lieu dans ce rectangle pendant ce pas. */
+  tappedIn(r) {
+    return this.taps.some((t) => t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h);
+  }
+
+  consumeTaps() {
+    this.taps = [];
+  }
+
   /** Appelé une fois par pas de simulation, avant la mise à jour des scènes. */
   update() {
+    this.taps = this._taps;
+    this._taps = [];
     const pad = this._pollPad();
     this.justPressed.clear();
     const actions = new Set([...Object.keys(this.bindings), ...this.virtual, ...pad]);

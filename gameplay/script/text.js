@@ -4,8 +4,9 @@
 //   {item:mushroom} nombre possédé
 //   {counter:kills_blob}
 //   {quizOk:histoire}  bonnes réponses dans une matière
+//   {player}           prénom du joueur
 export function formatText(text, { state, word }) {
-  return String(text).replace(/\{(w|ws|item|counter|quizOk):([\w-]+)\}/g, (_, kind, key) => {
+  return String(text).replace(/\{player\}/g, state.profile?.name ?? 'toi').replace(/\{(w|ws|item|counter|quizOk):([\w-]+)\}/g, (_, kind, key) => {
     if (kind === 'w') return word(key, false);
     if (kind === 'ws') return word(key, true);
     if (kind === 'item') return String(state.count(key));

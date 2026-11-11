@@ -1,60 +1,122 @@
 import { Scene, MenuScene, TextField, wrapText } from '../../engine/index.js';
 import { buildReport, formatPlayTime } from '../quiz/report.js';
+import { GameState } from '../state/GameState.js';
+import { parentSettings, setParentSettings } from '../profiles.js';
 
 // ESPACE PARENTS : protégé par un code à 4 chiffres choisi par le parent.
-// Contient le bilan (disponible à la fin du jeu, ou toujours selon la config)
-// et les réglages réservés aux adultes (âge de l'enfant, code).
+// Pour chaque enfant (profil) : bilan (à la fin du jeu, ou toujours selon la config),
+// âge, suppression. Réglages communs : délai d'attente après un échec, code.
 
 const CLASSES = { 6: 'CP', 7: 'CE1', 8: 'CE2', 9: 'CM1', 10: 'CM2' };
+const DELAYS = [1, 2, 5, 10, 15, 30]; // minutes
 
 /**
  * @param {object} o
  * @param {import('../../engine/index.js').Game} o.game
- * @param {import('../../engine/index.js').SaveStore} o.saves  stockage (le code y est rangé)
- * @param {import('../state/GameState.js').GameState} o.state  partie concernée
+ * @param {import('../../engine/index.js').SaveStore} o.saves
+ * @param {import('../profiles.js').ProfileStore} o.profiles
  * @param {object[]} [o.questDefs]
  * @param {'end'|'always'} [o.reportWhen='end']
- * @param {(state) => void} [o.onChange]  appelé après une modification (pour sauvegarder)
+ * @param {{ profileId: string, state: GameState }} [o.live]  partie en cours (si ouvert depuis le jeu)
  */
-export function openParentSpace({ game, saves, state, questDefs = [], reportWhen = 'end', onChange }) {
-  const stored = saves.load('parent')?.data?.code;
-  const menu = () =>
+export function openParentSpace({ game, saves, profiles, questDefs = [], reportWhen = 'end', live = null, defaultCooldown = 600 }) {
+  const settings = () => parentSettings(saves);
+
+  // État d'un profil : la partie en cours, ou celle sauvegardée.
+  const stateOf = (p) => {
+    if (live && live.profileId === p.id) return live.state;
+    const data = saves.load(profiles.slot(p.id))?.data;
+    if (!data) return null;
+    const st = new GameState();
+    st.load(data.state);
+    return st;
+  };
+  const writeBack = (p, st) => {
+    if (live && live.profileId === p.id) return; // sera sauvegardé avec la partie
+    const data = saves.load(profiles.slot(p.id))?.data;
+    if (data) saves.save(profiles.slot(p.id), { ...data, state: st.toJSON() });
+  };
+
+  const profileMenu = (p) =>
     game.scenes.push(
       new MenuScene({
-        title: 'ESPACE PARENTS',
-        width: 200,
+        title: p.name,
+        width: 210,
         items: [
           {
-            label: 'Bilan de l’enfant',
+            label: 'Bilan',
             onSelect: () => {
-              if (reportWhen === 'end' && !state.flag('game_finished')) {
-                game.scenes.push(new MessageScene('Le bilan sera disponible à la fin du jeu.'));
-              } else game.scenes.push(new ReportScene(buildReport(state, { questDefs })));
+              const st = stateOf(p);
+              if (!st) return game.scenes.push(new MessageScene('Aucune partie pour ce profil.'));
+              if (reportWhen === 'end' && !st.flag('game_finished')) return game.scenes.push(new MessageScene('Le bilan sera disponible à la fin du jeu.'));
+              game.scenes.push(new ReportScene(buildReport(st, { questDefs }), p.name));
             },
           },
           {
-            label: () => `Âge de l’enfant : ${state.profile.age} ans (${CLASSES[state.profile.age]})`,
+            label: () => `Âge : ${profiles.get(p.id)?.age ?? p.age} ans (${CLASSES[profiles.get(p.id)?.age ?? p.age]})`,
             onSelect: () => {
-              state.profile.age = state.profile.age >= 10 ? 6 : state.profile.age + 1;
-              onChange?.(state);
+              const cur = profiles.get(p.id)?.age ?? p.age;
+              const age = cur >= 10 ? 6 : cur + 1;
+              profiles.update(p.id, { age });
+              const st = stateOf(p);
+              if (st) {
+                st.profile.age = age;
+                writeBack(p, st);
+              }
             },
           },
-          { label: 'Changer le code', onSelect: () => game.scenes.push(new CodeScene({ mode: 'create', onOk: (code) => saves.save('parent', { code }) })) },
+          {
+            label: 'Supprimer ce profil',
+            enabled: () => !(live && live.profileId === p.id),
+            onSelect: (m) =>
+              game.scenes.push(
+                new MenuScene({
+                  title: `Supprimer « ${p.name} » et sa partie ?`,
+                  width: 230,
+                  items: [
+                    { label: 'Non', onSelect: (c) => c.close() },
+                    { label: 'Oui, supprimer', onSelect: (c) => (c.close(), m.close(), profiles.remove(p.id), mainMenu.refresh?.()) },
+                  ],
+                }),
+              ),
+          },
           { label: 'Retour', onSelect: (m) => m.close() },
         ],
       }),
     );
+
+  const mainMenu = new MenuScene({ title: 'ESPACE PARENTS', width: 220, items: [] });
+  mainMenu.refresh = () => {
+    mainMenu.items = [
+      ...profiles.list().map((p) => ({ label: `${p.name} (${p.age} ans)`, onSelect: () => profileMenu(p) })),
+      {
+        label: () => `Attente après un échec : ${Math.round((settings().cooldown ?? defaultCooldown) / 60)} min`,
+        onSelect: () => {
+          const cur = Math.round((settings().cooldown ?? defaultCooldown) / 60);
+          const next = DELAYS[(DELAYS.indexOf(cur) + 1) % DELAYS.length] ?? 10;
+          setParentSettings(saves, { cooldown: next * 60 });
+        },
+      },
+      { label: 'Changer le code', onSelect: () => game.scenes.push(new CodeScene({ mode: 'create', onOk: (code) => setParentSettings(saves, { code }) })) },
+      { label: 'Retour', onSelect: (m) => m.close() },
+    ];
+    mainMenu.index = Math.min(mainMenu.index, mainMenu.items.length - 1);
+  };
+  mainMenu.refresh();
+  const open = () => game.scenes.push(mainMenu);
+
+  const stored = settings().code;
   if (!stored) {
     game.scenes.push(
       new CodeScene({
         mode: 'create',
         onOk: (code) => {
-          saves.save('parent', { code });
-          menu();
+          setParentSettings(saves, { code });
+          open();
         },
       }),
     );
-  } else game.scenes.push(new CodeScene({ mode: 'check', expected: stored, onOk: menu }));
+  } else game.scenes.push(new CodeScene({ mode: 'check', expected: stored, onOk: open }));
 }
 
 /** Saisie du code parent. */
@@ -147,9 +209,10 @@ export class MessageScene extends Scene {
 
 /** Le bilan, en plusieurs pages (Gauche/Droite). */
 export class ReportScene extends Scene {
-  constructor(report) {
+  constructor(report, name = '') {
     super();
     this.report = report;
+    this.name = name;
     this.page = 0;
     const perPage = 6;
     this.missedPages = Math.max(1, Math.ceil(report.missed.length / perPage));
@@ -179,7 +242,7 @@ export class ReportScene extends Scene {
     r.rect(0, 0, W, r.height, s.box);
     r.strokeRect(2, 2, W - 4, r.height - 4, s.border);
     const titles = ['Résumé', 'Par matière', 'À retravailler'];
-    r.text(`BILAN · ${titles[Math.min(this.page, 2)]}`, 10, 9, { color: s.accent, size: 9, font: s.font, bold: true });
+    r.text(`BILAN ${this.name ? `de ${this.name} ` : ''}· ${titles[Math.min(this.page, 2)]}`, 10, 9, { color: s.accent, size: 9, font: s.font, bold: true });
     r.text(`${this.page + 1}/${this.pages}`, W - 10, 10, { color: s.dim, size: 7, font: s.font, align: 'right' });
     r.rect(8, 24, W - 16, 1, s.border);
     const line = (t, y, opts = {}) => r.text(t, 14, y, { color: s.text, size: 8, font: s.font, ...opts });

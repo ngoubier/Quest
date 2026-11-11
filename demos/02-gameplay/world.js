@@ -14,21 +14,34 @@ export const LEGEND = {
   P: { tile: 'path', marker: 'start' },
 };
 
+// bag: false   = ne prend pas de place dans le sac (affiché dans le bandeau)
+// quest: true  = objet de quête (ne peut pas être jeté)
+// use(adv)     = utilisable depuis le sac ; renvoie false pour annuler, ou un message
+const healUse = (n, label) => (adv) => {
+  if (adv.state.hp >= adv.state.maxHp) return (adv.toast('Ta vie est déjà pleine.'), false);
+  adv.state.heal(n);
+  adv.game.audio.play('heal');
+  return label;
+};
+
 export const ITEMS = {
-  coin: { icon: 'coin', word: 'coin', max: 999, sound: 'coin' },
-  key: { icon: 'key', word: 'key', max: 9 },
-  amulet: { icon: 'amulet', word: 'amulet' },
-  mushroom: { icon: 'mushroom', word: 'mushroom', max: 9 },
+  coin: { icon: 'coin', word: 'coin', max: 999, sound: 'coin', bag: false },
+  key: { icon: 'key', word: 'key', max: 9, bag: false },
+  hint: { icon: 'hint', name: 'indice', plural: 'indices', max: 99, sound: 'secret', bag: false },
   heart: { icon: 'heart', instant: (adv) => adv.state.heal(2), sound: 'heal' },
-  potion: { icon: 'potion', word: 'potion', name: 'Potion', max: 3 },
-  heart_container: { icon: 'heart_container', name: 'Cœur supplémentaire', instant: (adv) => adv.state.setMaxHp(adv.state.maxHp + 2, true), sound: 'heal' },
-  flowers: { icon: 'flowers', word: 'flowers', name: 'Fleurs', max: 1 },
-  ribbon: { icon: 'ribbon', name: 'Ruban', max: 1 },
-  bouquet: { icon: 'bouquet', name: 'Bouquet', max: 1 },
-  planks: { icon: 'planks', name: 'Planches', max: 1 },
-  nails: { icon: 'nails', name: 'Clous', max: 1 },
-  tarte: { icon: 'tarte', name: 'Tarte', max: 1 },
-  hint: { icon: 'hint', name: 'Indice', plural: 'Indices', max: 99, sound: 'secret' },
+  heart_container: { icon: 'heart_container', name: 'cœur supplémentaire', description: 'Un cœur de vie en plus, pour toujours.', instant: (adv) => adv.state.setMaxHp(adv.state.maxHp + 2, true), sound: 'heal' },
+  big_bag: { icon: 'big_bag', name: 'grand sac', description: 'Ton sac passe à 20 places !', instant: (adv) => (adv.state.bagSize = Math.max(adv.state.bagSize, 20)) },
+  apple: { icon: 'apple', name: 'pomme', plural: 'pommes', description: 'Rend 1 cœur.', max: 9, use: healUse(2, 'Miam ! +1 cœur.') },
+  cake: { icon: 'cake', name: 'gâteau', plural: 'gâteaux', description: 'Rend toute ta vie.', max: 3, use: healUse(99, 'Délicieux ! Vie pleine.') },
+  potion: { icon: 'potion', word: 'potion', name: 'potion', description: 'Te sauve automatiquement si tu perds toute ta vie.', max: 3 },
+  amulet: { icon: 'amulet', word: 'amulet', description: 'Le trésor de l’Ancien.', quest: true },
+  mushroom: { icon: 'mushroom', word: 'mushroom', description: 'Pour la recette de la cuisinière.', max: 9, quest: true },
+  flowers: { icon: 'flowers', word: 'flowers', name: 'fleurs', description: 'Pour le bouquet de Léon.', max: 1, quest: true },
+  ribbon: { icon: 'ribbon', name: 'ruban', description: 'Pour le bouquet de Léon.', max: 1 },
+  bouquet: { icon: 'bouquet', name: 'bouquet', description: 'À offrir à la cuisinière.', max: 1, quest: true },
+  planks: { icon: 'planks', name: 'planches', description: 'Pour réparer le pont.', max: 1, quest: true },
+  nails: { icon: 'nails', name: 'clous', description: 'Pour réparer le pont.', max: 1 },
+  tarte: { icon: 'tarte', name: 'tarte', description: 'Pour le pêcheur.', max: 1, quest: true },
 };
 
 // ----------------------------------------------------------------- QUÊTES
@@ -71,7 +84,7 @@ export const QUESTS = [
       {
         goal: 'Acheter des clous chez le marchand',
         done: { item: 'nails' },
-        hints: ['Le marchand est au village. Pour gagner des {ws:coin}, réponds aux questions de la maîtresse.'],
+        hints: ['Le magasin est dans la maison en haut du village, près de la cuisinière.', 'Pour gagner des {ws:coin}, réponds aux questions de la maîtresse.'],
       },
       { goal: 'Apporter planches et clous au charpentier', done: 'bridge_built', hints: ['Le charpentier attend au bord de la rivière, au sud.'] },
     ],
@@ -124,7 +137,7 @@ const ELDER = {
     {
       when: { quest: 'relic', status: 'none' },
       do: [
-        { say: 'Un monstre a emporté mon {w:amulet} et l’a cachée au fond de {w:cave}...' },
+        { say: 'Ah, {player}, te voilà ! Un monstre a emporté mon {w:amulet} et l’a cachée au fond de {w:cave}...' },
         {
           ask: 'Peux-tu m’aider ?',
           choices: [
@@ -233,7 +246,7 @@ const TEACHER = {
     diploma(30, 'diploma_3', 'Petit génie', [{ give: 'heart_container', announce: true }]),
     {
       do: [
-        { say: 'Bonjour ! Chaque bonne réponse à mes questions te rapporte 2 {ws:coin}.' },
+        { say: 'Bonjour {player} ! Chaque bonne réponse à mes questions te rapporte 2 {ws:coin}.' },
         {
           ask: 'On commence ?',
           choices: [
@@ -241,7 +254,7 @@ const TEACHER = {
               label: 'Oui',
               do: [
                 {
-                  quiz: { id: 'teacher', count: 3, cooldown: 45, retryPrice: 3 },
+                  quiz: { id: 'teacher', count: 3, retryPrice: 5 },
                   perCorrect: { give: 'coin', count: 2 },
                   success: [{ say: 'Trois sur trois, bravo !' }],
                   failure: [{ say: 'Continue de t’entraîner ! Reviens un peu plus tard pour une nouvelle série.' }],
@@ -383,7 +396,7 @@ const GARDENER = {
   ],
 };
 
-// Marchand : boutique.
+// Marchand : le magasin (dans la maison en haut, au centre du village).
 const SELLER = {
   type: 'npc',
   name: 'Marchand',
@@ -391,17 +404,20 @@ const SELLER = {
   dialogue: [
     {
       do: [
-        { say: 'Bienvenue ! Gagne des {ws:coin} en répondant aux questions de la maîtresse, puis reviens me voir.' },
+        { say: 'Bienvenue au magasin, {player} ! Choisis un article, puis la quantité avec Gauche / Droite.' },
         {
           shop: {
             id: 'village',
-            title: 'Boutique du village',
+            title: 'Magasin du village',
             offers: [
+              { item: 'apple', price: 2 },
+              { item: 'cake', price: 6 },
               { item: 'ribbon', price: 5 },
               { item: 'nails', price: 10 },
               { item: 'hint', price: 15 },
               { item: 'potion', price: 20 },
               { item: 'heart_container', price: 60, once: true },
+              { item: 'big_bag', price: 100, once: true },
             ],
           },
         },
@@ -457,11 +473,11 @@ export const MAPS = {
       '#..........,...........,....~~~~~~~~~~.#',
       '#.####.....####.............~~~~~~~~~~.#',
       '#.####..N..####..bbb.........~~~~~~~~..#',
-      '#.####.....####..bnb.......Y...~~~~....#',
-      '#....A.....M.....b.b...................#',
+      '#.####.....##Q#..bnb.......Y...~~~~....#',
+      '#....A.....M..Z..b.b...................#',
       '#==P===========================......c.#',
       '#......=..............,..........m.....#',
-      '#..S...=..G..V....E....................#',
+      '#..S...=..G.......E....................#',
       '#......=.......................F.......#',
       '#..,.H.=...........bb.......,..........#',
       '#......=...........bb..................#',
@@ -482,13 +498,14 @@ export const MAPS = {
       A: ELDER,
       M: COOK,
       N: LEON,
-      V: SELLER,
       J: GARDENER,
       K: TEACHER,
       H: HISTORIAN,
       Y: FISHER,
       R: CARPENTER,
       X: { type: 'tileswitch', tile: 'water', to: 'path', when: 'bridge_built' },
+      Q: { type: 'warp', tile: 'door', to: 'shop', at: [7, 9], facing: 'up' },
+      Z: { type: 'sign', text: 'MAGASIN — tout pour l’aventure !' },
       G: GUARD,
       S: { type: 'sign', text: ['Bienvenue au village !', 'Parle aux habitants (Action) pour obtenir des quêtes. Entrée ouvre le menu et le journal des quêtes.'] },
       U: { type: 'sign', text: 'Jardin fermé. Le levier ouvre la grille : frappe-le avec ton arme !' },
@@ -502,6 +519,29 @@ export const MAPS = {
       L: { type: 'lever', flag: 'garden_open' },
       g: { type: 'gate', openWhen: { flag: 'garden_open' } },
       D: { type: 'warp', tile: 'door', to: 'cave', at: [7, 20], facing: 'up' },
+    },
+  },
+
+  shop: {
+    name: 'Le magasin',
+    level: 'village', // fait partie du niveau « village »
+    camera: 'rooms',
+    rows: [
+      '################',
+      '#oooooo__oooooo#',
+      '#______________#',
+      '#______V_______#',
+      '#______________#',
+      '#______________#',
+      '#_o__________o_#',
+      '#______________#',
+      '#______________#',
+      '#______________#',
+      '#######D########',
+    ],
+    objects: {
+      V: { ...SELLER, tile: 'floor_in' },
+      D: { type: 'warp', tile: 'door', to: 'overworld', at: [13, 5], facing: 'down' },
     },
   },
 

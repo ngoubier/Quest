@@ -51,7 +51,7 @@ export class QuizScene extends Scene {
     if (this.phase !== 'ask') return;
     const q = this.q;
     const ok = checkAnswer(q, value);
-    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: q.image ? `${q.image} ${q.prompt}` : q.prompt, answer: q.answer });
+    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: describe(q), answer: q.answer });
     this.field.close();
     this.phase = 'feedback';
     this.t = 0;
@@ -132,7 +132,9 @@ export class QuizScene extends Scene {
     r.rect(x + 6, y + 19, w - 12, 1, s.border);
 
     let ty = y + 26;
-    if (q.image) {
+    if (q.image && typeof q.image === 'object') {
+      ty += drawPicture(r, q.image, W / 2, ty, s) + 6;
+    } else if (q.image) {
       const count = [...q.image].length;
       const size = count > 6 ? 16 : count > 3 ? 22 : 34;
       r.text(q.image, W / 2, ty, { size, font: EMOJI_FONT, align: 'center', color: s.text });
@@ -180,4 +182,106 @@ export class QuizScene extends Scene {
     }
     r.text('Action : continuer', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
   }
+}
+
+/** Texte de la question pour le bilan des parents (image décrite). */
+function describe(q) {
+  const img = q.image;
+  if (!img) return q.prompt;
+  if (typeof img === 'string') return `${img} ${q.prompt}`;
+  if (img.clock) return `[horloge ${img.clock[0]} h ${String(img.clock[1]).padStart(2, '0')}] ${q.prompt}`;
+  if (img.money) return `[${img.money.map(moneyLabel).join(' + ')}] ${q.prompt}`;
+  return q.prompt;
+}
+
+const moneyLabel = (v) => (v >= 1 ? `${v} €` : `${Math.round(v * 100)} c`);
+
+/**
+ * Images dessinées par le jeu (pas d'emoji) :
+ *   { clock: [h, m] }          horloge à aiguilles
+ *   { money: [2, 1, 0.5, 10] } pièces et billets en euros
+ * Renvoie la hauteur utilisée.
+ */
+export function drawPicture(r, img, cx, top, s) {
+  const c = r.ctx;
+  if (img.clock) {
+    const [h, m] = img.clock;
+    const R = 22;
+    const y = top + R;
+    c.save();
+    c.fillStyle = '#fbf6e8';
+    c.strokeStyle = '#333';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(cx, y, R, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.fillStyle = '#333';
+    for (let i = 1; i <= 12; i++) {
+      const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+      c.font = "bold 5px system-ui, sans-serif";
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(String(i), cx + Math.cos(a) * (R - 6), y + Math.sin(a) * (R - 6));
+    }
+    const hand = (angle, len, width, color) => {
+      c.strokeStyle = color;
+      c.lineWidth = width;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(cx, y);
+      c.lineTo(cx + Math.cos(angle) * len, y + Math.sin(angle) * len);
+      c.stroke();
+    };
+    hand((((h % 12) + m / 60) / 12) * Math.PI * 2 - Math.PI / 2, R * 0.5, 2.5, '#c43a3a'); // petite aiguille : heures
+    hand((m / 60) * Math.PI * 2 - Math.PI / 2, R * 0.8, 1.5, '#2a4a9a'); // grande aiguille : minutes
+    c.fillStyle = '#333';
+    c.beginPath();
+    c.arc(cx, y, 1.5, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+    return R * 2;
+  }
+  if (img.money) {
+    const items = img.money;
+    const widths = items.map((v) => (v >= 5 ? 30 : 16));
+    const total = widths.reduce((a, b) => a + b + 3, -3);
+    let x = cx - total / 2;
+    const H = 18;
+    c.save();
+    items.forEach((v, i) => {
+      const w = widths[i];
+      if (v >= 5) {
+        // billet
+        const col = { 5: '#9aa4a8', 10: '#d88a8a', 20: '#7a9ad8', 50: '#e8a050' }[v] ?? '#9ad89a';
+        c.fillStyle = col;
+        c.fillRect(x, top, w, H);
+        c.strokeStyle = '#333';
+        c.lineWidth = 0.6;
+        c.strokeRect(x, top, w, H);
+      } else {
+        // pièce : 1 € et 2 € bicolores, centimes cuivre / or
+        const rr = v >= 1 ? 7.5 : v >= 0.1 ? 6.5 : 5.5;
+        const outer = v === 2 ? '#d8b040' : v === 1 ? '#c0c0c8' : v >= 0.1 ? '#d8b040' : '#c87a4a';
+        const inner = v === 2 ? '#c0c0c8' : v === 1 ? '#d8b040' : outer;
+        c.fillStyle = outer;
+        c.beginPath();
+        c.arc(x + w / 2, top + H / 2, rr, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = inner;
+        c.beginPath();
+        c.arc(x + w / 2, top + H / 2, rr * 0.65, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.fillStyle = '#111';
+      c.font = 'bold 5px system-ui, sans-serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(moneyLabel(v).replace(' ', ''), x + w / 2, top + H / 2 + 0.5);
+      x += w + 3;
+    });
+    c.restore();
+    return H;
+  }
+  return 0;
 }

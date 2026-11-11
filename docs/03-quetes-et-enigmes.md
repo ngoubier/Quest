@@ -207,10 +207,29 @@ ou de **payer** (3 à 5 pièces) pour réessayer tout de suite.
   dont on retire celles corrigées ensuite.
 - Le réglage de l'**âge** est désormais dans l'Espace parents (plus dans le menu de l'enfant).
 
-## 8. Prochaines questions
+## 8. Décisions suivantes et ce qui a été fait
 
-1. Le **délai** après un échec (45–60 s) et le **prix** pour réessayer (3–5 pièces) vous conviennent-ils ?
-2. Le bilan : faut-il pouvoir **l'exporter** (PDF, e-mail) ou l'écran suffit-il ?
-3. Plusieurs **enfants / profils** sur le même appareil ?
-4. Validez-vous le **programme** proposé (`04-programme-scolaire.md`) ? Matières à ajouter ou retirer ?
-5. Peut-on passer à l'**étape suivante** : concevoir le jeu lui-même (univers, histoire, zones) ?
+| Sujet | Décision | Réalisé |
+|---|---|---|
+| Délai après un échec | **10 minutes, réglable** | ✓ défaut 10 min ; Espace parents : 1, 2, 5, 10, 15 ou 30 min |
+| Export du bilan | L'écran suffit | — |
+| Profils | **Plusieurs enfants** | ✓ jusqu'à 4 profils (prénom + âge), une partie chacun |
+| Programme | Validé ; écrire les notions manquantes | ✓ heure, monnaie, mesures, géométrie, homophones, République… |
+| Monnaie | **Des pièces : les euros** | ✓ dans toutes les ambiances ; prix en € au magasin |
+| Magasin | **Plusieurs objets à acheter** | ✓ magasin dans une maison du village, 8 articles, choix de la quantité, total calculé |
+| Sac | **Bouton à l'écran, 10 places, grand sac payant** | ✓ bouton dans le bandeau (ou touche I / bouton Y), 10 cases, grand sac à 20 places pour 100 € |
+
+### Le sac
+
+- **10 cases** au départ ; chaque case contient un type d'objet (empilé : 3 pommes = 1 case).
+- L'argent, les clés et les indices ne prennent **pas** de place (ils sont dans le bandeau).
+- Sac plein : on ne peut plus ramasser, ouvrir un coffre ni acheter ; **les objets donnés par les PNJ pour une quête sont toujours acceptés** (pas de blocage).
+- Dans le sac : **Utiliser** (pomme : +1 cœur, gâteau : vie pleine) ou **Jeter** (sauf les objets de quête).
+- **Grand sac** (100 €, au magasin) : 20 places.
+
+### Le magasin
+
+Pomme 2 € · Gâteau 6 € · Ruban 5 € · Clous 10 € · Indice 15 € · Potion 20 € · Cœur supplémentaire 60 € · Grand sac 100 €.
+Haut/Bas : article · Gauche/Droite : quantité · le total est affiché (« 3 × 2 € = 6 € ») : c'est aussi du calcul !
+
+Prochaine étape : valider les améliorations proposées dans `05-ameliorations-proposees.md`, puis concevoir le jeu.

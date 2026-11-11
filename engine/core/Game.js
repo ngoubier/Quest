@@ -57,6 +57,12 @@ export class Game {
     this._running = false;
 
     // L'audio des navigateurs ne démarre qu'après une interaction utilisateur.
+    // Toucher / clic sur l'écran de jeu (boutons du bandeau...), en pixels logiques.
+    this.canvas.addEventListener('pointerdown', (e) => {
+      const r = this.canvas.getBoundingClientRect();
+      this.input.addTap(((e.clientX - r.left) * this.width) / r.width, ((e.clientY - r.top) * this.height) / r.height);
+    });
+
     const unlock = () => this.audio.unlock();
     window.addEventListener('keydown', unlock);
     window.addEventListener('pointerdown', unlock);
