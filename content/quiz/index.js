@@ -4,9 +4,10 @@ import { QUESTIONS_EN } from './bank-en.js';
 import { QUESTIONS_DICTEE } from './dictee.js';
 import { MATHS_GENERATOR } from './maths.js';
 import { QUESTIONS_QUOTIDIEN, QUOTIDIEN_GENERATOR } from './quotidien.js';
+import { QUESTIONS_PLUS } from './bank-plus.js';
 
 /** Banque de questions prête à l'emploi (programme français + anglais, 6 à 10 ans). */
 export function frenchSchoolBank() {
-  return new QuestionBank({ questions: [...QUESTIONS_FR, ...QUESTIONS_EN, ...QUESTIONS_DICTEE, ...QUESTIONS_QUOTIDIEN], generators: [MATHS_GENERATOR, QUOTIDIEN_GENERATOR] });
+  return new QuestionBank({ questions: [...QUESTIONS_FR, ...QUESTIONS_EN, ...QUESTIONS_DICTEE, ...QUESTIONS_QUOTIDIEN, ...QUESTIONS_PLUS], generators: [MATHS_GENERATOR, QUOTIDIEN_GENERATOR] });
 }
-export { QUESTIONS_FR, QUESTIONS_EN, QUESTIONS_DICTEE, QUESTIONS_QUOTIDIEN, MATHS_GENERATOR, QUOTIDIEN_GENERATOR };
+export { QUESTIONS_PLUS, QUESTIONS_FR, QUESTIONS_EN, QUESTIONS_DICTEE, QUESTIONS_QUOTIDIEN, MATHS_GENERATOR, QUOTIDIEN_GENERATOR };

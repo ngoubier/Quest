@@ -28,8 +28,20 @@ test('Réponses : tolérance sur la forme, pas sur le fond', () => {
 test('Banque : toutes les questions sont valides et chaque âge a de quoi jouer', () => {
   const bank = frenchSchoolBank(); // lève une erreur si une question est mal formée
   assert.ok(QUESTIONS_FR.length >= 100);
-  const ids = new Set(QUESTIONS_FR.map((q) => q.id));
-  assert.equal(ids.size, QUESTIONS_FR.length, 'identifiants uniques');
+  const all = bank.questions;
+  assert.ok(all.length >= 700, 'une grande banque, pour éviter les répétitions');
+  const ids = new Set(all.map((q) => q.id));
+  assert.equal(ids.size, all.length, 'identifiants uniques');
+  for (const q of all) if (q.type === 'choice') assert.equal(new Set(q.choices).size, q.choices.length, `choix en double : ${q.id}`);
+  // Chaque matière a assez de questions à chaque âge.
+  for (let age = 6; age <= 10; age++) {
+    for (const [subject, min] of Object.entries({ francais: 60, histoire: 10, geographie: 10, sciences: 15, anglais: 15, quotidien: 20, dictee: 20 })) {
+      const n = all.filter((q) => q.subject === subject && age >= q.ages[0] && age <= q.ages[1]).length;
+      assert.ok(n >= min, `${subject} à ${age} ans : ${n} questions`);
+    }
+  }
+  // Le temps qui passe (jours, mois, saisons) est en Vie quotidienne, pas en Histoire.
+  for (const q of all) if (q.subject === 'histoire') assert.ok(!/\b(jours?|mois|saisons?|semaine)\b/i.test(q.prompt) || /fête|célèbre/i.test(q.prompt), `mal rangée en histoire : ${q.prompt}`);
   for (let age = 6; age <= 10; age++) {
     for (const subject of ['maths', 'francais', 'histoire', 'geographie', 'sciences']) {
       const qs = bank.pick({ age, subject, count: 3 });

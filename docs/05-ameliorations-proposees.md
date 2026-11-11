@@ -59,8 +59,8 @@
 | 6 | Oui | ✓ ~60 mots de dictée du CP au CM2 + ceux des parents ; matière « Dictée » à part entière (le jeu la propose comme les autres) et **un écrivain au village qui ne fait que des dictées** ; voix lancée dans le geste (exigé par Safari sur iPhone/iPad) ; **un seul mot par dictée** ; **sans voix : une image (emoji) de l’objet à écrire** (seuls les mots illustrés sont proposés) ; **mots difficiles : 2 indices** (un tiret par lettre, puis 1 ou 2 lettres dévoilées) |
 | 7 | Non | — |
 | 8–11, 13 | Plus tard | — |
-| 12 | Oui | ✓ boss des souterrains (Roi Gluant / Robot Géant / Rat Géant) : bouclier → question → bouclier baissé 6 s, 2 coups max ; vaincu, il libère la relique |
-| 14 | Oui | ✓ compagnon (chiot / petit drone / chaton) trouvé au village : il suit le héros et trouve un indice toutes les 8 min de jeu |
+| 12 | Oui | ✓ boss des souterrains (le Roi Gluant) : bouclier → question → bouclier baissé 6 s, 2 coups max ; vaincu, il libère la relique |
+| 14 | Oui | ✓ compagnon (un chiot) trouvé au village : il suit le héros et trouve un indice toutes les 8 min de jeu |
 | 15, 16, 20 | Non | — |
 | 17 | Oui, PC et mobile | ✓ Espace parents : « Exporter la partie » (code à copier ou fichier) / « Importer une partie » (coller le code ou ouvrir le fichier) |
 | 18, 19 | Plus tard | — |

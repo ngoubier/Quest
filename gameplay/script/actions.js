@@ -19,6 +19,8 @@ import { check } from './conditions.js';
 //     perCorrect?: { give: 'coin', count: 2 },                 récompense par bonne réponse
 //     success?: [...], failure?: [...] }                       selon que `pass` est atteint
 //   { shop: { id, title?, offers: [{ item, price, once? }] } } ouvre une boutique
+//   { minigame: 'morpion', win?: [...], lose?: [...], draw?: [...], quit?: [...] }
+//                              mini-jeu contre l'habitant (difficulté selon l'âge), puis la suite selon le résultat
 //   { call: (ctx) => {} }      échappatoire en JavaScript pour les cas spéciaux
 //
 // `ctx` est fourni par le jeu (AdventureScene) : { state, quests, say, ask, toast, collect, game }.
@@ -72,6 +74,7 @@ function exec(a, ctx, next) {
     });
   }
   if ('shop' in a) return ctx.shop(a.shop, next);
+  if ('minigame' in a) return ctx.minigame(a.minigame, (result) => runActions(a[result] ?? [], ctx, next));
   if ('give' in a) {
     ctx.collect(a.give, a.count ?? 1);
     if (a.announce) return ctx.announce(a.give, a.count ?? 1, next);

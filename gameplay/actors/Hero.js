@@ -1,6 +1,7 @@
 import { Animator, DIRS, rectsOverlap } from '../../engine/index.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
+import { Projectile } from './Projectile.js';
 
 // LE HÉROS, réutilisable d'un jeu à l'autre.
 //  - déplacement 8 directions, aide aux coins
@@ -8,6 +9,8 @@ import { Effect } from './Effect.js';
 //  - pousser : marcher contre un objet "poussable" pendant un court instant
 //  - se cogner à une porte verrouillée : l'ouvre si on a la clé
 //  - la vie est stockée dans GameState (sauvegardée), pas dans l'entité
+//  - bouton Objet : utilise l'objet équipé (bâton de feu...)
+//  - glace (propriété de tuile `slippery`) : on glisse tout droit jusqu'au prochain obstacle
 //
 // Sprites attendus (planche 'chars') : player_{down|up|side}_{0|1}
 // et (planche 'objects') : sword_{down|up|side}
@@ -21,6 +24,8 @@ export class Hero extends Actor {
     this.attack = null;
     this.attackTime = 0.24;
     this.pushTimer = 0;
+    this.slide = null; // direction de glissade sur la glace
+    this.toolCooldown = 0;
     const anims = {};
     for (const d of ['down', 'up', 'side']) {
       anims[`walk_${d}`] = { frames: [`player_${d}_0`, `player_${d}_1`], fps: 7 };
@@ -38,6 +43,7 @@ export class Hero extends Actor {
     this.game.audio.play('hurt');
     this.world.camera.shake(2, 0.2);
     this.attack = null;
+    this.slide = null;
   }
 
   die() {
@@ -63,7 +69,27 @@ export class Hero extends Actor {
       return;
     }
 
+    this.toolCooldown -= dt;
+    if (input.pressed('item')) {
+      input.consume('item');
+      if (this.adv.useTool()) return;
+    }
+
     const { x, y } = input.axis();
+    // Glace : on glisse tout droit jusqu'à un obstacle ou jusqu'au bord de la glace.
+    const onIce = this.onSlippery();
+    if (this.slide && !onIce) this.slide = null;
+    if (!this.slide && onIce && (x || y)) {
+      this.slide = Math.abs(x) >= Math.abs(y) ? { x: Math.sign(x), y: 0 } : { x: 0, y: Math.sign(y) };
+      this.facing = this.slide.x < 0 ? 'left' : this.slide.x > 0 ? 'right' : this.slide.y < 0 ? 'up' : 'down';
+    }
+    if (this.slide) {
+      const res = this.move(this.slide.x * 120 * dt, this.slide.y * 120 * dt);
+      if (res.hitX || res.hitY) this.slide = null;
+      this.anim.play(`idle_${animDir(this.facing)}`);
+      this.anim.update(dt);
+      return;
+    }
     if (x || y) {
       const keep = (this.facing === 'left' && x < 0) || (this.facing === 'right' && x > 0) || (this.facing === 'up' && y < 0) || (this.facing === 'down' && y > 0);
       if (!keep) this.facing = x < 0 ? 'left' : x > 0 ? 'right' : y < 0 ? 'up' : 'down';
@@ -93,6 +119,22 @@ export class Hero extends Actor {
       input.consume('action');
       if (!this.interact()) this.startAttack();
     }
+  }
+
+  /** Le héros est-il sur une tuile glissante ? */
+  onSlippery() {
+    const tm = this.world.tilemap;
+    return !!tm.propAt(Math.floor(this.cx / tm.tileSize), Math.floor(this.cy / tm.tileSize), 'slippery');
+  }
+
+  /** Lance un projectile devant soi (bâton de feu, arc...). Renvoie false si l'objet recharge. */
+  shoot(kind = 'fire', { cooldown = 0.45, speed = 150, range = 150, sound = 'fire' } = {}) {
+    if (this.toolCooldown > 0) return false;
+    this.toolCooldown = cooldown;
+    const d = DIRS[this.facing];
+    this.world.add(new Projectile({ x: this.cx + d.x * 9, y: this.cy - 3 + d.y * 9, dir: d, kind, speed, range, owner: this }));
+    this.game.audio.play(sound);
+    return true;
   }
 
   /** Première entité juste devant le héros (à `reach` pixels). */

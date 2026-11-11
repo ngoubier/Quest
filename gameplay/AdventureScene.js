@@ -17,6 +17,8 @@ import { check } from './script/conditions.js';
 import { EndScene } from './ui/EndScene.js';
 import { openParentSpace } from './ui/parents.js';
 import { ProfileStore, parentSettings } from './profiles.js';
+import { WorldMapScene } from './ui/WorldMapScene.js';
+import { createMinigame } from './minigames/index.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -29,7 +31,8 @@ import { ProfileStore, parentSettings } from './profiles.js';
 //   items:  { coin: { icon: 'coin', word: 'coin', max: 999, bag: false },   // bag:false = hors du sac (compteur)
 //             apple: { icon: 'apple', name: 'Pomme', use: (adv) => ... },     // utilisable depuis le sac
 //             planks: { ..., quest: true },                                    // objet de quête : ne se jette pas
-//             heart: { icon: 'heart', instant: (adv) => adv.state.heal(2) } },
+//             heart: { icon: 'heart', instant: (adv) => adv.state.heal(2) },
+//             fire_staff: { ..., tool: (adv, hero) => hero.shoot('fire') } },  // bouton Objet
 //   bagSize: 10,                               // places dans le sac au départ
 //   quests: [ ... ],
 //   startMap: 'overworld',
@@ -39,7 +42,13 @@ import { ProfileStore, parentSettings } from './profiles.js';
 //   reportWhen: 'end' | 'always',
 //   saveNamespace: 'mon-jeu',
 //   allowThemeSwitch: true,
+//   colorLoss: (adv) => 0.5,                   // 0..1 : le monde perd ses couleurs (0 = normal)
+//   menuItems: (adv) => [{ label, onSelect }],  // lignes ajoutées au menu pause
+//   worldMap: { when: 'flag', lockedText, nodes: [...], paint(r, box, state) },  // voir ui/WorldMapScene.js
 // })
+//
+// Une carte avec un objet { type: 'warp', worldMap: true, back: [tx, ty] } ouvre la carte du monde
+// (back : où replacer le héros s'il la referme sans voyager).
 //
 // Types d'objets reconnus par défaut : warp, pickup, chest, npc, sign, block, plate,
 // gate, locked, lever, enemy (voir objects/ObjectFactory.js).
@@ -163,6 +172,7 @@ export class AdventureScene extends Scene {
   }
 
   warp(w) {
+    if (w.worldMap) return this.openWorldMap({ from: w });
     this.warping = true;
     this.game.audio.play('door');
     this.game.scenes.fade(() => this.loadMap(w.to, { tx: w.at[0], ty: w.at[1], facing: w.facing ?? 'down' }));
@@ -238,6 +248,7 @@ export class AdventureScene extends Scene {
       quizCooldown: this.parentSettings().cooldown ?? this.cfg.quizCooldown ?? 600,
       quiz: (spec, done) => this.quiz(spec, done, speaker),
       shop: (spec, done) => this.game.scenes.push(new ShopScene(this, spec, done)),
+      minigame: (name, done) => this.minigame(name, done, speaker),
       announce: (item, n, next) => this.announce(item, n, next),
     };
   }
@@ -392,14 +403,90 @@ export class AdventureScene extends Scene {
     }
     if (def.instant) def.instant(this, n);
     else this.state.give(item, n, def.max ?? Infinity);
+    // Premier objet à utiliser : il s'équipe tout seul.
+    if (def.tool && !this.state.equipped) this.state.equipped = item;
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
     return true;
+  }
+
+  /** Équipe un objet (bouton Objet). */
+  equip(item) {
+    this.state.equipped = item;
+    this.game.audio.play('menu_ok');
+    this.toast(`Objet équipé : ${this.itemName(item)}`);
+  }
+
+  /** Objet équipé, s'il est toujours dans le sac. */
+  get equipped() {
+    const id = this.state.equipped;
+    return id && this.state.count(id) > 0 && this.itemDef(id).tool ? id : null;
+  }
+
+  /** Bouton Objet : utilise l'objet équipé (items[id].tool(adv, hero)). */
+  useTool() {
+    const id = this.equipped;
+    if (!id) return false;
+    return this.itemDef(id).tool(this, this.hero) !== false;
   }
 
   /** Fait apparaître le compagnon à côté du héros. */
   spawnCompanion() {
     if (this.world.entities.some((e) => e.has('companion') && !e.dead)) return;
     this.world.add(new Companion(this.hero, { hintEvery: this.cfg.companionHintEvery ?? 480 }));
+  }
+
+  /** Lance un mini-jeu contre un habitant. done(result) : 'win' | 'lose' | 'draw' | 'quit'. */
+  minigame(name, done, speaker) {
+    const st = this.state;
+    const scene = createMinigame(name, {
+      opponent: this.speakerName(speaker) ?? 'Habitant',
+      age: st.profile?.age ?? 8,
+      onDone: (result) => {
+        st.addCounter(`game_${name}_${result}`);
+        done(result);
+      },
+    });
+    this.game.scenes.push(scene);
+  }
+
+  /** La carte du monde est-elle disponible ? */
+  get hasWorldMap() {
+    const wm = this.cfg.worldMap;
+    return !!wm && (check(wm.when, this.state) || !!wm.unlocked?.(this)); // unlocked : raccourci d'essai fourni par le jeu
+  }
+
+  /**
+   * Ouvre la carte du monde. Depuis une sortie (`from`) : on peut voyager ; si on la referme,
+   * le héros revient sur la case `back`. Depuis le menu : voyage seulement depuis une carte
+   * marquée `worldExit: true` (un extérieur), sinon simple consultation.
+   */
+  openWorldMap({ from = null } = {}) {
+    const wm = this.cfg.worldMap;
+    const back = () => {
+      if (from?.back) {
+        const ts = this.cfg.tileSize;
+        this.hero.x = from.back[0] * ts + 3;
+        this.hero.y = from.back[1] * ts + 6;
+      }
+      this.warping = false;
+    };
+    this.warping = true;
+    if (!this.hasWorldMap) return this.say(wm?.lockedText ?? 'Cette route ne mène nulle part pour l’instant.', { onClose: back });
+    this.game.audio.play('menu_ok');
+    this.game.scenes.push(
+      new WorldMapScene({
+        ...wm,
+        state: this.state,
+        current: wm.currentNode?.(this),
+        travel: !!from || !!this.mapDef.worldExit,
+        format: (t) => this.format(t),
+        onTravel: (node) => {
+          this.game.audio.play('door');
+          this.game.scenes.fade(() => this.loadMap(node.mapId, { tx: node.at[0], ty: node.at[1], facing: node.facing ?? 'down' }));
+        },
+        onClose: back,
+      }),
+    );
   }
 
   openQuests() {
@@ -540,6 +627,7 @@ export class AdventureScene extends Scene {
       { label: 'Quêtes', onSelect: (m) => (m.close(), this.openQuests()) },
       { label: () => `Utiliser un indice (${this.state.count('hint')})`, onSelect: (m) => (m.close(), this.openHints()) },
       { label: () => `Sac (${this.bagItems().length}/${this.bagCapacity()})`, onSelect: (m) => (m.close(), this.openBag()) },
+      ...(this.hasWorldMap ? [{ label: 'Carte du royaume', onSelect: (m) => (m.close(), this.openWorldMap()) }] : []),
       {
         label: 'Sauvegarder',
         onSelect: (m) => {
@@ -549,6 +637,7 @@ export class AdventureScene extends Scene {
       },
       { label: 'Charger', enabled: () => this.hasSave(), onSelect: (m) => (m.close(), this.loadGame()) },
     ];
+    items.push(...(this.cfg.menuItems?.(this) ?? [])); // options propres au jeu
     items.push({ label: 'Espace parents', onSelect: (m) => (m.close(), this.openParentSpace()) });
     if (this.cfg.allowThemeSwitch) items.push({ label: () => `Ambiance : ${g.themes.current.def.name}`, onSelect: () => (g.themes.next(), g.audio.play('switch')) });
     items.push(
@@ -556,6 +645,20 @@ export class AdventureScene extends Scene {
       { label: () => `Son : ${g.audio.muted ? 'coupé' : 'activé'}`, onSelect: () => g.audio.setMuted(!g.audio.muted) },
     );
     g.scenes.push(new MenuScene({ title: 'PAUSE', width: 180, items }));
+  }
+
+  /** Le monde perd ses couleurs (0 = normal, 1 = tout gris) : mélange « saturation » vers le gris. */
+  _drawColorLoss(r) {
+    const k = Math.max(0, Math.min(1, this.cfg.colorLoss?.(this) ?? 0));
+    if (k <= 0) return;
+    const c = r.ctx;
+    const vp = this.viewport;
+    c.save();
+    c.globalCompositeOperation = 'saturation';
+    c.globalAlpha = k;
+    c.fillStyle = '#808080';
+    c.fillRect(vp.x, vp.y, vp.w, vp.h);
+    c.restore();
   }
 
   _debugLines() {
@@ -571,8 +674,30 @@ export class AdventureScene extends Scene {
   }
 
   // ------------------------------------------------------------------ dessin
+  /**
+   * Écran plus large que la salle (PC) : les salles voisines restent visibles mais
+   * assombries, pour que l'enfant sache toujours où il joue.
+   */
+  _dimOtherRooms(r) {
+    const cam = this.world.camera;
+    const vp = this.world.viewport;
+    if (cam.mode !== 'rooms' || (vp.w <= cam.roomWidth && vp.h <= cam.roomHeight)) return;
+    const rr = cam.roomRect();
+    const x0 = Math.round(vp.x + rr.x - cam.x);
+    const y0 = Math.round(vp.y + rr.y - cam.y);
+    const x1 = x0 + rr.w;
+    const y1 = y0 + rr.h;
+    const shade = (x, y, w, h) => w > 0 && h > 0 && r.rect(x, y, w, h, 'rgba(0,0,0,0.55)');
+    shade(vp.x, vp.y, x0 - vp.x, vp.h);
+    shade(x1, vp.y, vp.x + vp.w - x1, vp.h);
+    shade(Math.max(vp.x, x0), vp.y, Math.min(x1, vp.x + vp.w) - Math.max(vp.x, x0), y0 - vp.y);
+    shade(Math.max(vp.x, x0), y1, Math.min(x1, vp.x + vp.w) - Math.max(vp.x, x0), vp.y + vp.h - y1);
+  }
+
   draw(r) {
     this.world.draw(r);
+    this._drawColorLoss(r);
+    this._dimOtherRooms(r);
     this._hudButtons = drawHud(r, this, this.cfg.hud);
     const t = this.toasts[0];
     if (t) {

@@ -9,6 +9,8 @@ export const DEFAULT_BINDINGS = {
   right: ['ArrowRight', 'KeyD'],
   action: ['Space', 'KeyJ'],
   secondary: ['KeyK', 'ShiftLeft', 'ShiftRight'],
+  // Objet équipé (bâton de feu, arc...)
+  item: ['KeyE', 'KeyX'],
   start: ['Enter', 'Escape'],
   // Entrée VALIDE dans les menus et dialogues (en plus d'ouvrir le menu pause en jeu)
   confirm: ['Enter', 'NumpadEnter'],
@@ -26,7 +28,8 @@ export const DEFAULT_PAD_BINDINGS = {
   left: [14],
   right: [15],
   action: [0],
-  secondary: [1, 2],
+  secondary: [1],
+  item: [2],
   start: [9],
   select: [8],
   bag: [3],

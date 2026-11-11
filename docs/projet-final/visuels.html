@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Quête d'Alia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Nunito:wght@400;600;800&display=swap">
+<style>
+/* Mise en page : un « carnet de conception » de jeu — carte du monde en tête, puis une planche par niveau (plan pixel + fiche). */
+:root {
+  --bg: #eef0f7;
+  --panel: #ffffff;
+  --ink: #1d2140;
+  --muted: #5b6183;
+  --line: #d5d9ea;
+  --gold: #a8700a;
+  --gold-soft: #f6e7c4;
+  --alia: #7b4fd0;
+  --frame: #1d2140;
+  --display: 'Pixelify Sans', 'Courier New', monospace;
+  --body: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121427; --panel: #1b1e36; --ink: #e9eaf7; --muted: #a2a7c9; --line: #2e3254;
+    --gold: #f2c14e; --gold-soft: #3a3220; --alia: #b597ff; --frame: #070814; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121427; --panel: #1b1e36; --ink: #e9eaf7; --muted: #a2a7c9; --line: #2e3254;
+  --gold: #f2c14e; --gold-soft: #3a3220; --alia: #b597ff; --frame: #070814; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.4rem, 6vw, 4rem); letter-spacing: .01em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
+h3 { font-size: 1.25rem; }
+p { margin: 0; }
+.eyebrow { font-family: var(--display); text-transform: uppercase; letter-spacing: .14em; font-size: .8rem; color: var(--gold); }
+.lead { font-size: 1.12rem; max-width: 66ch; }
+.muted { color: var(--muted); }
+canvas.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; width: 100%; height: auto; }
+header.hero { display: grid; gap: 18px; }
+.story { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.story > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.story b { font-family: var(--display); font-weight: 700; display: block; font-size: 1.05rem; margin-bottom: 2px; }
+nav.levels { display: flex; flex-wrap: wrap; gap: 8px; }
+nav.levels a { text-decoration: none; color: var(--ink); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 12px 5px 8px; font-weight: 600; font-size: .9rem; display: inline-flex; align-items: center; gap: 7px; }
+nav.levels a:hover, nav.levels a:focus-visible { border-color: var(--gold); outline: none; }
+.dot { width: 12px; height: 12px; border-radius: 3px; transform: rotate(45deg); display: inline-block; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+section { display: flex; flex-direction: column; gap: 18px; }
+.mapframe { background: var(--frame); border-radius: 12px; padding: 10px; overflow: hidden; }
+.stones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stones button { font: inherit; font-weight: 600; font-size: .88rem; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 10px; display: inline-flex; align-items: center; gap: 7px; }
+.stones button[aria-pressed="false"] { opacity: .55; }
+.stones button[aria-pressed="false"] .dot { filter: grayscale(1); }
+.stones button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.stones .sep { width: 1px; height: 26px; background: var(--line); margin: 0 4px; }
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.flow .step { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; flex: 1 1 180px; min-width: 0; }
+.flow .step b { font-family: var(--display); display: block; }
+.flow .arrow { align-self: center; font-family: var(--display); color: var(--gold); font-size: 1.4rem; }
+.flow .six { flex: 2.4 1 320px; }
+.flow .six .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.flow .six .chips span { font-size: .82rem; font-weight: 600; border-radius: 6px; padding: 2px 8px; border: 1px solid var(--line); display: inline-flex; gap: 6px; align-items: center; }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 6px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.legend div { display: flex; align-items: center; gap: 8px; font-size: .88rem; min-width: 0; }
+.legend canvas { width: 24px; height: 24px; image-rendering: pixelated; flex: none; border-radius: 3px; }
+.level { border-top: 1px solid var(--line); padding-top: 34px; }
+.level-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.level-head .tag { font-family: var(--display); font-size: .95rem; padding: 2px 10px; border-radius: 6px; color: #fff; }
+.level-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 900px) { .level-grid { grid-template-columns: minmax(0, 1fr); } }
+.caption { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+dl.sheet { margin: 0; display: grid; grid-template-columns: 8.2em minmax(0, 1fr); gap: 9px 14px; }
+dl.sheet dt { font-family: var(--display); font-weight: 700; color: var(--gold); font-size: .95rem; padding-top: 1px; }
+dl.sheet dd { margin: 0; min-width: 0; }
+dl.sheet ul { margin: 0; padding-left: 1.1em; }
+dl.sheet li + li { margin-top: 2px; }
+@media (max-width: 480px) { dl.sheet { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.sheet dd { margin-bottom: 8px; } }
+.stonecard { display: flex; gap: 12px; align-items: center; background: var(--gold-soft); border-radius: 10px; padding: 10px 14px; }
+.stonecard canvas { width: 40px; height: 40px; image-rendering: pixelated; flex: none; }
+.tablebox { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: .93rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--display); font-weight: 700; color: var(--gold); background: var(--gold-soft); }
+tr:last-child td { border-bottom: 0; }
+.effort { font-family: var(--display); font-weight: 700; display: inline-block; min-width: 1.8em; text-align: center; border-radius: 5px; border: 1px solid var(--line); }
+.questions { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.questions div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.questions b { font-family: var(--display); color: var(--alia); }
+.final { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.final div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.final b { font-family: var(--display); display: block; font-size: 1.05rem; }
+@media (prefers-reduced-motion: no-preference) { nav.levels a, .stones button { transition: border-color .15s, opacity .15s; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="hero">
+  <span class="eyebrow">Quest · projet final · niveaux 1 et 2 jouables</span>
+  <h1>La Quête d'Alia</h1>
+  <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
+  <div class="story">
+    <div><b>8 niveaux</b>Une introduction, 6 niveaux pour les 6 pierres, puis le Volcan Noir. Chaque niveau a la taille du niveau actuel : un extérieur, des maisons, un donjon de 4 à 6 salles.</div>
+    <div><b>Ordre libre</b>Après l'introduction, la carte du monde s'ouvre. Les 6 niveaux se font dans l'ordre qu'on veut : l'objet de chaque niveau se trouve dans ce niveau.</div>
+    <div><b>Le royaume se décolore</b>Sur la carte du monde, une région reste grise tant que sa pierre n'est pas trouvée. Dans les niveaux, c'est une option du menu pause, désactivée par défaut.</div>
+  </div>
+  <nav class="levels" id="nav" aria-label="Aller à un niveau"></nav>
+</header>
+
+<section id="carte">
+  <span class="eyebrow">L'écran « Carte du royaume »</span>
+  <h2>La carte du monde</h2>
+  <p class="lead">Elle s'obtient en battant le boss de l'introduction. On y voit les 7 paysages, les 6 pierres et, au centre, le Volcan Noir, fermé tant que les pierres ne sont pas réunies. Touchez une pierre pour voir sa région perdre ou retrouver ses couleurs.</p>
+  <div class="mapframe"><canvas class="px" id="world" width="960" height="600" aria-label="Carte du royaume d'Iris : Mont Givré au nord, Forêt des Murmures au nord-ouest, Labyrinthe au nord-est, Abysses de Corail au sud-ouest, Désert des Mirages à l'est, Bourg-Lanterne au sud-est, Prébois au sud et le Volcan Noir au centre."></canvas></div>
+  <div class="stones" id="stones"></div>
+</section>
+
+<section id="parcours">
+  <span class="eyebrow">Le déroulé</span>
+  <h2>Le parcours du joueur</h2>
+  <div class="flow" id="flow"></div>
+</section>
+
+<section id="legende">
+  <span class="eyebrow">Comment lire les plans</span>
+  <h2>Légende des plans</h2>
+  <p class="muted">Chaque plan montre un niveau en entier sur 40 × 24 cases (comme le village actuel). Le donjon y est dessiné en résumé ; dans le jeu ce sera une carte à part, salle par salle.</p>
+  <div class="legend" id="legend"></div>
+</section>
+
+<div id="levels" style="display:flex;flex-direction:column;gap:56px"></div>
+
+<section id="armes">
+  <span class="eyebrow">Progression</span>
+  <h2>Armes et objets, niveau par niveau</h2>
+  <p class="muted">Un nouveau bouton « Objet » (touche E, bouton X de la manette, bouton à l'écran sur mobile) utilise l'objet choisi dans le sac. L'épée reste sur le bouton Action.</p>
+  <div class="tablebox"><table id="weapons"></table></div>
+</section>
+
+<section id="minijeux">
+  <span class="eyebrow">Contre les habitants</span>
+  <h2>Les mini-jeux</h2>
+  <p class="muted">Un mini-jeu par niveau, contre un habitant. La difficulté suit l'âge de l'enfant. On gagne des pièces, des indices ou un objet ; perdre ne coûte rien, on peut rejouer.</p>
+  <div class="tablebox"><table id="games"></table></div>
+</section>
+
+<section id="pierres">
+  <span class="eyebrow">Le combat final</span>
+  <h2>Les 6 pierres et le Cœur d'Iris</h2>
+  <p class="lead">Chaque pierre donne tout de suite un petit pouvoir. Réunies, elles forment le Cœur d'Iris, la seule arme capable de briser le bouclier noir de Morgor.</p>
+  <div class="final" id="finalcards"></div>
+</section>
+
+<section id="feuille-de-route">
+  <span class="eyebrow">Fabrication</span>
+  <h2>Feuille de route</h2>
+  <p class="muted">Un lot à la fois, chacun jouable et testé avant de passer au suivant. Effort : S petit, M moyen, L gros.</p>
+  <div class="tablebox"><table id="roadmap"></table></div>
+</section>
+
+<section id="questions">
+  <span class="eyebrow">À trancher ensemble</span>
+  <h2>Décisions</h2>
+  <div class="questions" id="qs"></div>
+</section>
+</div>
+
+<script>
+const MAPS = {
+ "intro": [
+  "########################################",
+  "#..........,...........,....~~~~~~~~~~.#",
+  "#.HHHH.....HHHH.............~~~~~~~~~~.#",
+  "#.rrrr..N..rrrr..bbb.........~~~~~~~~..#",
+  "#.HdHH.....HHdH..bhb.......N...~~~~....#",
+  "#....N.....N..$..b.b...................#",
+  "#==P===========================......C.#",
+  "#......=..............,..........*.....#",
+  "#..N...=..N.......E....................#",
+  "#......=.......................F.......#",
+  "#..,...=...........bb.......,..........#",
+  "#......=...........bb..................#",
+  "#..N...=.......#######..N......E.......#",
+  "#....N.=.......#.....#.................#",
+  "#......=.......#..*..#..W..bbb.........#",
+  "#..E...=.......#.....#.....b*b.........#",
+  "#......=.......###g###.........^^^^^^..#",
+  "#......=....l.................^^^^^^^^.#",
+  "#......=.......=..............^^^^^^^^.#",
+  "#......=========..............^^^W^^^^.#",
+  "#.........................~~~~~~~B~~~~~#",
+  "#..,......E.................======.N...#",
+  "#.......................h....N....,....#",
+  "########################################"
+ ],
+ "neige": [
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+  "^^^^^^^^^^^^###############^^^^^^^^^^^^^",
+  "^^T..T.....^#_Y_________Y_#^..T.....T.^^",
+  "^T....E....^#____O___O____#^.....F....^^",
+  "^..........^#_Y____Z____Y_#^..........^^",
+  "^..T....T..^#______S______#^..T...T...^^",
+  "^....=.....^###k###g###k###^.....=....^^",
+  "^....=...........====..........iiiii..^^",
+  "^....=.....E.....=..=.........iiiiiiii.^",
+  "^....=====.......=..=......F..iiOi.iii.^",
+  "^.HH.....=..HH...=..=.........iiiiiiCi.^",
+  "^.rr..N..=..rr...=..=.........i.iiiiii.^",
+  "^.Hd.....=..dH...=..=.........iiiii.ii.^",
+  "^........=.......=..=..........iiiiii..^",
+  "^..G.....=====...=..====....T.....=....^",
+  "^.HH..$......=...=.....=......E...=....^",
+  "^.rr.........=...=.....========...=..T.^",
+  "^.Hd...N.....=...=........=.......=....^",
+  "^............=====........=========....^",
+  "^..T....~~~~~~~~...........=.......E...^",
+  "^.......~~~~~~~~....T......=...T.......^",
+  "^..T.....h..........E......=.......h...^",
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^P^^^^^^^^^^^^",
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+ ],
+ "foret": [
+  "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+  "TT...b....TTTTTT@@@@@@@@TTTTT.....b..TTT",
+  "T...E......TTTT@@______@@TTT...F......TT",
+  "T.....*.....TT@@__S_Z___@@T.....*......T",
+  "T..b........TT@@________@@T..........b.T",
+  "T.......l....T@@@@@W@@@@@T...l.........T",
+  "TT..........TTT....=....TTT............T",
+  "TTT.====.......*...=.............====..T",
+  "T...=..=...........=.....E.......=..=..T",
+  "T...=..======================....=..=..T",
+  "T...=...............=.......=....=..=..T",
+  "T.b.=...TT..HH......=..TT...=....=.C=..T",
+  "T...=..TTT..rr..N...=..TTT..======..=..T",
+  "T...=...TT..Hd......=...TT..........=..T",
+  "T...=...............=......b......*.=..T",
+  "T~~~~B~~~~~~~~~~~~~~B~~~~~~~~~~~~~~~B~~T",
+  "T~~~~=~~~~~~~~~~~~~~=~~~~~~~~~~~~~~~=~~T",
+  "T...=...E....G......=.......N.......=..T",
+  "T...=.......TT......=......TT.......=..T",
+  "T.*.=.......TTT.....=.....TTT..F....=..T",
+  "T...==============================P=..*T",
+  "T..h...b.....T.....E......T......b.....T",
+  "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+  "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+ ],
+ "village": [
+  "########################################",
+  "#HHHH.HHHH.HHHH.......HHHHHHHH.HHHH.HHH#",
+  "#rrrr.rrrr.rrrr.......rrrrrrrr.rrrr.rrr#",
+  "#HdHH.HHdH.HdHH...N...HHHHdHHH.HHdH.HdH#",
+  "#.................................K....#",
+  "#=====================================.#",
+  "#.....=...........=.......=.........=..#",
+  "#.HHH.=.HHHH.......=.***.=..HHHH....=..#",
+  "#.rrr.=.rrrr.N.....=.*o*.=..rrrr..N.=..#",
+  "#.HdH.=.HHdH.......=.***.=..HdHH....=..#",
+  "#.....=............=..G..=..........=..#",
+  "#======================================#",
+  "#...=.....=.....=....=......=.....=....#",
+  "#.HHH.HHH.=.HHH.=.$..=.HHHH.=.HHH.=.HH.#",
+  "#.rrr.rrr.=.rrr.=....=.rrrr.=.rrr.=.rr.#",
+  "#.HdH.HdH.=.HdH.=..N.=.HHdH.=.HdH.=.dH.#",
+  "#.........=.....=....=......=.....=....#",
+  "#~~~~~~~~~B~~~~~B~~~~B~~~~~~B~~~~~B~~~~#",
+  "#.....N...=.....=....=......=.....=..C.#",
+  "#.HHHHHH..=..E..=....=..HHH.=.....=....#",
+  "#.rrrrrr..=.....=....=..rrr.=..F..=.HH.#",
+  "#.HHHdHH..=========P=======.=======.dH.#",
+  "#.........................g..........K.#",
+  "########################################"
+ ],
+ "labyrinthe": [
+  "########################################",
+  "#S.Z..#.....x....#.........#.....h.....#",
+  "#.....#.####.###.#.#######.#.#######.#.#",
+  "#..O..|....#...#...#.....#...#.....#.#.#",
+  "##o####.##.###.#####.###.#####.###.#.#.#",
+  "#.....#..#...#.....#...#.......#...#...#",
+  "#.###.##.###.#####.###.#########.#######",
+  "#...#....#.F.....#...#.....!.....#.....#",
+  "###.######.#####.###.#####.#####.#.###.#",
+  "#...#....#.....#...#.....#.#...#...#...#",
+  "#.###.##.#####.###.#####.#.#.#.#####.###",
+  "#.....#........#...#x..x.#...#.......#.#",
+  "#.#####.########.###.##.#########.###.##",
+  "#.#...#..E.......#...#..#.......#...#..#",
+  "#.#.#.#####.######.###.##.#####.###.####",
+  "#...#.....#.#....!.#...#..#...#.u.#...##",
+  "#####.###.#.#.####.#.###.##.#.#####.#.##",
+  "#.....#.k.#...#..C.#.#.....#.#.....#...#",
+  "#.#####.#.#####.####.#.#####.#####.###.#",
+  "#.#.....#.....|......#.....+.....#...E.#",
+  "#.#.#########.#########.##########.#####",
+  "#...#.........G.........#....N.$.......#",
+  "####################P###################",
+  "########################################"
+ ],
+ "desert": [
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+  "^ssss......*..........ssssssssss.....*.^",
+  "^sssss..........*....sssssssssssss.....^",
+  "^.sss...E....HHHHH..sssssssZsssssss..F.^",
+  "^............rrrrr...sssssssssssssss...^",
+  "^..*.........HHdHH....sssssssssssss....^",
+  "^.......................sssssssss..*...^",
+  "^..HH..HH..===============.............^",
+  "^..rr..rr..=.............=......E......^",
+  "^..Hd..dH..=...TT~~~TT...=.............^",
+  "^...N......=...T~~~~~T...=.....*.......^",
+  "^.....G....=...T~~~~~T...=..........*..^",
+  "^..HH..$...=....TT~TT....=.............^",
+  "^..rr......=......N......=.....HHHHH...^",
+  "^..Hd......=..............=....rrrrr...^",
+  "^..........=======.........=...HHWHH...^",
+  "^.*....E.........=..........=====......^",
+  "^.........ss.....=...........*.........^",
+  "^........ssss....=......E..........C...^",
+  "^...*.....ss.....=...................*.^",
+  "^......h.........=.........s...........^",
+  "^................P........sss......h...^",
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+ ],
+ "ocean": [
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^~",
+  "~^aaa..q....^^^^^^^^^^^^^^^...q....aa.^~",
+  "~^aa.......^^..........Z..^^..........^~",
+  "~^.....F...^^..........S..^^...E......^~",
+  "~^..q......^^.............^^.....q....^~",
+  "~^.........^^^^^^^g^^^^^^^^^......aa..^~",
+  "~^...........cccccccccc...............^~",
+  "~^.q...........E.........q.....qqq....^~",
+  "~^......aaa............HHHH...q.C.q...^~",
+  "~^......aNa.....q......rrrr...q...q...^~",
+  "~^......aaa...........HHdHH....qqq....^~",
+  "~^...E.........G......................^~",
+  "~^.qq.......cccccc.........N...F......^~",
+  "~^.qq..q...........aa........$........^~",
+  "~^.......E.........aa.........q.......^~",
+  "~^..........................aa......q.^~",
+  "~^.....q..........E.........aa....E...^~",
+  "~^...aa..........................h....^~",
+  "~^...aa...q.........P...........q.....^~",
+  "~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+ ],
+ "volcan": [
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+  "^LLLLLLLLLLL#QQQQQQQQQQQQQQ#LLLLLLLLLLL^",
+  "^LLLLLLLLLLL#Q____________Q#LLLLLLLLLLL^",
+  "^LLLL^^^LLLL#Q_____A______Q#LLLL^^^LLLL^",
+  "^LLL^^.^^LLL#Q_____Z______Q#LLL^^.^^LLL^",
+  "^LLLL^^^LLLL#Q____________Q#LLLL^^^LLLL^",
+  "^LLLLLLLLLLL#QQQQQQgQQQQQQQ#LLLLLLLLLLL^",
+  "^LLLLLLLLLLLLLLLLLLBLLLLLLLLLLLLLLLLLLL^",
+  "^LLLLLLLLLLLLLLLLLLBLLLLLLLLLLLLLLLLLLL^",
+  "^.........v.......=......v........F....^",
+  "^..F..............=..............,.....^",
+  "^.....,....LLL....=.....LLLL...........^",
+  "^.........LLLLL...====..LLLLL....*.....^",
+  "^....*.....LLL.......=...LLL......F....^",
+  "^...................=.......v..........^",
+  "^..HH.....F.........=..................^",
+  "^..rr..$............=.....F.....,......^",
+  "^..Hd..N....,.......=..........LLLLLL..^",
+  "^...................=......*...LLLLLL..^",
+  "^..v.....LLLL.......=..........LLLLLL..^",
+  "^.......LLLLLL....F.=....v.........h...^",
+  "^...................P..................^",
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+  "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+ ]
+};
+
+// ------------------------------------------------------------------ palettes
+const PAL = {
+  intro:   { floor:'#6fbf4a', alt:'#5eab3c', tuft:'#4c9a32', path:'#d9b77a', pathDark:'#c39f62', wall:'#8a8c98', wallTop:'#b5b7c2', wallDark:'#5c5e6a', tree:'#2f8a36', treeLight:'#4fae4a', treeDark:'#1d5a22', trunk:'#6b4423', water:'#3b82d6', waterLight:'#9cd0ff', rock:'#9a8a74', rockLight:'#c4b59c', rockDark:'#5e5245', house:'#e2c79a', window:'#6aa8e0', roof:'#c0503e', roofDark:'#8a3428', door:'#6a3e1c', bush:'#3f9b3a', bushLight:'#6cc45a', deco:'#ff6a8a', inner:'#c9a87a', innerLine:'#b08f62', enemy:'#5ac83a', enemyDark:'#2a7a1a', fast:'#7a3a9a', boss:'#46b83a', bossAcc:'#ffd35a', npc:['#3a6ad8','#d84a6a','#e8a03a','#7a5ad8'], bridge:'#a8763a', stone:'#ffffff' },
+  neige:   { floor:'#eef4fb', alt:'#d8e5f3', tuft:'#c4d6ea', path:'#c6d4e6', pathDark:'#adbfd6', wall:'#7fbde6', wallTop:'#c8ecff', wallDark:'#4a8cbc', tree:'#2c6e5a', treeLight:'#ffffff', treeDark:'#1b4a3c', trunk:'#6b4a33', water:'#4f86c4', waterLight:'#bfe0ff', rock:'#9aa8ba', rockLight:'#ffffff', rockDark:'#5f6e82', snowcap:true, ice:'#bfe9ff', house:'#ffffff', window:'#7fbde6', roof:'#dbe9f6', roofDark:'#b3c8de', door:'#5a7aa0', bush:'#cfe0f0', bushLight:'#ffffff', deco:'#6fd0ff', inner:'#cfe6f7', innerLine:'#a9cbe6', enemy:'#ffffff', enemyDark:'#9db4cc', fast:'#8a96aa', boss:'#e6f0ff', bossAcc:'#4aa8e8', npc:['#d84a4a','#3a8ad8','#e8a03a','#3aa86a'], bridge:'#a8763a', stone:'#5fe1ff' },
+  foret:   { floor:'#4f9a3c', alt:'#448a34', tuft:'#6bb84e', path:'#b08a5a', pathDark:'#957246', wall:'#6b4a2a', wallTop:'#8a6a3a', wallDark:'#4a321c', tree:'#24702e', treeLight:'#3f9a3c', treeDark:'#123f18', trunk:'#5a3a1c', water:'#3a86c0', waterLight:'#a6d8ff', rock:'#7a7464', rockLight:'#a8a08a', rockDark:'#4a463c', house:'#a8743c', window:'#f4d070', roof:'#5f8a34', roofDark:'#3f6420', door:'#4a2a10', bush:'#2f7f2a', bushLight:'#58b048', deco:'#e0503c', inner:'#9a6a3a', innerLine:'#7a522a', bark:'#7a4e2a', barkDark:'#4e3018', enemy:'#8a5a3a', enemyDark:'#4e3018', fast:'#d8a020', boss:'#3a2a4a', bossAcc:'#7ad84a', npc:['#c8803a','#e0e0e0','#a85a3a','#d8c050'], bridge:'#8a5a2a', stone:'#4cf07a' },
+  village: { floor:'#bdb6aa', alt:'#aaa396', tuft:'#9a9386', path:'#dccaa0', pathDark:'#c7b287', wall:'#7a6f66', wallTop:'#9e948a', wallDark:'#544b44', tree:'#3f8a3a', treeLight:'#5fae4a', treeDark:'#25602a', trunk:'#6b4423', water:'#4a8ec4', waterLight:'#a8d4ff', rock:'#8a8070', rockLight:'#b0a690', rockDark:'#5a5246', house:'#efe0bf', window:'#5a8ac8', roof:'#c0573e', roofDark:'#8a3a28', roofAlt:['#c0573e','#3f6aa8','#6a9a3a','#a85aa0','#d8a030'], door:'#6a3e1c', bush:'#4a9a3a', bushLight:'#7ac45a', deco:'#ff7aa0', inner:'#c9a87a', innerLine:'#b08f62', enemy:'#8a8a9a', enemyDark:'#4a4a5a', fast:'#4a3a5a', boss:'#2a2a3a', bossAcc:'#e8b830', npc:['#3a6ad8','#d84a6a','#e8a03a','#3aa86a'], bridge:'#a8763a', stone:'#ffd23f' },
+  labyrinthe: { floor:'#4a4560', alt:'#423d57', tuft:'#55506e', path:'#5a5470', pathDark:'#4e4864', wall:'#8f89b0', wallTop:'#bdb7dc', wallDark:'#5d587c', tree:'#3a6a4a', treeLight:'#5a8a6a', treeDark:'#24442e', trunk:'#5a3a1c', water:'#3a5a9a', waterLight:'#8aaaff', rock:'#6a6488', rockLight:'#9a94b8', rockDark:'#3e3a56', house:'#a8a0c8', window:'#f4d070', roof:'#6a4a9a', roofDark:'#4a3070', door:'#3a2a10', bush:'#3a6a4a', bushLight:'#5a8a6a', deco:'#c8a0ff', inner:'#4a4560', innerLine:'#3e3a54', enemy:'#ece4cf', enemyDark:'#9a9078', fast:'#b4a8ff', boss:'#9a5a2a', bossAcc:'#e8c860', npc:['#e8a03a','#3aa86a','#d84a6a','#3a6ad8'], bridge:'#8a5a2a', stone:'#b36bff' },
+  desert:  { floor:'#ebcb7e', alt:'#dfbb6c', tuft:'#c9a458', path:'#c9a35e', pathDark:'#b08a48', wall:'#c08850', wallTop:'#dcaa70', wallDark:'#8a5a30', tree:'#3f9a3a', treeLight:'#6cc45a', treeDark:'#24702a', trunk:'#8a5a2a', water:'#2fa4c8', waterLight:'#b4ecff', rock:'#c4864e', rockLight:'#e6aa6e', rockDark:'#8a5630', house:'#c99a5c', window:'#5a3a1c', roof:'#e8c060', roofDark:'#b8902e', door:'#5a3a1c', bush:'#8a9a3a', bushLight:'#b4c45a', deco:'#3f9a4a', dune:'#d9a85a', duneDark:'#b8873e', inner:'#c9a87a', innerLine:'#b08f62', enemy:'#5aa83a', enemyDark:'#2a6a1a', fast:'#b03a2a', boss:'#c8783a', bossAcc:'#ffe08a', npc:['#3a6ad8','#e8e8e8','#d84a3a','#2a9a8a'], bridge:'#8a5a2a', stone:'#ff8a1f' },
+  ocean:   { floor:'#2c7393', alt:'#276886', tuft:'#3a86a6', path:'#3a86a6', pathDark:'#327a98', wall:'#1f4a63', wallTop:'#2f6683', wallDark:'#133246', tree:'#2aa86a', treeLight:'#5ad89a', treeDark:'#1a7048', trunk:'#2a6a4a', water:'#0d2c4a', waterLight:'#24507a', rock:'#2a5e7c', rockLight:'#3f7ea0', rockDark:'#163a50', house:'#ead2f2', window:'#5ae0ff', roof:'#b07ad0', roofDark:'#7e50a0', door:'#5a3a8a', bush:'#2aa86a', bushLight:'#5ad89a', deco:'#ffd0e0', coral:'#ff7a8a', coralLight:'#ffb0b8', algae:'#36b06e', algaeDark:'#1f7a48', current:'#7ac8e8', inner:'#4a8aa8', innerLine:'#3a7a98', enemy:'#e85a3a', enemyDark:'#9a2a1a', fast:'#e6a6ff', boss:'#8a3a8a', bossAcc:'#ffd35a', npc:['#ff8ab0','#5ae0c8','#ffd35a','#b07ad0'], bridge:'#8a5a2a', stone:'#2f7bff' },
+  volcan:  { floor:'#3c3230', alt:'#332a28', tuft:'#4a3e3a', path:'#5e4c44', pathDark:'#4e3e38', wall:'#2a2226', wallTop:'#4a3e44', wallDark:'#161214', tree:'#2a2020', treeLight:'#3a2e2e', treeDark:'#1a1414', trunk:'#2a1e1a', water:'#ff5a1a', waterLight:'#ffc23a', rock:'#3a302e', rockLight:'#5a4a46', rockDark:'#1a1414', lava:'#ff5a1a', lavaLight:'#ffc23a', castle:'#2c2438', castleTop:'#4c3f60', castleDark:'#18121f', house:'#6a5a50', window:'#ffb03a', roof:'#8a3a2a', roofDark:'#5a2418', door:'#2a1a10', bush:'#4a3a30', bushLight:'#6a5040', deco:'#ff8a3a', inner:'#3a2e3e', innerLine:'#2c2232', enemy:'#ff7a3a', enemyDark:'#a83a10', fast:'#d83a5a', boss:'#3a1a4a', bossAcc:'#ff5a1a', npc:['#e8a03a','#3a8ad8','#d84a4a','#3aa86a'], bridge:'#5a3a2a', stone:'#ffffff' },
+};
+
+// ------------------------------------------------------------------ niveaux
+const LEVELS = [
+ { id:'intro', key:'intro', num:'Niveau 1', tag:'Introduction', name:'Prébois', sub:'Le village actuel devient l’introduction', color:'#4fae4a',
+   caption:'Le village actuel, inchangé dans sa forme. Le donjon (souterrains) est au sud-est, après le pont.',
+   sheet:[
+    ['Rôle', 'Raconter l’histoire, apprendre à jouer, obtenir la <b>Carte du royaume</b>.'],
+    ['Histoire', ['Ouverture en 4 images : le royaume d’Iris, Alia la licorne, l’enlèvement par Morgor une nuit d’orage, les couleurs qui pâlissent.','L’Ancien réveille le héros : « Un sbire de Morgor a volé la carte du royaume ! »','La quête « La relique perdue » devient « <b>La carte du royaume</b> ».']],
+    ['Arme', 'Épée (déjà là).'],
+    ['Monstres', 'Gluants, chauves-souris (déjà là).'],
+    ['Astuces', ['Levier du jardin, bloc à pousser sur la dalle, salle à nettoyer pour la clé (déjà là).']],
+    ['Mini-jeu', '<b>Morpion</b> avec Bastien le garde, sur son banc.'],
+    ['Boss', '<b>Roi Gluant</b>, sbire de Morgor. Vaincu, il lâche la Carte du royaume. L’Ancien raconte alors la légende des 6 pierres, et la carte du monde s’ouvre.'],
+    ['Quêtes', 'Le pont cassé, la recette, le bouquet, les champs (déjà là).'],
+   ]},
+ { id:'neige', key:'neige', num:'Niveau 2', tag:'Pierre de Givre', name:'Le Mont Givré', sub:'Igloos, lac gelé et temple de glace', color:'#5fe1ff',
+   caption:'Plan d’origine. En bas, l’arrivée. À gauche, le hameau d’igloos. À droite, le lac gelé. En haut, le temple de glace. Le niveau est jouable.',
+   sheet:[
+    ['Ambiance', 'Neige partout, sapins, igloos et maisons en briques de neige, un lac gelé, le temple de glace au sommet.'],
+    ['Habitants', 'Nanouk le chef du hameau, Mamie Flocon, Pingo le pingouin, Igor le savant, Anouchka et son chocolat chaud.'],
+    ['Nouvel objet', '<b>Bâton de feu</b>, dans le coffre au milieu du lac gelé : il lance des flammèches (bouton Objet) qui font fondre la glace et allument les braseros.'],
+    ['Monstres', 'Bonhommes de neige (lancent des boules), loups blancs (rapides), pingouins glisseurs (foncent tout droit), stalactites qui tombent.'],
+    ['Astuces', ['<b>Lac gelé</b> : on glisse jusqu’au prochain obstacle ; trouver le bon chemin jusqu’au coffre.','<b>Blocs de glace</b> poussés : ils glissent jusqu’au mur.','<b>4 braseros</b> à allumer pour ouvrir la porte du temple.','<b>Murs de glace fissurés</b> à faire fondre.']],
+    ['Mini-jeu', '<b>Le dernier glaçon</b> avec Pingo : 15 glaçons, chacun en prend 1, 2 ou 3, celui qui prend le dernier a perdu.'],
+    ['Quêtes', '« La Pierre de Givre » (quête principale) · « Les pelotes de Mamie Flocon » : 3 pelotes, une sur le lac, une derrière un mur de glace.'],
+    ['Boss', '<b>Le Yéti Grondeur</b> : il tape le sol et fait tomber des stalactites. Faire fondre sa carapace de glace au bâton de feu, répondre à sa question, puis frapper.'],
+   ]},
+ { id:'foret', key:'foret', num:'Niveau 3', tag:'Pierre de Sève', name:'La Forêt des Murmures', sub:'Animaux de la forêt et Grand Chêne à visiter', color:'#4cf07a',
+   caption:'En bas, l’arrivée et la rivière. Au milieu, la cabane du bûcheron. En haut, le Grand Chêne : on entre par ses racines et on monte jusqu’à la cime.',
+   sheet:[
+    ['Ambiance', 'Forêt dense, rivière, clairières fleuries, cabane du bûcheron, et le <b>Grand Chêne</b> géant, visitable sur 3 étages : racines, tronc, cime.'],
+    ['Habitants', 'Hulotte la chouette, la biche, Gaspard le bûcheron, un renard chapardeur.'],
+    ['Nouvel objet', '<b>Arc</b>, dans les racines du Grand Chêne : toucher des cibles et des monstres de loin.'],
+    ['Monstres', 'Sangliers (chargent en ligne droite), écureuils lanceurs de glands, guêpes (rapides), champignons sauteurs.'],
+    ['Astuces', ['<b>Cibles</b> à toucher à l’arc : elles ouvrent des passages et font monter l’ascenseur à poulie du tronc.','<b>Le bois qui tourne en rond</b> : suivre les champignons rouges pour ne pas revenir au début.','<b>Rondins</b> à pousser dans la rivière pour faire un pont.']],
+    ['Mini-jeu', '<b>Memory des animaux</b> avec Hulotte la chouette : retrouver les paires de cartes.'],
+    ['Quêtes', '« Les œufs de Hulotte » (3 œufs tombés du nid) · « Ce que le renard a pris » · « 5 bûches pour Gaspard ».'],
+    ['Boss', '<b>Ronce-Noire</b>, l’arbre corrompu par Morgor, au sommet du chêne. Viser ses yeux à l’arc, répondre, frapper son cœur. Vaincu, le Grand Chêne refleurit.'],
+   ]},
+ { id:'village', key:'village', num:'Niveau 4', tag:'Pierre d’Aurore', name:'Bourg-Lanterne', sub:'Une grande ville pleine de maisons, de clés et de coffres', color:'#ffd23f',
+   caption:'Trois quartiers séparés par deux grandes rues et un canal. La place du marché est au centre. Le donjon est dans les égouts, sous le beffroi.',
+   sheet:[
+    ['Ambiance', 'Grande ville : rues pavées, canal et ponts, place du marché avec fontaine, beffroi, une douzaine de maisons dont 8 à visiter.'],
+    ['Habitants', 'Le maire, la boulangère, le facteur, l’aubergiste, Mme Pélagie et son chat, des enfants qui jouent.'],
+    ['Nouvel objet', '<b>Boomerang</b>, offert par le chef de la garde : il rapporte les objets éloignés (une clé derrière une grille), étourdit les monstres et touche les interrupteurs de loin.'],
+    ['Monstres', 'Rats (dans les égouts), chauves-souris, voleurs masqués (sbires de Morgor) qui chipent des pièces.'],
+    ['Astuces', ['<b>Clés de couleur</b> : la clé rouge ouvre la maison au toit rouge.','<b>Coffres à code</b> : le code est caché dans une autre maison, sous forme de calcul.','<b>Objets cachés</b> dans les maisons : armoires, tonneaux, sous les lits.']],
+    ['Mini-jeu', '<b>Puissance 4</b> contre l’aubergiste, à l’auberge.'],
+    ['Quêtes', '« La pierre volée » (enquête du maire : 3 indices dans 3 maisons) · « Le facteur débordé » (5 lettres : lire les noms sur les portes) · « Le chat de Mme Pélagie » · « 4 pains à livrer ».'],
+    ['Boss', '<b>Le Chef des Masques</b>, dans les égouts : il devient invisible. Le boomerang l’étourdit, on répond à sa question, puis on frappe.'],
+   ]},
+ { id:'labyrinthe', key:'labyrinthe', num:'Niveau 5', tag:'Pierre du Temps', name:'Le Labyrinthe des Mille Portes', sub:'Pièges, clés et portes qui changent le chemin', color:'#b36bff',
+   caption:'Entrée en bas, avec le magasin et le gnome. La sortie et la pierre sont en haut à gauche. Portes bleues et rouges, piques, trous, mur fissuré.',
+   sheet:[
+    ['Ambiance', 'Un grand dédale de pierre mauve, sous un ciel violet. Un <b>magasin à l’entrée</b>.'],
+    ['Habitants', 'Lulu la marchande (plan du labyrinthe, bombes, clés, potions), Gnomo le gnome portier.'],
+    ['Nouvel objet', '<b>Bombes</b> (au magasin et dans des coffres) : elles cassent les murs fissurés et ouvrent des raccourcis.'],
+    ['Monstres', 'Squelettes, fantômes (rapides, traversent les murs), armures animées.'],
+    ['Pièges', 'Piques qui sortent en rythme, flèches tirées par les murs, dalles qui s’effondrent, trous.'],
+    ['Astuces', ['<b>Interrupteurs cristal</b> : on les frappe, les portes bleues s’abaissent et les rouges se lèvent (ou l’inverse). Le chemin change.','<b>Portes à horloge</b> : toutes les 20 secondes elles changent ; un carillon prévient.','<b>Portes à clé</b>, et un <b>plan</b> à acheter qui affiche le labyrinthe.']],
+    ['Mini-jeu', '<b>Code secret</b> avec Gnomo : deviner ses 3 couleurs en 8 essais. Gagner donne une clé.'],
+    ['Boss', '<b>Le Minotaure de bronze</b> : il charge tout droit. L’esquiver pour qu’il percute un mur, répondre pendant qu’il est sonné, frapper.'],
+   ]},
+ { id:'desert', key:'desert', num:'Niveau 6', tag:'Pierre du Soleil', name:'Le Désert des Mirages', sub:'Serpents, huttes, oasis et la grande dune', color:'#ff8a1f',
+   caption:'Le campement de huttes à gauche, l’oasis au centre, le temple enfoui à droite. La grande dune, en haut à droite, cache le boss.',
+   sheet:[
+    ['Ambiance', 'Dunes, cactus, une oasis, un campement de huttes, un temple à moitié enfoui dans le sable.'],
+    ['Habitants', 'Sabri le marchand, Mémé Dune, une caravane de chameaux égarés.'],
+    ['Nouvel objet', '<b>Pelle</b> : creuser pour trouver trésors, interrupteurs enterrés et l’entrée du temple.'],
+    ['Monstres', 'Serpents, scorpions (rapides), vautours, momies dans le temple.'],
+    ['Astuces', ['<b>Sables mouvants</b> qui ralentissent.','<b>Tempête de sable</b> : on voit moins loin, il faut suivre les poteaux.','<b>Statues</b> à tourner face au soleil pour ouvrir le temple.','<b>Carte au trésor</b> : creuser là où est la croix.']],
+    ['Mini-jeu', '<b>Les 3 gobelets</b> avec Sabri : suivre la bille des yeux.'],
+    ['Quêtes', '« La caravane perdue » (3 chameaux) · « De l’eau pour Mémé Dune ».'],
+    ['Boss', '<b>Le Ver des Dunes</b>, caché sous la grande dune : on voit le sable bouger. Le faire sortir en frappant les 3 tambours, répondre, frapper.'],
+   ]},
+ { id:'ocean', key:'ocean', num:'Niveau 7', tag:'Pierre des Marées', name:'Les Abysses de Corail', sub:'Sous l’océan, avec une combinaison de plongée', color:'#2f7bff',
+   caption:'On arrive par le bas en plongeant. Le palais des sirènes est au centre, les courants traversent la carte, la fosse du Kraken est en haut.',
+   sheet:[
+    ['Accès', 'Sur la plage, le capitaine Barnabé prête sa <b>combinaison de plongée</b> si on lui rapporte sa longue-vue.'],
+    ['Ambiance', 'Coraux, algues, bancs de poissons, une épave, le palais des sirènes, une fosse sombre.'],
+    ['Habitants', 'Coralie la sirène, la reine Marine, une tortue qui connaît tous les chemins.'],
+    ['Nouvel objet', '<b>Trident</b>, offert par la reine Marine : il frappe loin, même à travers les algues.'],
+    ['Monstres', 'Crabes, méduses (rapides), anguilles qui sortent des trous, poissons-lanternes dans le noir.'],
+    ['Astuces', ['<b>Nage</b> : on avance plus doucement, en glissant.','<b>Courants</b> qui entraînent le héros.','<b>Bouteille d’oxygène</b> : un compte à rebours s’affiche. Si le niveau n’est pas fini à temps, on le recommence.','<b>Algues</b> qui cachent des passages, <b>coquillages-interrupteurs</b>, portes de corail.']],
+    ['Mini-jeu', '<b>Le chant des coquillages</b> avec Coralie : répéter la suite de notes, de plus en plus longue.'],
+    ['Boss', '<b>Le Kraken</b> : toucher chacun de ses tentacules au trident, puis sa tête, répondre, frapper.'],
+   ]},
+ { id:'volcan', key:'volcan', num:'Niveau 8', tag:'Niveau final', name:'Le Volcan Noir', sub:'Terres brûlées, armure magique et château de Morgor', color:'#ff5a1a',
+   caption:'En bas, les terres brûlées et le campement de la forge. Le pont de pierre traverse la lave jusqu’au château de Morgor, où Alia est enfermée.',
+   sheet:[
+    ['Accès', 'Les 6 pierres réunies forment le <b>Cœur d’Iris</b> : la porte du Volcan Noir s’ouvre sur la carte.'],
+    ['Ambiance', 'Sol très sombre, rivières de lave, geysers, ciel rouge, arbres morts. Un petit campement de résistants.'],
+    ['Objectif', 'Réunir <b>300 pièces</b> pour acheter l’<b>Armure d’Iris</b> chez Brasier le forgeron. Sans elle, les attaques de Morgor sont trop fortes.'],
+    ['Argent', 'Les monstres d’ici donnent plus de pièces, coffres, pépites cachées, questions du vieux sage (3 pièces par bonne réponse), mini-jeu.'],
+    ['Monstres', 'Rapides : chauves-souris de feu, diablotins, loups de lave, golems de pierre.'],
+    ['Pièges', 'Rivières de lave (la pierre de Givre les gèle), geysers en rythme, rochers qui roulent, dalles qui s’effondrent.'],
+    ['Mini-jeu', '<b>Plus ou moins</b> avec Brasier : deviner son nombre entre 1 et 100.'],
+    ['Château', '4 à 6 salles qui demandent tous les objets du jeu : arc, boomerang, bombes, bâton de feu, pelle.'],
+    ['Boss final', '<b>Morgor</b>, en 3 phases (détail plus bas). Vaincu, Alia est libre et les couleurs reviennent sur tout le royaume.'],
+   ]},
+];
+
+const WEAPONS = [
+ ['Prébois', 'Épée', 'Frapper, couper les buissons, actionner les leviers.', 'Levier, bloc à pousser (déjà là)'],
+ ['Mont Givré', 'Bâton de feu', 'Lance une flammèche : fait fondre la glace, allume les braseros, touche les monstres de glace.', 'Braseros, murs de glace'],
+ ['Forêt des Murmures', 'Arc', 'Tire des flèches : cibles, monstres perchés, cordes à couper.', 'Cibles, ascenseur à poulie'],
+ ['Bourg-Lanterne', 'Boomerang', 'Revient dans la main : rapporte les objets, étourdit, touche les interrupteurs de loin.', 'Clé derrière une grille'],
+ ['Labyrinthe', 'Bombes', 'Cassent les murs fissurés et les rochers, ouvrent des raccourcis.', 'Murs fissurés'],
+ ['Désert des Mirages', 'Pelle', 'Creuse le sable : trésors, interrupteurs enterrés, passages.', 'Carte au trésor, interrupteurs'],
+ ['Abysses de Corail', 'Combinaison + Trident', 'Nager sous l’eau ; frapper loin, à travers les algues.', 'Coquillages, portes de corail'],
+ ['Volcan Noir', 'Armure d’Iris', 'Achetée 300 pièces : divise par deux les dégâts de Morgor.', 'Château de Morgor'],
+];
+
+const GAMES = [
+ ['Prébois', 'Morpion', 'Bastien le garde', 'Aligner 3 croix. Le garde joue au hasard à 6 ans, bien à 10 ans.', 'Stratégie'],
+ ['Mont Givré', 'Le dernier glaçon', 'Pingo le pingouin', 'Prendre 1, 2 ou 3 glaçons ; celui qui prend le dernier a perdu.', 'Calcul'],
+ ['Forêt des Murmures', 'Memory des animaux', 'Hulotte la chouette', 'Retrouver les paires. 6 paires à 6 ans, 10 à 10 ans.', 'Mémoire'],
+ ['Bourg-Lanterne', 'Puissance 4', 'L’aubergiste', 'Aligner 4 jetons avant lui.', 'Stratégie'],
+ ['Labyrinthe', 'Code secret', 'Gnomo le gnome', 'Deviner 3 couleurs en 8 essais grâce à ses indices.', 'Logique'],
+ ['Désert des Mirages', 'Les 3 gobelets', 'Sabri le marchand', 'Suivre la bille cachée sous un gobelet.', 'Attention'],
+ ['Abysses de Corail', 'Le chant des coquillages', 'Coralie la sirène', 'Répéter une suite de notes et de couleurs.', 'Mémoire'],
+ ['Volcan Noir', 'Plus ou moins', 'Brasier le forgeron', 'Deviner un nombre entre 1 et 100.', 'Nombres'],
+];
+
+const STONES = [
+ { id:'neige', name:'Pierre de Givre', where:'Mont Givré', color:'#5fe1ff', power:'Gèle la lave et l’eau : des dalles de glace pour traverser.' },
+ { id:'foret', name:'Pierre de Sève', where:'Forêt des Murmures', color:'#4cf07a', power:'Rend doucement la vie : 1 cœur par minute.' },
+ { id:'village', name:'Pierre d’Aurore', where:'Bourg-Lanterne', color:'#ffd23f', power:'Éclaire les salles sombres et montre les passages secrets.' },
+ { id:'labyrinthe', name:'Pierre du Temps', where:'Labyrinthe', color:'#b36bff', power:'Ralentit les monstres rapides.' },
+ { id:'desert', name:'Pierre du Soleil', where:'Désert des Mirages', color:'#ff8a1f', power:'Épée de feu : chaque coup compte double.' },
+ { id:'ocean', name:'Pierre des Marées', where:'Abysses de Corail', color:'#2f7bff', power:'Une bulle protège d’un coup, puis se recharge.' },
+];
+
+const FINAL = [
+ ['Phase 1 · Le bouclier noir', 'Morgor est protégé par un bouclier. Le rayon arc-en-ciel du Cœur d’Iris le brise.'],
+ ['Phase 2 · La pluie de feu', 'Il lance des boules de feu partout. L’Armure d’Iris et la bulle des Marées protègent ; la Pierre du Temps le ralentit.'],
+ ['Phase 3 · Les questions', 'Il appelle ses sbires et pose des questions. Chaque bonne réponse lui retire sa magie ; on frappe pour finir.'],
+ ['La fin', 'La cage s’ouvre, Alia s’envole, les couleurs reviennent sur toute la carte. Fête à Prébois, puis on peut continuer à jouer pour finir les quêtes.'],
+];
+
+const ROADMAP = [
+ ['1 ✓', 'Fondations de l’aventure (fait)', 'Histoire en images, carte du monde, royaume qui se décolore, introduction réécrite (la carte du royaume), Morpion, ambiance médiévale seule.', 'L'],
+ ['2 ✓', 'Mont Givré (fait)', 'Thème neige, glace glissante, blocs qui glissent, braseros, bouton Objet et bâton de feu (projectile), Le dernier glaçon, Yéti.', 'L'],
+ ['3', 'Forêt des Murmures', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
+ ['4', 'Bourg-Lanterne', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
+ ['5', 'Labyrinthe', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
+ ['6', 'Désert des Mirages', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
+ ['7', 'Abysses de Corail', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
+ ['8', 'Volcan Noir et fin', 'Thème volcan, lave et geysers, armure, château, Morgor en 3 phases, scène de fin.', 'L'],
+];
+
+const QUESTIONS = [
+ ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
+ ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
+ ['Par où commencer — décidé', 'Lot 1 et Mont Givré faits. Suite : la Forêt des Murmures.'],
+ ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
+ ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
+ ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],
+ ['L’armure', '300 pièces, sauf avis contraire. Les pièces gagnées avant le volcan comptent aussi.'],
+];
+
+// ------------------------------------------------------------------ dessin des tuiles
+const T = 8;
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function R(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+const FLOORS = '._=,si';
+const ENT = 'PNE$FZGCKOolShWAYuvw';
+function floorFor(rows, x, y) {
+  for (const [dx, dy] of [[-1,0],[1,0],[0,1],[0,-1],[-1,1],[1,1],[-2,0],[2,0]]) {
+    const ch = (rows[y + dy] || '')[x + dx];
+    if (ch && FLOORS.includes(ch)) return ch;
+  }
+  return '.';
+}
+
+function ground(c, px, py, p, r) {
+  R(c, px, py, T, T, p.floor);
+  if (r() < .55) R(c, px + (r() * 6 | 0), py + (r() * 7 | 0), 2, 1, p.alt);
+  if (r() < .35) R(c, px + (r() * 7 | 0), py + (r() * 7 | 0), 1, 1, p.alt);
+}
+
+function terrain(c, ch, px, py, p, b, r, x, y) {
+  switch (ch) {
+    case '.': ground(c, px, py, p, r); break;
+    case ',': ground(c, px, py, p, r); R(c, px + 1, py + 4, 1, 2, p.tuft); R(c, px + 3, py + 3, 1, 3, p.tuft); R(c, px + 5, py + 5, 1, 2, p.tuft); break;
+    case '_': R(c, px, py, T, T, p.inner); R(c, px, py + 7, T, 1, p.innerLine); R(c, px + 7, py, 1, T, p.innerLine); break;
+    case '=': R(c, px, py, T, T, p.path); if (r() < .6) R(c, px + (r() * 6 | 0), py + (r() * 7 | 0), 2, 1, p.pathDark); break;
+    case '#': case 'k':
+      R(c, px, py, T, T, p.wall); R(c, px, py, T, 2, p.wallTop); R(c, px, py + 7, T, 1, p.wallDark);
+      R(c, px + ((y % 2) ? 2 : 6), py + 2, 1, 5, p.wallDark); R(c, px, py + 4, T, 1, p.wallDark);
+      if (ch === 'k') { c.fillStyle = '#111'; [[2,1],[3,2],[3,3],[4,4],[5,5],[4,6]].forEach(([a, d]) => c.fillRect(px + a, py + d, 1, 1)); }
+      break;
+    case 'Q':
+      R(c, px, py, T, T, p.castle); R(c, px, py, T, 2, p.castleTop); R(c, px, py + 7, T, 1, p.castleDark);
+      R(c, px + ((y % 2) ? 1 : 5), py + 2, 1, 5, p.castleDark); if ((x + y) % 5 === 0) R(c, px + 3, py + 3, 2, 3, '#ffb03a');
+      break;
+    case '^': {
+      R(c, px, py, T, T, p.rockDark);
+      c.fillStyle = p.rock; c.beginPath(); c.moveTo(px - 1, py + T); c.lineTo(px + 4, py + 1); c.lineTo(px + T + 1, py + T); c.fill();
+      c.fillStyle = p.rockLight; c.beginPath(); c.moveTo(px + 4, py + 1); c.lineTo(px + 1.5, py + 5); c.lineTo(px + 4, py + 4); c.fill();
+      if (p.snowcap) { R(c, px + 3, py + 1, 2, 2, '#ffffff'); R(c, px + 2, py + 3, 4, 1, '#ffffff'); }
+      break; }
+    case 'T': {
+      R(c, px, py, T, T, b === 'foret' ? p.treeDark : p.floor);
+      if (b === 'neige') {
+        R(c, px + 3, py + 6, 2, 2, p.trunk);
+        R(c, px + 3, py, 2, 2, p.tree); R(c, px + 2, py + 2, 4, 2, p.tree); R(c, px + 1, py + 4, 6, 2, p.tree);
+        R(c, px + 3, py, 1, 1, '#fff'); R(c, px + 2, py + 2, 2, 1, '#fff'); R(c, px + 1, py + 4, 2, 1, '#fff');
+      } else if (b === 'desert') {
+        R(c, px + 4, py + 3, 1, 5, p.trunk); R(c, px + 3, py + 5, 1, 3, p.trunk);
+        R(c, px + 1, py + 2, 7, 1, p.tree); R(c, px + 2, py + 1, 4, 1, p.tree); R(c, px, py + 3, 2, 1, p.tree); R(c, px + 6, py + 3, 2, 1, p.tree); R(c, px + 3, py + 2, 2, 1, p.treeLight);
+      } else if (b === 'volcan') {
+        R(c, px + 3, py + 2, 2, 6, '#1e1614'); R(c, px + 1, py + 2, 2, 1, '#1e1614'); R(c, px + 5, py + 1, 2, 1, '#1e1614'); R(c, px, py + 1, 1, 1, '#1e1614');
+      } else {
+        R(c, px + 3, py + 5, 2, 3, p.trunk);
+        R(c, px + 1, py + 1, 6, 5, p.tree); R(c, px + 2, py, 4, 1, p.tree); R(c, px, py + 2, 1, 3, p.tree); R(c, px + 7, py + 2, 1, 3, p.tree);
+        R(c, px + 2, py + 1, 2, 2, p.treeLight); R(c, px + 1, py + 5, 6, 1, p.treeDark);
+      }
+      break; }
+    case '~':
+      R(c, px, py, T, T, p.water);
+      R(c, px + 1 + ((x * 3 + y) % 4), py + 2 + (y % 2) * 3, 3, 1, p.waterLight);
+      break;
+    case 'L':
+      R(c, px, py, T, T, p.lava || '#ff5a1a');
+      R(c, px + ((x * 5 + y * 3) % 5), py + ((x + y) % 4) + 1, 3, 2, p.lavaLight || '#ffc23a');
+      if (r() < .4) R(c, px + (r() * 6 | 0), py + (r() * 6 | 0), 1, 1, '#fff2a0');
+      break;
+    case 'i':
+      R(c, px, py, T, T, p.ice || '#bfe9ff'); R(c, px, py + 7, T, 1, '#9fd6f2');
+      if ((x + y) % 3 === 0) { R(c, px + 2, py + 5, 1, 1, '#fff'); R(c, px + 3, py + 4, 1, 1, '#fff'); R(c, px + 4, py + 3, 1, 1, '#fff'); }
+      break;
+    case 'H': {
+      R(c, px, py, T, T, p.house);
+      if (b === 'neige') { R(c, px, py + 3, T, 1, '#c9d9ea'); R(c, px + (y % 2 ? 2 : 5), py, 1, 3, '#c9d9ea'); R(c, px + (y % 2 ? 5 : 2), py + 4, 1, 4, '#c9d9ea'); }
+      else { R(c, px, py, T, 1, 'rgba(0,0,0,.12)'); if ((x + y) % 2 === 0) { R(c, px + 2, py + 2, 4, 4, '#4a3a2a'); R(c, px + 3, py + 3, 2, 2, p.window); } }
+      R(c, px, py + 7, T, 1, 'rgba(0,0,0,.25)');
+      break; }
+    case 'r': {
+      const roof = p.roofAlt ? p.roofAlt[Math.floor(x / 5) % p.roofAlt.length] : p.roof;
+      R(c, px, py, T, T, roof); R(c, px, py + 2, T, 1, 'rgba(0,0,0,.2)'); R(c, px, py + 5, T, 1, 'rgba(0,0,0,.2)'); R(c, px, py, T, 1, 'rgba(255,255,255,.25)');
+      break; }
+    case 'd':
+      R(c, px, py, T, T, p.house); R(c, px + 2, py + 1, 4, 7, p.door); R(c, px + 2, py + 1, 4, 1, 'rgba(255,255,255,.25)'); R(c, px + 5, py + 4, 1, 1, '#ffd35a');
+      break;
+    case 'b':
+      ground(c, px, py, p, r); R(c, px + 1, py + 2, 6, 5, p.bush); R(c, px + 2, py + 1, 4, 1, p.bush); R(c, px + 2, py + 2, 2, 2, p.bushLight); R(c, px + 1, py + 7, 6, 1, 'rgba(0,0,0,.25)');
+      break;
+    case 'q':
+      ground(c, px, py, p, r); R(c, px + 3, py + 2, 2, 6, p.coral); R(c, px + 1, py + 3, 2, 1, p.coral); R(c, px + 1, py + 1, 1, 3, p.coral); R(c, px + 5, py + 4, 2, 1, p.coral); R(c, px + 6, py + 2, 1, 3, p.coral); R(c, px + 3, py + 2, 1, 1, p.coralLight);
+      break;
+    case 'a':
+      ground(c, px, py, p, r); R(c, px + 1, py + 1, 1, 7, p.algae); R(c, px + 2, py + 3, 1, 5, p.algaeDark); R(c, px + 4, py, 1, 8, p.algae); R(c, px + 6, py + 2, 1, 6, p.algae); R(c, px + 5, py + 4, 1, 4, p.algaeDark);
+      break;
+    case '*':
+      ground(c, px, py, p, r);
+      if (b === 'neige') { R(c, px + 3, py + 1, 2, 6, p.deco); R(c, px + 1, py + 4, 2, 3, p.deco); R(c, px + 5, py + 3, 2, 4, p.deco); R(c, px + 3, py + 1, 1, 2, '#fff'); }
+      else if (b === 'desert') { R(c, px + 3, py + 1, 2, 7, p.deco); R(c, px + 1, py + 3, 1, 3, p.deco); R(c, px + 1, py + 5, 2, 1, p.deco); R(c, px + 6, py + 2, 1, 3, p.deco); R(c, px + 5, py + 4, 2, 1, p.deco); }
+      else if (b === 'volcan') { R(c, px + 2, py + 4, 4, 3, '#5a4a46'); R(c, px + 3, py + 3, 2, 1, '#ff8a3a'); R(c, px + 4, py + 1, 1, 1, '#ffc23a'); }
+      else if (b === 'ocean') { R(c, px + 2, py + 4, 4, 3, p.deco); R(c, px + 3, py + 3, 2, 1, p.deco); R(c, px + 3, py + 5, 1, 1, '#c88a9a'); }
+      else if (b === 'labyrinthe') { R(c, px + 3, py + 2, 2, 4, p.deco); R(c, px + 2, py + 3, 4, 2, p.deco); }
+      else { [[1,2],[5,1],[3,5],[6,5]].forEach(([a, d], i) => { R(c, px + a, py + d, 2, 2, i % 2 ? '#ffffff' : p.deco); R(c, px + a, py + d + 2, 1, 1, p.tuft); }); }
+      break;
+    case 's':
+      R(c, px, py, T, T, p.dune || p.floor); R(c, px + ((x + y) % 3), py + 2 + (y % 2) * 3, 5, 1, p.duneDark || p.alt);
+      break;
+    case 'x':
+      R(c, px, py, T, T, p.floor);
+      [[1,2],[5,2],[3,5],[7,5]].forEach(([a, d]) => { R(c, px + a - 1, py + d + 1, 2, 1, '#6a6a7a'); R(c, px + a - 1, py + d, 1, 1, '#e0e0ea'); });
+      break;
+    case '+': R(c, px, py, T, T, '#05040a'); R(c, px, py, T, 2, 'rgba(255,255,255,.12)'); break;
+    case 'B':
+      R(c, px, py, T, T, p.water); R(c, px, py + 1, T, 6, p.bridge); R(c, px, py + 1, T, 1, 'rgba(255,255,255,.25)'); R(c, px + 2, py + 1, 1, 6, 'rgba(0,0,0,.25)'); R(c, px + 5, py + 1, 1, 6, 'rgba(0,0,0,.25)');
+      break;
+    case 'g': {
+      const f = floorFor(MAP_ROWS, x, y); terrain(c, f === 'g' ? '.' : f, px, py, p, b, r, x, y);
+      R(c, px, py, T, 1, '#3a3a44'); [1, 3, 5, 7].forEach(a => R(c, px + a - 1, py, 1, T, '#2a2a34')); [1, 3, 5, 7].forEach(a => R(c, px + a, py, 1, T, '#9a9aa8'));
+      break; }
+    case '|': case '!': {
+      const col = ch === '|' ? ['#3a6ad8', '#8ab0ff'] : ['#d83a3a', '#ffa0a0'];
+      R(c, px, py, T, T, col[0]); R(c, px + 1, py + 1, 6, 1, col[1]); R(c, px + 3, py + 3, 2, 2, col[1]); R(c, px, py + 7, T, 1, 'rgba(0,0,0,.35)');
+      break; }
+    case '@':
+      R(c, px, py, T, T, p.bark); R(c, px + 1 + (y % 2), py, 1, T, p.barkDark); R(c, px + 5 - (y % 2), py, 1, T, p.barkDark);
+      break;
+    case 'c':
+      ground(c, px, py, p, r); c.fillStyle = p.current; c.fillRect(px + 1, py + 4, 4, 1); c.fillRect(px + 4, py + 3, 1, 3); c.fillRect(px + 5, py + 4, 1, 1); c.fillRect(px + 3, py + 2, 1, 1); c.fillRect(px + 3, py + 6, 1, 1);
+      break;
+    default: ground(c, px, py, p, r);
+  }
+}
+
+function person(c, px, py, skin, body, hair) {
+  R(c, px + 2, py, 4, 2, hair); R(c, px + 2, py + 2, 4, 2, skin); R(c, px + 3, py + 3, 1, 1, '#222'); R(c, px + 5, py + 3, 1, 1, '#222');
+  R(c, px + 1, py + 4, 6, 3, body); R(c, px + 1, py + 4, 1, 2, skin); R(c, px + 6, py + 4, 1, 2, skin);
+  R(c, px + 2, py + 7, 1, 1, '#3a2a1a'); R(c, px + 5, py + 7, 1, 1, '#3a2a1a');
+}
+function gem(c, cx, cy, s, col) {
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.arc(cx, cy, s * 1.25, 0, Math.PI * 2); c.fill();
+  c.fillStyle = col; c.beginPath(); c.moveTo(cx, cy - s); c.lineTo(cx + s * .8, cy); c.lineTo(cx, cy + s); c.lineTo(cx - s * .8, cy); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = Math.max(.6, s / 6); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(cx - s * .35, cy - s * .5, Math.max(1, s * .25), Math.max(1, s * .35));
+}
+
+function entity(c, ch, px, py, p, b, x, y) {
+  const npcCol = p.npc[(x * 7 + y * 3) % p.npc.length];
+  switch (ch) {
+    case 'P': person(c, px, py, '#f0c8a0', '#3a9a3a', '#2f7d2a'); R(c, px + 7, py + 2, 1, 4, '#d8e0f0'); break;
+    case 'N': person(c, px, py, '#f0c8a0', npcCol, '#6a4220'); R(c, px + 3, py - 3, 2, 2, '#ffd35a'); break;
+    case '$': person(c, px, py, '#f0c8a0', '#e8b830', '#6a4220'); R(c, px + 2, py + 5, 4, 2, '#fff2c0'); c.fillStyle = '#ffd35a'; c.beginPath(); c.arc(px + 4, py - 2, 2, 0, 7); c.fill(); break;
+    case 'G':
+      R(c, px, py + 5, 8, 2, '#8a5a2a'); R(c, px + 1, py + 7, 1, 1, '#5a3a1a'); R(c, px + 6, py + 7, 1, 1, '#5a3a1a');
+      R(c, px + 1, py, 6, 5, '#f4e8c8'); R(c, px + 3, py, 1, 5, '#7a5a30'); R(c, px + 5, py, 1, 5, '#7a5a30'); R(c, px + 1, py + 1, 6, 1, '#7a5a30'); R(c, px + 1, py + 3, 6, 1, '#7a5a30');
+      R(c, px + 2, py + 2, 1, 1, '#d83a3a'); R(c, px + 4, py + 4, 1, 1, '#3a6ad8');
+      break;
+    case 'C': R(c, px, py + 2, 8, 6, '#a8672a'); R(c, px, py + 2, 8, 2, '#c8803a'); R(c, px, py + 4, 8, 1, '#5a3414'); R(c, px + 3, py + 4, 2, 2, '#d8c070'); break;
+    case 'K': R(c, px + 1, py + 1, 3, 3, '#ffd35a'); R(c, px + 2, py + 2, 1, 1, '#9a6a10'); R(c, px + 3, py + 3, 4, 1, '#ffd35a'); R(c, px + 5, py + 4, 1, 2, '#ffd35a'); R(c, px + 7, py + 4, 1, 1, '#ffd35a'); break;
+    case 'O': {
+      const ice = b === 'neige';
+      R(c, px, py, T, T, ice ? '#7fc8f0' : '#9a9488'); R(c, px, py, T, 1, ice ? '#e6f8ff' : '#c4beb2'); R(c, px, py, 1, T, ice ? '#e6f8ff' : '#c4beb2'); R(c, px, py + 7, T, 1, ice ? '#3a8ac0' : '#5a564e'); R(c, px + 7, py, 1, T, ice ? '#3a8ac0' : '#5a564e');
+      break; }
+    case 'o': R(c, px + 1, py + 1, 6, 6, '#6a6454'); R(c, px + 1, py + 1, 6, 5, '#b0a890'); R(c, px + 3, py + 3, 2, 1, '#5aff5a'); break;
+    case 'l':
+      if (b === 'foret') { c.fillStyle = '#fff'; c.beginPath(); c.arc(px + 4, py + 4, 3.5, 0, 7); c.fill(); c.fillStyle = '#d83a3a'; c.beginPath(); c.arc(px + 4, py + 4, 2.5, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(px + 4, py + 4, 1.2, 0, 7); c.fill(); }
+      else { R(c, px + 2, py + 6, 4, 2, '#5a5a66'); R(c, px + 4, py + 1, 1, 5, '#8a5a2a'); R(c, px + 3, py, 3, 2, '#d83a3a'); }
+      break;
+    case 'S': gem(c, px + 4, py + 4, 4.2, STONES.find(s => s.id === b)?.color || '#fff'); break;
+    case 'h': R(c, px + 1, py + 2, 2, 3, '#e8303a'); R(c, px + 5, py + 2, 2, 3, '#e8303a'); R(c, px + 2, py + 3, 4, 3, '#e8303a'); R(c, px + 3, py + 6, 2, 1, '#e8303a'); R(c, px + 2, py + 2, 1, 1, '#ff9aa0'); break;
+    case 'W': R(c, px, py, T, T, '#2a2420'); R(c, px + 1, py + 1, 6, 7, '#05040a'); R(c, px + 2, py, 4, 1, '#05040a'); break;
+    case 'Y':
+      R(c, px + 2, py + 4, 4, 4, '#6a6a7a'); R(c, px + 1, py + 4, 6, 1, '#9a9aa8');
+      R(c, px + 3, py + 1, 2, 3, '#ff8a1a'); R(c, px + 2, py + 2, 1, 2, '#ffb03a'); R(c, px + 5, py + 2, 1, 2, '#ffb03a'); R(c, px + 3, py + 2, 1, 1, '#fff2a0');
+      break;
+    case 'u': c.fillStyle = '#3a6ad8'; c.beginPath(); c.moveTo(px + 4, py); c.lineTo(px + 7, py + 4); c.lineTo(px + 1, py + 4); c.fill(); c.fillStyle = '#d83a3a'; c.beginPath(); c.moveTo(px + 1, py + 4); c.lineTo(px + 7, py + 4); c.lineTo(px + 4, py + 8); c.fill(); break;
+    case 'v': c.fillStyle = '#1a1414'; c.beginPath(); c.ellipse(px + 4, py + 5, 3.5, 2, 0, 0, 7); c.fill(); R(c, px + 3, py + 4, 2, 1, '#ff8a1a'); R(c, px + 3, py, 1, 3, 'rgba(255,200,120,.7)'); R(c, px + 5, py + 1, 1, 2, 'rgba(255,200,120,.5)'); break;
+    case 'w': c.strokeStyle = '#d8f4ff'; c.lineWidth = 1; c.beginPath(); c.arc(px + 4, py + 4, 2.5, 0, 7); c.stroke(); c.beginPath(); c.arc(px + 6.5, py + 1.5, 1, 0, 7); c.stroke(); R(c, px + 3, py + 3, 1, 1, '#fff'); break;
+    case 'E': enemy(c, px, py, p, b, false); break;
+    case 'F': enemy(c, px, py, p, b, true); break;
+    case 'Z': boss(c, px - 4, py - 4, p, b); break;
+    case 'A': unicorn(c, px - 4, py - 6); break;
+  }
+}
+
+function enemy(c, px, py, p, b, fast) {
+  if (fast) {
+    R(c, px + 2, py + 3, 4, 3, p.fast); R(c, px, py + 2, 2, 2, p.fast); R(c, px + 6, py + 2, 2, 2, p.fast); R(c, px, py + 1, 1, 1, p.fast); R(c, px + 7, py + 1, 1, 1, p.fast);
+    R(c, px + 3, py + 4, 1, 1, '#ffde3a'); R(c, px + 5, py + 4, 1, 1, '#ffde3a');
+    return;
+  }
+  if (b === 'neige') { // bonhomme de neige
+    R(c, px + 2, py + 4, 4, 4, '#fff'); R(c, px + 1, py + 5, 6, 2, '#fff'); R(c, px + 3, py + 1, 2, 3, '#fff'); R(c, px + 2, py + 2, 4, 1, '#fff');
+    R(c, px + 3, py, 2, 1, '#2a2a3a'); R(c, px + 3, py + 2, 1, 1, '#222'); R(c, px + 5, py + 2, 1, 1, '#ff8a1a'); R(c, px + 1, py + 7, 6, 1, '#9db4cc');
+    return;
+  }
+  if (b === 'desert') { // serpent
+    R(c, px + 1, py + 6, 4, 2, p.enemy); R(c, px + 4, py + 4, 2, 3, p.enemy); R(c, px + 3, py + 2, 2, 3, p.enemy); R(c, px + 3, py + 1, 4, 2, p.enemy); R(c, px + 6, py + 2, 1, 1, '#222'); R(c, px + 7, py + 3, 1, 1, '#e83a3a');
+    return;
+  }
+  if (b === 'ocean') { // crabe
+    R(c, px + 1, py + 4, 6, 3, p.enemy); R(c, px, py + 2, 2, 2, p.enemy); R(c, px + 6, py + 2, 2, 2, p.enemy); R(c, px + 2, py + 3, 1, 1, '#fff'); R(c, px + 5, py + 3, 1, 1, '#fff');
+    R(c, px + 1, py + 7, 1, 1, p.enemyDark); R(c, px + 3, py + 7, 1, 1, p.enemyDark); R(c, px + 4, py + 7, 1, 1, p.enemyDark); R(c, px + 6, py + 7, 1, 1, p.enemyDark);
+    return;
+  }
+  if (b === 'labyrinthe') { // squelette
+    R(c, px + 2, py, 4, 3, p.enemy); R(c, px + 3, py + 1, 1, 1, '#222'); R(c, px + 5, py + 1, 1, 1, '#222'); R(c, px + 3, py + 3, 2, 3, p.enemy); R(c, px + 1, py + 4, 6, 1, p.enemy); R(c, px + 2, py + 6, 1, 2, p.enemy); R(c, px + 5, py + 6, 1, 2, p.enemy);
+    return;
+  }
+  if (b === 'volcan') { // diablotin
+    R(c, px + 1, py + 2, 6, 6, p.enemy); R(c, px + 1, py, 1, 2, p.enemy); R(c, px + 6, py, 1, 2, p.enemy); R(c, px + 2, py + 4, 1, 1, '#fff2a0'); R(c, px + 5, py + 4, 1, 1, '#fff2a0'); R(c, px + 1, py + 7, 6, 1, p.enemyDark);
+    return;
+  }
+  if (b === 'foret') { // sanglier
+    R(c, px, py + 3, 7, 4, p.enemy); R(c, px + 6, py + 4, 2, 2, p.enemy); R(c, px + 7, py + 5, 1, 1, '#f4e8c8'); R(c, px + 5, py + 4, 1, 1, '#222'); R(c, px + 1, py + 2, 4, 1, p.enemyDark); R(c, px + 1, py + 7, 1, 1, p.enemyDark); R(c, px + 5, py + 7, 1, 1, p.enemyDark);
+    return;
+  }
+  // gluant / rat
+  R(c, px + 1, py + 3, 6, 4, p.enemy); R(c, px + 2, py + 2, 4, 1, p.enemy); R(c, px + 1, py + 7, 6, 1, p.enemyDark);
+  R(c, px + 2, py + 4, 1, 1, '#fff'); R(c, px + 5, py + 4, 1, 1, '#fff');
+  if (b === 'village') { R(c, px + 1, py + 1, 2, 2, p.enemy); R(c, px + 5, py + 1, 2, 2, p.enemy); R(c, px + 7, py + 5, 1, 1, '#d88a9a'); }
+}
+
+function boss(c, px, py, p, b) {
+  const col = p.boss, acc = p.bossAcc;
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(px + 8, py + 15, 7, 2, 0, 0, 7); c.fill();
+  if (b === 'ocean') { for (let i = 0; i < 4; i++) R(c, px + 1 + i * 4, py + 10, 2, 6, col); }
+  if (b === 'desert') { R(c, px, py + 10, 16, 6, p.duneDark); }
+  R(c, px + 2, py + 3, 12, 11, '#140c18'); R(c, px + 3, py + 4, 10, 9, col);
+  R(c, px + 4, py + 2, 8, 2, '#140c18'); R(c, px + 5, py + 3, 6, 1, col);
+  if (b === 'labyrinthe' || b === 'neige' || b === 'intro') { R(c, px + 1, py, 2, 4, acc); R(c, px + 13, py, 2, 4, acc); }
+  else { R(c, px + 4, py, 2, 3, acc); R(c, px + 7, py - 1, 2, 4, acc); R(c, px + 10, py, 2, 3, acc); R(c, px + 4, py + 2, 8, 1, acc); }
+  R(c, px + 5, py + 6, 2, 2, '#ff2a2a'); R(c, px + 9, py + 6, 2, 2, '#ff2a2a'); R(c, px + 5, py + 6, 1, 1, '#fff'); R(c, px + 9, py + 6, 1, 1, '#fff');
+  R(c, px + 6, py + 10, 4, 1, '#140c18');
+  if (b === 'foret') { R(c, px + 1, py + 6, 2, 1, acc); R(c, px + 13, py + 7, 2, 1, acc); }
+  if (b === 'volcan') { R(c, px + 1, py + 8, 1, 7, '#8a1a2a'); R(c, px + 14, py + 8, 1, 7, '#8a1a2a'); }
+}
+
+function unicorn(c, px, py) {
+  c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(px + 8, py + 9, 10, 0, 7); c.fill();
+  const W = '#ffffff', S = '#d6d0ec';
+  R(c, px + 3, py + 7, 10, 5, W); R(c, px + 3, py + 11, 10, 1, S);
+  R(c, px + 11, py + 3, 4, 5, W); R(c, px + 12, py + 2, 3, 2, W);
+  R(c, px + 4, py + 12, 1, 4, W); R(c, px + 7, py + 12, 1, 4, W); R(c, px + 10, py + 12, 1, 4, W); R(c, px + 12, py + 12, 1, 4, W);
+  R(c, px + 14, py, 1, 2, '#ffd35a'); R(c, px + 15, py - 1, 1, 1, '#ffd35a');
+  R(c, px + 13, py + 4, 1, 1, '#3a2a6a');
+  ['#ff5a7a', '#ffb03a', '#ffe04a', '#5ad87a', '#5aa8ff', '#a87aff'].forEach((col, i) => R(c, px + 10 - (i > 2 ? 1 : 0), py + 2 + i, 2, 1, col));
+  ['#ff5a7a', '#ffe04a', '#5aa8ff'].forEach((col, i) => R(c, px + 1, py + 7 + i * 2, 2, 2, col));
+}
+
+let MAP_ROWS = [];
+function drawMap(canvas, key) {
+  const rows = MAPS[key], p = PAL[key], c = canvas.getContext('2d');
+  MAP_ROWS = rows;
+  canvas.width = rows[0].length * T; canvas.height = rows.length * T;
+  const r = rng(key.length * 9973 + 7);
+  const later = [];
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    const px = x * T, py = y * T;
+    if (ENT.includes(ch) || ch === 'A') {
+      const f = floorFor(rows, x, y);
+      terrain(c, f, px, py, p, key, r, x, y);
+      later.push([ch, px, py, x, y]);
+    } else terrain(c, ch, px, py, p, key, r, x, y);
+  }));
+  // ombre douce sous les murs
+  later.sort((a, b) => (a[0] === 'Z' || a[0] === 'A') - (b[0] === 'Z' || b[0] === 'A'));
+  later.forEach(([ch, px, py, x, y]) => entity(c, ch, px, py, p, key, x, y));
+}
+
+// ------------------------------------------------------------------ carte du monde
+const WM = { W: 160, H: 100, S: 6 };
+const REGIONS = {
+  prebois: { x: .37, y: .82, col: [124, 195, 90], label: 'Prébois' },
+  neige: { x: .5, y: .13, col: [236, 243, 251], label: 'Mont Givré' },
+  foret: { x: .2, y: .3, col: [63, 143, 58], label: 'Forêt des Murmures' },
+  labyrinthe: { x: .8, y: .24, col: [138, 132, 170], label: 'Labyrinthe' },
+  ocean: { x: .14, y: .7, col: [63, 176, 200], label: 'Abysses de Corail' },
+  desert: { x: .85, y: .62, col: [232, 200, 122], label: 'Désert des Mirages' },
+  village: { x: .63, y: .84, col: [168, 200, 106], label: 'Bourg-Lanterne' },
+};
+const SITES = {
+  prebois: [.36, .83], neige: [.5, .2], foret: [.2, .32], labyrinthe: [.79, .27], ocean: [.15, .67], desert: [.84, .6], village: [.64, .82], volcan: [.5, .48],
+};
+function hash(x, y, s) { let h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function vnoise(x, y, s) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c2 = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s);
+  return a + (b - a) * u + (c2 - a) * v + (a - b - c2 + d) * u * v;
+}
+function fbm(x, y, s) { let t = 0, amp = .5, f = 1; for (let i = 0; i < 4; i++) { t += amp * vnoise(x * f, y * f, s + i); amp /= 2; f *= 2; } return t; }
+
+let WORLD = null;
+function buildWorld() {
+  const { W, H } = WM, cells = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const nx = x / W, ny = y / H;
+    const dx = (nx - .5) / .47, dy = (ny - .5) / .45;
+    const edge = Math.sqrt(dx * dx + dy * dy) + (fbm(nx * 5, ny * 5, 3) - .5) * .5;
+    let reg = 'sea';
+    if (edge < 1) {
+      const wx = nx + (fbm(nx * 6, ny * 6, 11) - .5) * .16, wy = ny + (fbm(nx * 6, ny * 6, 23) - .5) * .16;
+      const vd = Math.hypot((wx - .5) / 1, (wy - .48) / 1.05);
+      if (vd < .13) reg = 'volcan';
+      else { let best = 9; for (const [k, R0] of Object.entries(REGIONS)) { const d = Math.hypot(wx - R0.x, (wy - R0.y) * 1.1); if (d < best) { best = d; reg = k; } } }
+    }
+    cells.push({ reg, edge, n: fbm(nx * 18, ny * 18, 5), n2: hash(x, y, 77) });
+  }
+  // côtes
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const c = cells[y * W + x]; if (c.reg === 'sea') continue;
+    let near = false; for (const [a, b] of [[1,0],[-1,0],[0,1],[0,-1]]) { const o = cells[(y + b) * W + x + a]; if (!o || o.reg === 'sea') near = true; }
+    c.coast = near;
+  }
+  WORLD = cells;
+}
+function grey(rgb, k) { const l = rgb[0] * .3 + rgb[1] * .59 + rgb[2] * .11; return rgb.map(v => Math.round(v + (l * .82 + 20 - v) * k)); }
+function hex(rgb) { return 'rgb(' + rgb.join(',') + ')'; }
+function shade(rgb, f) { return rgb.map(v => Math.max(0, Math.min(255, Math.round(v * f)))); }
+
+function drawWorld(restored) {
+  const cv = document.getElementById('world'), c = cv.getContext('2d'), { W, H, S } = WM;
+  const allOk = Object.keys(REGIONS).filter(k => k !== 'prebois').every(k => restored.has(k));
+  const ok = (reg) => reg === 'sea' ? true : reg === 'prebois' ? allOk || restored.size > 0 : reg === 'volcan' ? true : restored.has(reg);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const cell = WORLD[y * W + x]; let rgb;
+    const { reg, n, n2 } = cell;
+    if (reg === 'sea') { rgb = cell.edge < 1.08 ? [58, 134, 192] : [31, 95, 154]; if (n2 < .04) rgb = [120, 180, 230]; }
+    else if (cell.coast && reg !== 'ocean' && reg !== 'volcan') rgb = reg === 'neige' ? [214, 228, 240] : [232, 214, 160];
+    else if (reg === 'volcan') {
+      const vd = Math.hypot(x / W - .5, (y / H - .48) * .95);
+      rgb = vd < .035 ? [255, 120, 30] : vd < .06 ? [60, 40, 40] : [74, 58, 54];
+      if (vd > .06 && Math.abs(Math.sin(Math.atan2(y / H - .48, x / W - .5) * 5 + n * 3)) < .08) rgb = [230, 90, 30];
+      if (n2 < .05 && vd >= .06) rgb = [40, 30, 30];
+    } else {
+      rgb = REGIONS[reg].col.slice();
+      rgb = shade(rgb, .9 + n * .2);
+      if (reg === 'foret' && n2 < .35) rgb = [36, 100, 40];
+      if (reg === 'desert' && Math.sin(y * .8 + Math.sin(x * .25) * 2) > .82) rgb = [212, 172, 96];
+      if (reg === 'labyrinthe' && ((x % 4 === 0 && hash(x, y >> 2, 3) < .6) || (y % 4 === 0 && hash(x >> 2, y, 4) < .6))) rgb = [86, 82, 120];
+      if (reg === 'ocean' && n2 < .05) rgb = [255, 122, 138];
+      if (reg === 'ocean' && n2 > .96) rgb = [54, 176, 110];
+      if (reg === 'prebois' && n2 < .05) rgb = [72, 150, 60];
+      if (reg === 'village' && n2 < .06) rgb = [192, 87, 62];
+      if (reg === 'neige' && n2 < .04) rgb = [190, 210, 230];
+    }
+    if (!ok(reg)) rgb = grey(rgb, .85);
+    c.fillStyle = hex(rgb); c.fillRect(x * S, y * S, S, S);
+  }
+  // reliefs, arbres, maisons
+  const gl = (reg) => ok(reg) ? 1 : 0;
+  const rr = rng(4242);
+  for (let i = 0; i < 900; i++) {
+    const x = rr() * W | 0, y = rr() * H | 0, cell = WORLD[y * W + x];
+    if (cell.coast) continue;
+    const px = x * S, py = y * S;
+    if (cell.reg === 'neige' && rr() < .5) {
+      c.fillStyle = gl('neige') ? '#8a9ab0' : '#9a9ca2'; c.beginPath(); c.moveTo(px - 9, py + 9); c.lineTo(px, py - 8); c.lineTo(px + 9, py + 9); c.fill();
+      c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(px - 4, py); c.lineTo(px, py - 8); c.lineTo(px + 4, py); c.fill();
+    } else if (cell.reg === 'foret') {
+      c.fillStyle = gl('foret') ? '#1d5a22' : '#4a4e4a'; c.beginPath(); c.arc(px, py, 5, 0, 7); c.fill();
+      c.fillStyle = gl('foret') ? '#3f9a3c' : '#6a6e6a'; c.beginPath(); c.arc(px - 1.5, py - 1.5, 2.5, 0, 7); c.fill();
+    } else if (cell.reg === 'village' && rr() < .25) {
+      c.fillStyle = gl('village') ? '#efe0bf' : '#cfcfcf'; c.fillRect(px - 4, py - 2, 8, 6);
+      c.fillStyle = gl('village') ? '#c0573e' : '#8a8a8a'; c.beginPath(); c.moveTo(px - 5, py - 2); c.lineTo(px, py - 7); c.lineTo(px + 5, py - 2); c.fill();
+    } else if (cell.reg === 'desert' && rr() < .15) {
+      c.fillStyle = gl('desert') ? '#3f9a4a' : '#7a7a7a'; c.fillRect(px - 1, py - 6, 3, 10); c.fillRect(px - 5, py - 3, 3, 2); c.fillRect(px - 5, py - 5, 2, 3); c.fillRect(px + 3, py - 4, 3, 2); c.fillRect(px + 4, py - 6, 2, 3);
+    } else if (cell.reg === 'prebois' && rr() < .25) {
+      c.fillStyle = ok('prebois') ? '#2f8a36' : '#5a5e5a'; c.beginPath(); c.arc(px, py, 4, 0, 7); c.fill();
+    }
+  }
+  // routes
+  const [sx, sy] = SITES.prebois;
+  c.setLineDash([7, 6]); c.lineWidth = 3; c.strokeStyle = 'rgba(255,240,200,.9)'; c.lineCap = 'round';
+  const ring = { neige: [.5, .3], foret: [.33, .4], labyrinthe: [.67, .37], ocean: [.3, .6], desert: [.7, .58], village: [.56, .68] };
+  for (const [k, [tx, ty]] of Object.entries(SITES)) {
+    if (k === 'prebois' || k === 'volcan') continue;
+    const [mx, my] = ring[k];
+    c.beginPath(); c.moveTo(sx * 960, sy * 600); c.quadraticCurveTo(mx * 960, my * 600, tx * 960, ty * 600); c.stroke();
+  }
+  c.strokeStyle = 'rgba(255,120,60,.9)';
+  c.beginPath(); c.moveTo(sx * 960, sy * 600); c.quadraticCurveTo(.44 * 960, .64 * 600, .5 * 960, .55 * 600); c.stroke();
+  c.setLineDash([]);
+  // volcan et château
+  const vx = .5 * 960, vy = .48 * 600;
+  c.fillStyle = '#2a2024'; c.beginPath(); c.moveTo(vx - 70, vy + 42); c.lineTo(vx - 20, vy - 30); c.lineTo(vx + 20, vy - 30); c.lineTo(vx + 70, vy + 42); c.fill();
+  c.fillStyle = '#3c3034'; c.beginPath(); c.moveTo(vx - 70, vy + 42); c.lineTo(vx - 20, vy - 30); c.lineTo(vx - 4, vy - 30); c.lineTo(vx - 30, vy + 42); c.fill();
+  c.fillStyle = '#ff6a1a'; c.fillRect(vx - 20, vy - 33, 40, 5);
+  c.fillStyle = '#ffb03a'; c.fillRect(vx - 6, vy - 29, 4, 18); c.fillRect(vx + 8, vy - 29, 3, 10);
+  c.fillStyle = 'rgba(60,40,50,.55)'; c.beginPath(); c.arc(vx - 8, vy - 52, 14, 0, 7); c.arc(vx + 10, vy - 62, 12, 0, 7); c.fill();
+  // château sur le volcan
+  c.fillStyle = '#1a1220'; c.fillRect(vx - 16, vy - 8, 32, 26); c.fillRect(vx - 22, vy - 18, 10, 36); c.fillRect(vx + 12, vy - 18, 10, 36); c.fillRect(vx - 5, vy - 24, 10, 16);
+  [-22, -18, -14, 12, 16, 20].forEach(o => c.fillRect(vx + o, vy - 22, 2, 4));
+  c.fillStyle = '#ffb03a'; c.fillRect(vx - 2, vy - 18, 4, 4); c.fillRect(vx - 18, vy - 8, 2, 3); c.fillRect(vx + 16, vy - 8, 2, 3);
+  c.fillStyle = '#05040a'; c.fillRect(vx - 4, vy + 8, 8, 10);
+  // 6 emplacements autour du château
+  STONES.forEach((s, i) => {
+    const a = -Math.PI / 2 + i * Math.PI / 3, gx = vx + Math.cos(a) * 44, gy = vy + 2 + Math.sin(a) * 38;
+    c.fillStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.arc(gx, gy, 7, 0, 7); c.fill();
+    if (restored.has(s.id)) gem(c, gx, gy, 5, s.color); else { c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.5; c.beginPath(); c.arc(gx, gy, 4.5, 0, 7); c.stroke(); }
+  });
+  // marqueurs
+  STONES.forEach((s, i) => {
+    const [tx, ty] = SITES[s.id], X = tx * 960, Y = ty * 600;
+    c.fillStyle = 'rgba(10,8,20,.75)'; c.beginPath(); c.arc(X, Y, 15, 0, 7); c.fill();
+    c.strokeStyle = s.color; c.lineWidth = 3; c.beginPath(); c.arc(X, Y, 15, 0, 7); c.stroke();
+    gem(c, X, Y, 9, restored.has(s.id) ? s.color : '#8a8a96');
+    c.font = '700 13px "Pixelify Sans", monospace'; c.textAlign = 'center'; c.fillStyle = '#fff'; c.fillText(String(i + 2), X + 15, Y - 11);
+  });
+  // départ
+  { const X = sx * 960, Y = sy * 600; c.fillStyle = 'rgba(10,8,20,.75)'; c.beginPath(); c.arc(X, Y, 15, 0, 7); c.fill(); c.strokeStyle = '#ffd35a'; c.lineWidth = 3; c.stroke();
+    c.fillStyle = '#ffd35a'; c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? 4 : 9; c.lineTo(X + Math.cos(a) * rr2, Y + Math.sin(a) * rr2); } c.fill(); }
+  // étiquettes
+  const label = (t, X, Y, size = 20, col = '#fff') => {
+    c.font = `700 ${size}px "Pixelify Sans", monospace`; c.textAlign = 'center'; c.lineJoin = 'round';
+    c.lineWidth = 5; c.strokeStyle = 'rgba(12,10,26,.85)'; c.strokeText(t, X, Y); c.fillStyle = col; c.fillText(t, X, Y);
+  };
+  for (const [k, R0] of Object.entries(REGIONS)) {
+    const [tx, ty] = SITES[k]; const below = k === 'prebois' || k === 'village' || k === 'ocean';
+    label(R0.label, tx * 960, ty * 600 + (below ? 36 : -24));
+  }
+  label('Volcan Noir', vx, vy + 66, 22, '#ffb07a');
+  label('Château de Morgor', vx, vy + 86, 14, '#ffd8c0');
+  label('Royaume d’Iris', 960 - 120, 40, 26, '#ffe8a0');
+  // rose des vents
+  const cx = 70, cy = 530; c.fillStyle = 'rgba(255,240,200,.9)';
+  c.beginPath(); c.moveTo(cx, cy - 26); c.lineTo(cx + 6, cy); c.lineTo(cx, cy + 26); c.lineTo(cx - 6, cy); c.fill();
+  c.beginPath(); c.moveTo(cx - 26, cy); c.lineTo(cx, cy - 6); c.lineTo(cx + 26, cy); c.lineTo(cx, cy + 6); c.fill();
+  label('N', cx, cy - 32, 16, '#ffe8a0');
+}
+
+// ------------------------------------------------------------------ page
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s;
+function stoneIcon(color, size = 20) { const cv = document.createElement('canvas'); cv.width = cv.height = size; gem(cv.getContext('2d'), size / 2, size / 2, size * .38, color); return cv; }
+
+function buildPage() {
+  // navigation
+  $('nav').innerHTML = LEVELS.map(l => `<a href="#${l.id}"><span class="dot" style="background:${l.color}"></span>${l.num.replace('Niveau ', '')} · ${l.name}</a>`).join('') + `<a href="#carte">Carte du monde</a><a href="#feuille-de-route">Feuille de route</a>`;
+  // parcours
+  $('flow').innerHTML = `
+    <div class="step"><b>1 · Prébois</b>L'histoire, les bases du jeu, le Roi Gluant. Récompense : la Carte du royaume.</div>
+    <div class="arrow" aria-hidden="true">›</div>
+    <div class="step six"><b>2 à 7 · Les 6 pierres, dans l'ordre qu'on veut</b>Chaque niveau : un nouvel objet, un mini-jeu, des quêtes, un boss qui garde la pierre.
+      <div class="chips">${STONES.map(s => `<span><span class="dot" style="background:${s.color}"></span>${s.where}</span>`).join('')}</div></div>
+    <div class="arrow" aria-hidden="true">›</div>
+    <div class="step"><b>8 · Volcan Noir</b>Réunir 300 pièces pour l'armure, traverser les terres brûlées, vaincre Morgor, délivrer Alia.</div>`;
+  // légende
+  const LEG = [['P','Héros (arrivée)'],['N','Habitant'],['$','Marchand'],['G','Mini-jeu'],['E','Monstre'],['F','Monstre rapide'],['Z','Boss'],['S','Pierre magique'],['C','Coffre'],['K','Clé'],['O','Bloc à pousser'],['o','Dalle / interrupteur'],['l','Levier ou cible'],['g','Grille'],['k','Mur fissuré'],['|','Porte bleue'],['!','Porte rouge'],['u','Interrupteur cristal'],['x','Piques'],['+','Trou'],['i','Glace glissante'],['Y','Brasero'],['c','Courant marin'],['v','Geyser'],['L','Lave'],['W','Entrée de donjon'],['h','Cœur']];
+  const legKey = { S: 'neige', i: 'neige', Y: 'neige', c: 'ocean', w: 'ocean', v: 'volcan', L: 'volcan', u: 'labyrinthe', x: 'labyrinthe', '+': 'labyrinthe', '|': 'labyrinthe', '!': 'labyrinthe' };
+  $('legend').innerHTML = '';
+  LEG.forEach(([ch, txt]) => {
+    const d = document.createElement('div'); const cv = document.createElement('canvas'); cv.width = 16; cv.height = 16;
+    const c = cv.getContext('2d'); const key = legKey[ch] || 'intro'; const p = PAL[key]; MAP_ROWS = ['...', '...', '...'];
+    c.scale(2, 2);
+    if (ENT.includes(ch)) { terrain(c, '.', 0, 0, p, key, rng(1), 0, 0); if (ch === 'Z') { c.scale(.5, .5); boss(c, 0, 0, p, key); } else entity(c, ch, 0, 0, p, key, 0, 0); }
+    else terrain(c, ch, 0, 0, p, key, rng(1), 1, 1);
+    d.append(cv, Object.assign(document.createElement('span'), { textContent: txt })); $('legend').append(d);
+  });
+  // niveaux
+  $('levels').innerHTML = '';
+  LEVELS.forEach(l => {
+    const s = document.createElement('section'); s.className = 'level'; s.id = l.id;
+    const stone = STONES.find(x => x.id === l.key);
+    s.innerHTML = `
+      <div class="level-head"><span class="eyebrow">${l.num}</span><span class="tag" style="background:${l.color === '#ffd23f' || l.color === '#5fe1ff' || l.color === '#4cf07a' ? '#1d2140' : l.color};${['#ffd23f','#5fe1ff','#4cf07a'].includes(l.color) ? 'color:' + l.color : ''}">${l.tag}</span></div>
+      <h2>${l.name}</h2>
+      <p class="muted">${l.sub}</p>
+      <div class="level-grid">
+        <figure style="margin:0;min-width:0">
+          <div class="mapframe"><canvas class="px" aria-label="Plan du niveau ${l.name}"></canvas></div>
+          <figcaption class="caption">${l.caption}</figcaption>
+        </figure>
+        <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+          ${stone ? `<div class="stonecard"><span data-stone="${stone.color}"></span><div><b style="font-family:var(--display)">${stone.name}</b><br><span>${stone.power}</span></div></div>` : ''}
+          <dl class="sheet">${l.sheet.map(([k, v]) => `<dt>${k}</dt><dd>${Array.isArray(v) ? '<ul>' + v.map(i => `<li>${i}</li>`).join('') + '</ul>' : v}</dd>`).join('')}</dl>
+        </div>
+      </div>`;
+    $('levels').append(s);
+    drawMap(s.querySelector('canvas'), l.key);
+    const holder = s.querySelector('[data-stone]'); if (holder) { const cv = stoneIcon(holder.dataset.stone, 20); holder.replaceWith(cv); }
+  });
+  // tableaux
+  $('weapons').innerHTML = '<thead><tr><th>Niveau</th><th>Objet</th><th>À quoi il sert</th><th>Énigmes qui l’utilisent</th></tr></thead><tbody>' + WEAPONS.map(r => `<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('') + '</tbody>';
+  $('games').innerHTML = '<thead><tr><th>Niveau</th><th>Jeu</th><th>Contre</th><th>Règle</th><th>Travaille</th></tr></thead><tbody>' + GAMES.map(r => `<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('') + '</tbody>';
+  $('roadmap').innerHTML = '<thead><tr><th>Lot</th><th>Contenu</th><th>Ce qu’il faut construire</th><th>Effort</th></tr></thead><tbody>' + ROADMAP.map(r => `<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td><span class="effort">${r[3]}</span></td></tr>`).join('') + '</tbody>';
+  $('finalcards').innerHTML = STONES.map(s => `<div><b><span class="dot" style="background:${s.color};margin-right:8px"></span>${s.name}</b><span class="muted">${s.where}</span><br>${s.power}</div>`).join('') + FINAL.map(([t, d]) => `<div><b style="color:var(--alia)">${t}</b>${d}</div>`).join('');
+  $('qs').innerHTML = QUESTIONS.map(([t, d], i) => `<div><b>${i + 1}. ${t}</b><br>${d}</div>`).join('');
+  // pierres de la carte
+  const restored = new Set(STONES.map(s => s.id));
+  const bar = $('stones');
+  const mk = (label, fn, extra = '') => { const b = document.createElement('button'); b.type = 'button'; b.innerHTML = extra + label; b.addEventListener('click', fn); return b; };
+  const refresh = () => { drawWorld(restored); bar.querySelectorAll('[data-id]').forEach(b => b.setAttribute('aria-pressed', restored.has(b.dataset.id))); };
+  STONES.forEach(s => { const b = mk(s.name, () => { restored.has(s.id) ? restored.delete(s.id) : restored.add(s.id); refresh(); }, `<span class="dot" style="background:${s.color}"></span>`); b.dataset.id = s.id; bar.append(b); });
+  bar.append(Object.assign(document.createElement('span'), { className: 'sep' }));
+  bar.append(mk('Royaume sans Alia', () => { restored.clear(); refresh(); }));
+  bar.append(mk('Tout en couleur', () => { STONES.forEach(s => restored.add(s.id)); refresh(); }));
+  buildWorld(); refresh();
+  (document.fonts?.ready || Promise.resolve()).then(() => drawWorld(restored));
+}
+buildPage();
+</script>
+
+</body>
+</html>

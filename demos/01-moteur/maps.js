@@ -46,7 +46,7 @@ export const MAPS = {
     ],
     signs: [
       "Bienvenue dans l'essai n°1 du moteur ! Déplace-toi avec les flèches (ou ZQSD), parle avec Espace.",
-      'Appuie sur Tab (ou Select) pour changer d\'ambiance : la carte reste la même, seul le thème change.',
+      'Appuie sur Entrée (ou Start) pour ouvrir le menu pause et sauvegarder ta partie.',
       'Les écrans défilent comme dans les Zelda classiques. Appuie sur F1 (ou ²) pour voir les boîtes de collision.',
     ],
     npcs: [

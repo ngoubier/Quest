@@ -77,11 +77,8 @@ export const QUESTIONS_FR = [
   T('conj-manger-pc', 'francais', [10, 10], 'Hier, nous (manger) … une pizza. (au passé composé)', 'avons mangé', { strictAccents: true }),
   C('conj-temps', 'francais', [9, 10], '« Je jouais dans le jardin. » À quel temps est le verbe ?', ['présent', 'imparfait', 'futur'], 'imparfait'),
 
-  // ------------------------------------------------------------ HISTOIRE — se repérer dans le temps (petits)
-  T('hist-jours', 'histoire', [6, 7], 'Combien y a-t-il de jours dans une semaine ?', '7', { accept: ['sept'] }),
-  T('hist-mois', 'histoire', [6, 7], 'Combien y a-t-il de mois dans une année ?', '12', { accept: ['douze'] }),
-  T('hist-lundi', 'histoire', [6, 6], 'Quel jour vient après lundi ?', 'mardi'),
-  C('hist-saison', 'histoire', [6, 7], 'Quelle saison vient après l’été ?', ['le printemps', 'l’automne', 'l’hiver'], 'l’automne'),
+  // ------------------------------------------------------------ HISTOIRE
+  // (Les jours, les mois et les saisons sont dans « Vie quotidienne » : voir quotidien.js et bank-plus.js.)
   C('hist-siecle', 'histoire', [8, 9], 'Un siècle, c’est combien d’années ?', ['10 ans', '100 ans', '1000 ans'], '100 ans'),
   // ------------------------------------------------------------ HISTOIRE — périodes et personnages
   C('hist-grottes', 'histoire', [8, 9], 'Comment appelle-t-on les peintures préhistoriques sur les murs des grottes ?', ['des peintures rupestres', 'des vitraux', 'des fresques romaines'], 'des peintures rupestres', { explain: 'Par exemple dans la grotte de Lascaux.' }),
