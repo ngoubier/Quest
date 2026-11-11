@@ -98,12 +98,12 @@ export class DialogScene extends Scene {
     let ty = y + 8;
     if (this.speaker) {
       // Onglet bien visible avec le nom de celui qui parle.
-      const nw = Math.ceil(r.measure(this.speaker, s.fontSize + 1, s.font, true)) + 14;
+      const nw = Math.min(w - 12, Math.ceil(r.measure(this.speaker, s.fontSize + 1, s.font, true)) + 14);
       const th = s.fontSize + 7;
       r.rect(x + 6, y - th + 2, nw, th, s.box);
       r.strokeRect(x + 6, y - th + 2, nw, th, s.accent);
       r.rect(x + 7, y, nw - 2, 2, s.box);
-      r.text(this.speaker, x + 13, y - th + 5, { color: s.accent, size: s.fontSize + 1, font: s.font, bold: true });
+      r.fitText(this.speaker, x + 13, y - th + 5, nw - 12, { color: s.accent, size: s.fontSize + 1, font: s.font, bold: true });
       ty += 2;
     }
     let left = Math.floor(this.shown);
@@ -115,7 +115,7 @@ export class DialogScene extends Scene {
     }
     if (this._choosing) {
       const lh = s.fontSize + 6;
-      const cw = Math.max(...this.choices.map((c) => r.measure(c.label, s.fontSize, s.font))) + 28;
+      const cw = Math.min(w, Math.max(...this.choices.map((c) => r.measure(c.label, s.fontSize, s.font))) + 28);
       const ch = this.choices.length * lh + 10;
       const cx = x + w - cw;
       const cy = y - ch - 4;
@@ -124,7 +124,7 @@ export class DialogScene extends Scene {
       this.choices.forEach((c, i) => {
         const sel = i === this.choice;
         if (sel) r.text('▶', cx + 6, cy + 6 + i * lh, { color: s.accent, size: s.fontSize, font: s.font });
-        r.text(c.label, cx + 18, cy + 6 + i * lh, { color: sel ? s.accent : s.text, size: s.fontSize, font: s.font });
+        r.fitText(c.label, cx + 18, cy + 6 + i * lh, cw - 24, { color: sel ? s.accent : s.text, size: s.fontSize, font: s.font });
       });
     } else if (this.shown >= this.total && Math.floor(this.game.time * 3) % 2 === 0) {
       r.text(this._isLast ? '■' : '▼', x + w - 12, y + h - 12, { color: s.accent, size: s.fontSize, font: s.font });

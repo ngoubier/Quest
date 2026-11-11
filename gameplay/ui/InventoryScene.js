@@ -80,7 +80,7 @@ export class InventoryScene extends Scene {
     r.withAlpha(0.55, () => r.rect(0, 0, r.width, r.height, '#000'));
     const w = Math.min(224, r.width - 8);
     const gx = Math.round((w - COLS * CELL) / 2) + 2;
-    const h = rows * CELL + 74;
+    const h = rows * CELL + 84;
     const x = Math.round((r.width - w) / 2);
     const y = Math.max(4, Math.round((r.height - h) / 2));
     r.rect(x, y, w, h, s.box);
@@ -103,9 +103,9 @@ export class InventoryScene extends Scene {
     const sel = items[this.sel];
     if (sel) {
       const def = adv.itemDef(sel[0]);
-      r.text(cap(adv.itemName(sel[0], sel[1] > 1)) + (def.quest ? '  (quête)' : ''), x + 12, ty, { color: s.accent, size: 8, font: s.font, bold: true });
-      r.text(def.description ?? '', x + 12, ty + 12, { color: s.text, size: 7, font: s.font });
+      r.fitText(cap(adv.itemName(sel[0], sel[1] > 1)) + (def.quest ? '  (quête)' : ''), x + 12, ty, w - 24, { color: s.accent, size: 8, font: s.font, bold: true });
+      r.textBlock(def.description ?? '', x + 12, ty + 12, w - 24, { color: s.text, size: 7, font: s.font, lineHeight: 9, maxLines: 2 });
     } else r.text('Case vide', x + 12, ty, { color: s.dim, size: 8, font: s.font });
-    r.text(this.msg || 'Action : utiliser / jeter · B : fermer', x + 12, ty + 26, { color: s.dim, size: 6, font: s.font });
+    r.fitText(this.msg || 'Action : utiliser / jeter · B : fermer', x + 12, ty + 33, w - 24, { color: s.dim, size: 6, font: s.font });
   }
 }

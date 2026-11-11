@@ -1,3 +1,5 @@
+import { wrapText } from '../ui/text.js';
+
 // Dessin 2D. Tout est exprimé en pixels LOGIQUES (ex. 256x192) ; le renderer
 // multiplie par un facteur entier pour que le pixel art reste net, tandis que
 // le texte est rendu en haute résolution (lisible, accents compris).
@@ -91,6 +93,40 @@ export class Renderer {
     }
     c.fillStyle = color;
     c.fillText(str, x, y);
+  }
+
+  /**
+   * Texte sur une ligne qui tient dans `maxW` : la police rétrécit (jusqu'à `minSize`),
+   * puis le texte est coupé avec « … » s'il ne tient toujours pas. Renvoie la taille utilisée.
+   */
+  fitText(str, x, y, maxW, o = {}) {
+    let size = o.size ?? 8;
+    const min = o.minSize ?? Math.min(size, 5);
+    const m = (t, sz) => this.measure(t, sz, o.font, o.bold);
+    let t = String(str);
+    while (size > min && m(t, size) > maxW) size -= 0.5;
+    if (m(t, size) > maxW) {
+      while (t.length > 1 && m(`${t}…`, size) > maxW) t = t.slice(0, -1);
+      t = `${t.trimEnd()}…`;
+    }
+    this.text(t, x, y, { ...o, size });
+    return size;
+  }
+
+  /**
+   * Bloc de texte avec retour à la ligne automatique dans `maxW`.
+   * Options en plus de text() : lineHeight, maxLines. Renvoie la hauteur utilisée.
+   */
+  textBlock(str, x, y, maxW, o = {}) {
+    const size = o.size ?? 8;
+    const lh = o.lineHeight ?? size + 3;
+    let lines = wrapText(String(str), maxW, (t) => this.measure(t, size, o.font, o.bold));
+    if (o.maxLines && lines.length > o.maxLines) {
+      lines = lines.slice(0, o.maxLines);
+      lines[lines.length - 1] += '…';
+    }
+    lines.forEach((l, i) => this.fitText(l, x, y + i * lh, maxW, o));
+    return lines.length * lh;
   }
 
   measure(str, size = 8, font, bold = false) {

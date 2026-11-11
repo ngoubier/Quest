@@ -199,11 +199,11 @@ export class QuizScene extends Scene {
       const left = this.hintsLeft;
       r.rect(hb.x, hb.y, hb.w, hb.h, left > 0 ? s.border : s.dim);
       r.rect(hb.x + 1, hb.y + 1, hb.w - 2, hb.h - 2, s.box);
-      r.text(`💡 Indice ${this.hintLevel + 1}/2 · il t’en reste ${left}`, W / 2, hb.y + 3, { color: left > 0 ? s.text : s.dim, size: 6, font: s.font, align: 'center' });
+      r.fitText(`💡 Indice ${this.hintLevel + 1}/2 · il t’en reste ${left}`, W / 2, hb.y + 3, hb.w - 6, { color: left > 0 ? s.text : s.dim, size: 6, font: s.font, align: 'center' });
     }
     if (this.hintMsg) {
-      const y = hb ? hb.y - 10 : (this.q.type === 'choice' ? this.game.height - 34 : 128);
-      r.text(this.hintMsg, W / 2, y, { color: '#ff7a6a', size: 6, font: s.font, align: 'center' });
+      const y = hb ? hb.y - 18 : this.q.type === 'choice' ? this.game.height - 42 : 120;
+      r.textBlock(this.hintMsg, W / 2, y, W - 36, { color: '#ff7a6a', size: 6, font: s.font, align: 'center', lineHeight: 8, maxLines: 2 });
     }
   }
 
@@ -279,20 +279,22 @@ export class QuizScene extends Scene {
 
     if (this.phase === 'summary') {
       const n = this.questions.length;
-      r.text('BILAN', W / 2, y + 24, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
-      r.text(`${this.correct} bonne${this.correct > 1 ? 's' : ''} réponse${this.correct > 1 ? 's' : ''} sur ${n}`, W / 2, y + 56, { color: s.text, size: 10, font: s.font, align: 'center' });
-      const stars = '★'.repeat(this.correct) + '☆'.repeat(n - this.correct);
-      r.text(stars, W / 2, y + 82, { color: s.accent, size: 18, font: s.font, align: 'center' });
+      r.fitText('BILAN', W / 2, y + 24, w - 16, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
+      r.fitText(`${this.correct} bonne${this.correct > 1 ? 's' : ''} réponse${this.correct > 1 ? 's' : ''} sur ${n}`, W / 2, y + 56, w - 16, { color: s.text, size: 10, font: s.font, align: 'center' });
+      const stars = n <= 8 ? '★'.repeat(this.correct) + '☆'.repeat(n - this.correct) : `★ ${this.correct} / ${n}`;
+      r.fitText(stars, W / 2, y + 82, w - 16, { color: s.accent, size: 18, font: s.font, align: 'center' });
       const msg = this.correct === n ? 'Sans faute, félicitations !' : this.correct >= n / 2 ? 'Très bien, continue comme ça !' : 'Tu progresseras en t’entraînant !';
-      r.text(msg, W / 2, y + 120, { color: s.text, size: 8, font: s.font, align: 'center' });
-      r.text('Action : continuer', W / 2, y + h - 18, { color: s.dim, size: 7, font: s.font, align: 'center' });
+      r.fitText(msg, W / 2, y + 120, w - 16, { color: s.text, size: 8, font: s.font, align: 'center' });
+      r.fitText('Action : continuer', W / 2, y + h - 18, w - 16, { color: s.dim, size: 7, font: s.font, align: 'center' });
       return;
     }
 
     const q = this.q;
     // En-tête : qui demande, matière, progression.
-    r.text(this.speaker ?? '', x + 8, y + 7, { color: s.accent, size: 8, font: s.font, bold: true });
-    r.text(`${SUBJECTS[q.subject] ?? q.subject} · ${this.i + 1}/${this.questions.length}`, x + w - 8, y + 7, { color: s.dim, size: 7, font: s.font, align: 'right' });
+    const sub = `${SUBJECTS[q.subject] ?? q.subject} · ${this.i + 1}/${this.questions.length}`;
+    const subW = r.measure(sub, 7, s.font);
+    r.text(sub, x + w - 8, y + 7, { color: s.dim, size: 7, font: s.font, align: 'right' });
+    r.fitText(this.speaker ?? '', x + 8, y + 7, w - 24 - subW, { color: s.accent, size: 8, font: s.font, bold: true });
     r.rect(x + 6, y + 19, w - 12, 1, s.border);
 
     let ty = y + 26;
@@ -301,7 +303,7 @@ export class QuizScene extends Scene {
     } else if (q.image && q.type !== 'dictation') {
       const count = [...q.image].length;
       const size = count > 6 ? 16 : count > 3 ? 22 : 34;
-      r.text(q.image, W / 2, ty, { size, font: EMOJI_FONT, align: 'center', color: s.text });
+      r.fitText(q.image, W / 2, ty, w - 16, { size, font: EMOJI_FONT, align: 'center', color: s.text });
       ty += size + 8;
     }
     if (q.type === 'dictation') {
@@ -311,41 +313,41 @@ export class QuizScene extends Scene {
         const pulse = this.phase === 'ask' && !this.spoke && Math.floor(this.game.time * 2) % 2 === 0;
         r.rect(b.x, b.y, b.w, b.h, pulse ? s.accent : s.border);
         r.rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, s.box);
-        r.text(mode === 'voice' ? '🔊 Écouter l’énigme' : '👁 Voir le mot (3 s)', W / 2, b.y + 6, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
+        r.fitText(mode === 'voice' ? '🔊 Écouter l’énigme' : '👁 Voir le mot (3 s)', W / 2, b.y + 6, w - 16, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
         ty = b.y + b.h + 4;
       }
       const fb = this.fallbackButton;
       if (fb) {
-        r.text(q.image ? 'Pas de son ? 🖼 Voir l’image' : 'Pas de son ? 👁 Voir le mot', W / 2, fb.y + 2, { color: s.dim, size: 7, font: s.font, align: 'center' });
+        r.fitText(q.image ? 'Pas de son ? 🖼 Voir l’image' : 'Pas de son ? 👁 Voir le mot', W / 2, fb.y + 2, w - 16, { color: s.dim, size: 7, font: s.font, align: 'center' });
         ty = fb.y + fb.h + 2;
       }
       if (mode === 'image') {
         // L'objet à écrire
         const size = b ? 24 : 34;
-        r.text(q.image, W / 2, ty + 2, { size, font: EMOJI_FONT, align: 'center', color: s.text });
+        r.fitText(q.image, W / 2, ty + 2, w - 16, { size, font: EMOJI_FONT, align: 'center', color: s.text });
         ty += size + 8;
       }
       if (this.flashT > 0 && this.phase === 'ask') {
-        r.text(q.answer, W / 2, ty + 2, { color: s.text, size: 18, font: s.font, bold: true, align: 'center' });
+        r.fitText(q.answer, W / 2, ty + 2, w - 16, { color: s.text, size: 18, font: s.font, bold: true, align: 'center' });
         ty += 26;
       }
       const prompt = mode === 'voice' ? 'Écris le mot que tu entends.' : mode === 'image' ? 'Écris le nom de ce que tu vois.' : 'Regarde bien le mot, puis écris-le.';
-      r.text(prompt, W / 2, ty, { color: s.text, size: 8, font: s.font, align: 'center' });
+      r.fitText(prompt, W / 2, ty, w - 16, { color: s.text, size: 8, font: s.font, align: 'center' });
       ty += 12;
       // Indices
       if (this.hintLevel > 0 && this.phase === 'ask') {
-        r.text(this.hintPattern(), W / 2, ty, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
+        r.fitText(this.hintPattern(), W / 2, ty, w - 16, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
         ty += 14;
       }
     }
     const prompt = q.type === 'dictation' ? '' : q.prompt;
     for (const line of prompt ? this._wrapped(r, prompt, w - 24, 9) : []) {
-      r.text(line, W / 2, ty, { color: s.text, size: 9, font: s.font, align: 'center' });
+      r.fitText(line, W / 2, ty, w - 16, { color: s.text, size: 9, font: s.font, align: 'center' });
       ty += 12;
     }
     if (q.type === 'text' && this.hintLevel > 0 && this.phase === 'ask') {
       ty += 2;
-      r.text(this.hintPattern(), W / 2, ty, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
+      r.fitText(this.hintPattern(), W / 2, ty, w - 16, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
       ty += 12;
     }
     if (this.phase === 'ask') this._drawHintButton(r, s);
@@ -358,10 +360,10 @@ export class QuizScene extends Scene {
           const bx = x + 24;
           const bw = w - 48;
           if (sel) r.rect(bx, ty - 2, bw, 13, s.accent);
-          r.text(o, W / 2, ty, { color: sel ? s.box : s.text, size: 8, font: s.font, align: 'center', bold: sel });
+          r.fitText(o, W / 2, ty, w - 16, { color: sel ? s.box : s.text, size: 8, font: s.font, align: 'center', bold: sel });
           ty += 15;
         });
-        r.text(W < 240 ? 'Haut/Bas · A : valider · B : passer' : 'Haut/Bas : choisir · A : valider · H : indice · B : passer', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+        r.fitText(W < 240 ? 'Haut/Bas · A : valider · B : passer' : 'Haut/Bas : choisir · A : valider · H : indice · B : passer', W / 2, y + h - 12, w - 16, { color: s.dim, size: 6, font: s.font, align: 'center' });
       } else {
         this.field.place();
         const narrow = W < 240;
@@ -373,28 +375,29 @@ export class QuizScene extends Scene {
             : narrow
               ? 'Entrée : valider · ? : indice'
               : 'Entrée (ou A) : valider · ? : indice · B : je ne sais pas';
-        r.text(hint, W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+        r.fitText(hint, W / 2, y + h - 12, w - 16, { color: s.dim, size: 6, font: s.font, align: 'center' });
       }
       return;
     }
 
     // Correction.
     const res = this.results[this.results.length - 1];
-    const fy = Math.max(ty, 118);
+    const fy = Math.max(ty, 112);
+    let answerH = 0;
     if (res.ok) {
-      r.text(`✓ ${this.praise}`, W / 2, fy, { color: '#5adc5a', size: 12, font: s.font, bold: true, align: 'center' });
+      r.fitText(`✓ ${this.praise}`, W / 2, fy, w - 16, { color: '#5adc5a', size: 12, font: s.font, bold: true, align: 'center' });
     } else {
-      r.text(res.given == null ? 'Pas grave !' : '✗ Pas tout à fait...', W / 2, fy, { color: '#ff7a6a', size: 10, font: s.font, bold: true, align: 'center' });
-      r.text(`La bonne réponse : ${q.answer}`, W / 2, fy + 16, { color: s.text, size: 8, font: s.font, align: 'center' });
+      r.fitText(res.given == null ? 'Pas grave !' : '✗ Pas tout à fait...', W / 2, fy, w - 16, { color: '#ff7a6a', size: 10, font: s.font, bold: true, align: 'center' });
+      answerH = r.textBlock(`La bonne réponse : ${q.answer}`, W / 2, fy + 16, w - 20, { color: s.text, size: 8, font: s.font, align: 'center', lineHeight: 10 });
     }
     if (q.explain) {
-      let ey = fy + (res.ok ? 18 : 30);
+      let ey = fy + (res.ok ? 18 : 18 + answerH);
       for (const line of this._wrapped(r, q.explain, w - 24, 7)) {
-        r.text(line, W / 2, ey, { color: s.dim, size: 7, font: s.font, align: 'center' });
+        r.fitText(line, W / 2, ey, w - 16, { color: s.dim, size: 7, font: s.font, align: 'center' });
         ey += 9;
       }
     }
-    r.text('Action : continuer', W / 2, y + h - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    r.fitText('Action : continuer', W / 2, y + h - 12, w - 16, { color: s.dim, size: 6, font: s.font, align: 'center' });
   }
 }
 

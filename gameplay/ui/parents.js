@@ -291,10 +291,10 @@ export class CodeScene extends Scene {
     const h = 120;
     r.rect(x, y, w, h, s.box);
     r.strokeRect(x, y, w, h, s.border);
-    r.text('ESPACE PARENTS', r.width / 2, y + 10, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
+    r.fitText('ESPACE PARENTS', r.width / 2, y + 10, w - 16, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
     const msg = this.mode === 'create' ? ['Choisissez un code à 4 chiffres.', 'Il protège le bilan et les réglages.'] : ['Entrez le code parent.'];
-    msg.forEach((m, i) => r.text(m, r.width / 2, y + 30 + i * 11, { color: s.text, size: 7, font: s.font, align: 'center' }));
-    if (this.error) r.text(this.error, r.width / 2, y + 102, { color: '#ff7a6a', size: 7, font: s.font, align: 'center' });
+    r.textBlock(msg.join(' '), r.width / 2, y + 28, w - 16, { color: s.text, size: 7, font: s.font, align: 'center', lineHeight: 9, maxLines: 4 });
+    if (this.error) r.fitText(this.error, r.width / 2, y + 102, w - 16, { color: '#ff7a6a', size: 7, font: s.font, align: 'center' });
   }
 }
 
@@ -317,7 +317,7 @@ export class MessageScene extends Scene {
 
   draw(r) {
     const s = this.game.style;
-    const lines = wrapText(this.text, 180, (t) => r.measure(t, 8, s.font));
+    const lines = wrapText(this.text, r.width - 80, (t) => r.measure(t, 8, s.font));
     const h = lines.length * 12 + 20;
     const y = (r.height - h) / 2;
     r.rect(30, y, r.width - 60, h, s.box);
@@ -361,10 +361,10 @@ export class ReportScene extends Scene {
     r.rect(0, 0, W, r.height, s.box);
     r.strokeRect(2, 2, W - 4, r.height - 4, s.border);
     const titles = ['Résumé', 'Par matière', 'À retravailler'];
-    r.text(`BILAN ${this.name ? `de ${this.name} ` : ''}· ${titles[Math.min(this.page, 2)]}`, 10, 9, { color: s.accent, size: 9, font: s.font, bold: true });
+    r.fitText(`BILAN ${this.name ? `de ${this.name} ` : ''}· ${titles[Math.min(this.page, 2)]}`, 10, 9, W - 40, { color: s.accent, size: 9, font: s.font, bold: true });
     r.text(`${this.page + 1}/${this.pages}`, W - 10, 10, { color: s.dim, size: 7, font: s.font, align: 'right' });
     r.rect(8, 24, W - 16, 1, s.border);
-    const line = (t, y, opts = {}) => r.text(t, 12, y, { color: s.text, size: r.width < 240 ? 6 : 8, font: s.font, ...opts });
+    const line = (t, y, opts = {}) => r.fitText(t, 12, y, W - 24, { color: s.text, size: r.width < 240 ? 7 : 8, font: s.font, ...opts });
     const pct = (x) => `${Math.round(x * 100)} %`;
 
     if (this.page === 0) {
@@ -399,11 +399,11 @@ export class ReportScene extends Scene {
       if (!items.length) line('Aucune erreur à retravailler. Bravo !', y + 4, { color: '#5adc5a' });
       for (const m of items) {
         const q = (m.prompt ?? '').length > 46 ? `${m.prompt.slice(0, 45)}…` : m.prompt;
-        r.text(q, 12, y, { color: s.text, size: 7, font: s.font });
-        r.text(`→ ${m.answer}${m.wrong > 1 ? `   (×${m.wrong})` : ''}`, 20, y + 9, { color: s.accent, size: 7, font: s.font });
+        r.fitText(m.prompt ?? '', 12, y, W - 24, { color: s.text, size: 7, font: s.font });
+        r.fitText(`→ ${m.answer}${m.wrong > 1 ? `   (×${m.wrong})` : ''}`, 20, y + 9, W - 32, { color: s.accent, size: 7, font: s.font });
         y += 25;
       }
     }
-    r.text('Gauche/Droite : pages · B : fermer', W / 2, r.height - 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    r.fitText('Gauche/Droite : pages · B : fermer', W / 2, r.height - 12, W - 16, { color: s.dim, size: 6, font: s.font, align: 'center' });
   }
 }

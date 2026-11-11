@@ -1,4 +1,4 @@
-import { Scene, World, Camera, Tilemap, MenuScene, DialogScene, SaveStore, Speech } from '../engine/index.js';
+import { Scene, World, Camera, Tilemap, MenuScene, DialogScene, SaveStore, Speech, wrapText } from '../engine/index.js';
 import { GameState } from './state/GameState.js';
 import { QuestSystem } from './quests/QuestSystem.js';
 import { formatText } from './script/text.js';
@@ -578,11 +578,14 @@ export class AdventureScene extends Scene {
     if (t) {
       const s = this.game.style;
       const y = this.cfg.hud.height + 6;
-      const w = Math.min(r.width - 16, r.measure(t.text, 8, s.font) + 14);
+      const maxW = r.width - 16;
+      const w = Math.min(maxW, r.measure(t.text, 8, s.font) + 14);
       const x = Math.round((r.width - w) / 2);
-      r.rect(x, y, w, 14, s.box);
-      r.strokeRect(x, y, w, 14, s.border);
-      r.text(t.text, r.width / 2, y + 3, { color: s.text, size: 8, font: s.font, align: 'center' });
+      const lines = wrapText(t.text, w - 10, (str) => r.measure(str, 8, s.font)).slice(0, 2);
+      const h = lines.length * 11 + 4;
+      r.rect(x, y, w, h, s.box);
+      r.strokeRect(x, y, w, h, s.border);
+      lines.forEach((l, i) => r.fitText(l, r.width / 2, y + 3 + i * 11, w - 8, { color: s.text, size: 8, font: s.font, align: 'center' }));
     }
   }
 }

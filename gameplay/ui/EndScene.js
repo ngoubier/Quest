@@ -17,7 +17,7 @@ export class EndScene extends MenuScene {
   draw(r) {
     super.draw(r);
     const s = this.game.style;
-    r.text(this.message, r.width / 2, 40, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center', shadow: '#000' });
+    r.fitText(this.message, r.width / 2, 40, r.width - 16, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center', shadow: '#000' });
     r.text('★ ★ ★', r.width / 2, 56, { color: s.accent, size: 12, font: s.font, align: 'center', shadow: '#000' });
   }
 }

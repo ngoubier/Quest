@@ -104,8 +104,9 @@ export class ShopScene extends Scene {
     r.rect(x, y, w, h, s.box);
     r.strokeRect(x, y, w, h, s.border);
     r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
-    r.text(this.title, x + 10, y + 7, { color: s.accent, size: 9, font: s.font, bold: true });
-    r.text(`Sac ${adv.bagItems().length}/${adv.bagCapacity()}`, x + w - 10, y + 8, { color: s.dim, size: 7, font: s.font, align: 'right' });
+    const bagTxt = `Sac ${adv.bagItems().length}/${adv.bagCapacity()}`;
+    r.text(bagTxt, x + w - 10, y + 8, { color: s.dim, size: 7, font: s.font, align: 'right' });
+    r.fitText(this.title, x + 10, y + 7, w - 26 - r.measure(bagTxt, 7, s.font), { color: s.accent, size: 9, font: s.font, bold: true });
     let ty = y + 24;
     const rows = [...this.offers, null].slice(this.scroll, this.scroll + VISIBLE);
     rows.forEach((o, k) => {
@@ -120,8 +121,9 @@ export class ShopScene extends Scene {
       const color = out ? s.dim : sel ? s.accent : s.text;
       if (sel) r.text('▶', x + 6, ty + 4, { color: s.accent, size: 8, font: s.font });
       th.objects.draw(r, adv.itemIcon(o.item), x + 14, ty);
-      r.text(cap(adv.itemName(o.item)), x + 34, ty + 4, { color, size: 8, font: s.font });
-      r.text(out ? 'épuisé' : `${o.price} €`, x + w - 10, ty + 4, { color, size: 8, font: s.font, align: 'right' });
+      const price = out ? 'épuisé' : `${o.price} €`;
+      r.text(price, x + w - 10, ty + 4, { color, size: 8, font: s.font, align: 'right' });
+      r.fitText(cap(adv.itemName(o.item)), x + 34, ty + 4, w - 50 - r.measure(price, 8, s.font), { color, size: 8, font: s.font });
       ty += ROW;
     });
     const o = this.offers[this.sel];
@@ -129,10 +131,11 @@ export class ShopScene extends Scene {
     r.rect(x + 6, by, w - 12, 1, s.border);
     if (o) {
       const d = adv.itemDef(o.item);
-      r.text(d.description ?? '', x + 10, by + 4, { color: s.dim, size: 7, font: s.font });
-      if (!this.soldOut(o)) r.text(`Quantité ◀ ${this.qty} ▶  ·  ${this.qty} × ${o.price} € = ${this.qty * o.price} €`, x + 10, by + 14, { color: s.accent, size: 7, font: s.font });
+      r.fitText(d.description ?? '', x + 10, by + 4, w - 20, { color: s.dim, size: 7, font: s.font });
+      if (!this.soldOut(o)) r.fitText(`Quantité ◀ ${this.qty} ▶ · ${this.qty} × ${o.price} € = ${this.qty * o.price} €`, x + 10, by + 14, w - 20, { color: s.accent, size: 7, font: s.font });
     }
-    r.text(this.msg, x + 10, by + 25, { color: s.text, size: 7, font: s.font });
-    r.text(`Tu as ${adv.state.count(this.currency)} €`, x + w - 10, by + 25, { color: s.accent, size: 7, font: s.font, align: 'right' });
+    const money = `Tu as ${adv.state.count(this.currency)} €`;
+    r.text(money, x + w - 10, by + 25, { color: s.accent, size: 7, font: s.font, align: 'right' });
+    r.fitText(this.msg, x + 10, by + 25, w - 28 - r.measure(money, 7, s.font), { color: s.text, size: 7, font: s.font });
   }
 }

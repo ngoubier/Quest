@@ -133,6 +133,7 @@ class TitleScene extends Scene {
         title: 'Comment t’appelles-tu ?',
         message: 'Écris ton prénom puis Entrée.',
         placeholder: 'Prénom',
+        maxLength: 16,
         onOk: (name) =>
           game.scenes.push(
             new MenuScene({

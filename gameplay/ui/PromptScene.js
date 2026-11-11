@@ -50,8 +50,8 @@ export class PromptScene extends Scene {
     const h = 100;
     r.rect(x, y, w, h, s.box);
     r.strokeRect(x, y, w, h, s.border);
-    r.text(this.title, r.width / 2, y + 10, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
-    if (this.message) r.text(this.message, r.width / 2, y + 28, { color: s.text, size: 7, font: s.font, align: 'center' });
-    if (this.error) r.text(this.error, r.width / 2, y + 84, { color: '#ff7a6a', size: 7, font: s.font, align: 'center' });
+    r.fitText(this.title, r.width / 2, y + 10, w - 16, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
+    if (this.message) r.textBlock(this.message, r.width / 2, y + 26, w - 16, { color: s.text, size: 7, font: s.font, align: 'center', lineHeight: 9, maxLines: 3 });
+    if (this.error) r.textBlock(this.error, r.width / 2, y + 84, w - 16, { color: '#ff7a6a', size: 7, font: s.font, align: 'center', lineHeight: 9, maxLines: 2 });
   }
 }

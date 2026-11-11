@@ -28,7 +28,7 @@ export class ProfileStore {
   }
 
   add({ name, age }) {
-    const p = { id: Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: name.trim().slice(0, 12), age };
+    const p = { id: Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: name.trim().slice(0, 16), age };
     this.saves.save('profiles', [...this.list(), p]);
     return p;
   }
