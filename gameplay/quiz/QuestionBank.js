@@ -57,11 +57,11 @@ export class QuestionBank {
    * Choisit `count` questions adaptées à l'âge (repli sur l'âge inférieur si besoin),
    * en évitant celles déjà vues (`seen`).
    */
-  pick({ age, subject = null, count = 3, seen = [], excludeTypes = [], rng = createRng(Date.now() % 1e9) }) {
+  pick({ age, subject = null, count = 3, seen = [], excludeTypes = [], accept = null, rng = createRng(Date.now() % 1e9) }) {
     const seenSet = new Set(seen);
     const out = [];
     const subj = (s) => !subject || s === subject;
-    const typeOk = (q) => !excludeTypes.includes(q.type);
+    const typeOk = (q) => !excludeTypes.includes(q.type) && (!accept || accept(q));
     const shuffle = (arr) => {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) {

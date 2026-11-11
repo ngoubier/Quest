@@ -30,13 +30,10 @@ export class QuizScene extends Scene {
       const x = ((e.clientX - c.left) * this.game.width) / c.width;
       const y = ((e.clientY - c.top) * this.game.height) / c.height;
       const inside = (b) => b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
-      if (inside(this.listenButton)) {
-        this._listen();
-        this._spokeByTap = true;
-      } else if (inside(this.flashButton)) {
-        this._flash();
-        this._spokeByTap = true;
-      }
+      // Tous les boutons de la dictée sont gérés ici, dans le geste (exigé pour la voix).
+      if (inside(this.listenButton)) this._listen();
+      else if (inside(this.fallbackButton)) this._fallback();
+      else if (inside(this.hintButton)) this._hint();
     };
     this.game.canvas.addEventListener('pointerdown', this._onPointer);
     this._start(0);
@@ -62,52 +59,108 @@ export class QuizScene extends Scene {
       this.sel = 0;
     } else {
       const numeric = q.type !== 'dictation' && /^[\d\s.,]+$/.test(String(q.answer));
-      // Dictée : Tab (ou le bouton à l'écran) fait réécouter le mot.
-      const onKey = (e) => (q.type === 'dictation' && e.key === 'Tab' ? (this._listen(), true) : false);
+      // Dictée : Tab = écouter (ou voir), ? = indice.
+      const onKey = (e) => {
+        if (q.type !== 'dictation') return false;
+        if (e.key === 'Tab') return this._listen(), true;
+        if (e.key === '?') return this._hint(), true;
+        return false;
+      };
       this.flashT = 0;
       this.triedVoice = false;
+      this.showImage = false;
+      this.hintLevel = 0;
       this.field.open({ x: Math.round((this.game.width - 160) / 2), y: 142, w: 160, h: 18 }, { onSubmit: (v) => this._answer(v), onKey, placeholder: 'Ta réponse', inputMode: numeric ? 'decimal' : 'text' });
     }
   }
 
-  /** L'appareil sait-il parler ? Sinon : « dictée flash » (le mot s'affiche 3 s puis disparaît). */
+  /** L'appareil sait-il parler ? */
   get voiceOk() {
     return Speech.available;
   }
 
-  /** Bouton principal : écouter (voix) ou voir le mot (dictée flash). */
+  /**
+   * Mode de la dictée :
+   *  - 'voice' : la voix dicte le mot ;
+   *  - 'image' : l'appareil ne parle pas (ou « Pas de son ? ») → on montre l'objet à écrire ;
+   *  - 'flash' : ni voix ni image (mot ajouté par les parents) → le mot s'affiche 3 s.
+   */
+  get mode() {
+    const q = this.q;
+    if (this.voiceOk && !this.showImage) return 'voice';
+    return q.image ? 'image' : 'flash';
+  }
+
+  /** Bouton principal : écouter (voix) ou voir le mot (flash). Pas de bouton en mode image. */
   _listen() {
     if (this.q.type !== 'dictation') return;
-    if (!this.voiceOk) return this._flash();
+    if (this.mode === 'flash') return this._flash();
+    if (this.mode !== 'voice') return;
     this.spoke = Speech.speak(this.q.say ?? `Écris le mot : ${this.q.answer}.`);
     this.triedVoice = true;
-    if (!this.spoke) this._flash();
+    if (!this.spoke) this._fallback();
+  }
+
+  /** « Pas de son ? » : image de l'objet si elle existe, sinon le mot quelques secondes. */
+  _fallback() {
+    if (this.q.image) this.showImage = true;
+    else this._flash();
   }
 
   _flash() {
-    if (this.q.type !== 'dictation') return;
     this.flashT = 3;
     this.spoke = true;
   }
 
-  /** Bouton « Écouter l'énigme » (zone tactile, en pixels logiques). */
-  get listenButton() {
-    const W = this.game.width;
-    return { x: Math.round(W / 2 - 64), y: 62, w: 128, h: 20 };
+  /** Mot « complexe » : long, ou avec accents, ç, apostrophe, trait d'union. */
+  get complex() {
+    const w = String(this.q.answer);
+    return [...w].filter((c) => /\p{L}/u.test(c)).length >= 6 || /[àâäéèêëîïôöùûüç’'\-]/i.test(w);
   }
 
-  /** Secours : « Pas de son ? Voir le mot » (après un premier essai d'écoute). */
-  get flashButton() {
-    if (!this.voiceOk || !this.triedVoice) return null;
+  /** Indices : 1 = un tiret par lettre ; 2 = une ou deux lettres dévoilées. */
+  _hint() {
+    if (this.q.type !== 'dictation' || !this.complex || this.hintLevel >= 2) return;
+    this.hintLevel++;
+    this.game.audio.play('secret');
+  }
+
+  /** Motif d'indice : « _ _ _ _ » puis « é _ _ _ _ a _ t ». */
+  hintPattern() {
+    const chars = [...String(this.q.answer)];
+    const letters = chars.map((c, i) => (/\p{L}/u.test(c) ? i : -1)).filter((i) => i >= 0);
+    const shown = new Set();
+    if (this.hintLevel >= 2) {
+      shown.add(letters[0]);
+      if (letters.length >= 8) shown.add(letters[Math.floor(letters.length / 2)]);
+    }
+    return chars.map((c, i) => (/\p{L}/u.test(c) ? (shown.has(i) ? c : '_') : c)).join(' ');
+  }
+
+  // --- zones des boutons (pixels logiques)
+  get listenButton() {
+    if (this.q?.type !== 'dictation' || this.mode === 'image') return null;
     const W = this.game.width;
-    return { x: Math.round(W / 2 - 64), y: 86, w: 128, h: 12 };
+    return { x: Math.round(W / 2 - 64), y: 32, w: 128, h: 20 };
+  }
+
+  get fallbackButton() {
+    if (this.q?.type !== 'dictation' || this.mode !== 'voice' || !this.triedVoice) return null;
+    const W = this.game.width;
+    return { x: Math.round(W / 2 - 70), y: 55, w: 140, h: 11 };
+  }
+
+  get hintButton() {
+    if (this.q?.type !== 'dictation' || !this.complex || this.hintLevel >= 2 || this.phase !== 'ask') return null;
+    const W = this.game.width;
+    return { x: Math.round(W / 2 - 40), y: 126, w: 80, h: 13 };
   }
 
   _answer(value) {
     if (this.phase !== 'ask') return;
     const q = this.q;
     const ok = checkAnswer(q, value);
-    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: describe(q), answer: q.answer, question: JSON.parse(JSON.stringify(q)) });
+    this.results.push({ id: q.id, subject: q.subject, ok, given: value, prompt: describe(q), answer: q.answer, hints: this.hintLevel ?? 0, question: JSON.parse(JSON.stringify(q)) });
     this.field.close();
     this.phase = 'feedback';
     this.t = 0;
@@ -119,15 +172,7 @@ export class QuizScene extends Scene {
     this.t += dt;
     const input = this.input;
     if (this.phase === 'ask') {
-      if (this.q.type === 'dictation' && input.tappedIn(this.listenButton)) {
-        input.consumeTaps();
-        if (!this._spokeByTap) this._listen(); // déjà fait dans le geste
-        this._spokeByTap = false;
-      } else if (this.q.type === 'dictation' && this.flashButton && input.tappedIn(this.flashButton)) {
-        input.consumeTaps();
-        if (!this._spokeByTap) this._flash();
-        this._spokeByTap = false;
-      }
+      if (this.q.type === 'dictation') input.consumeTaps(); // boutons gérés dans le geste (voir enter)
       if (this.flashT > 0) this.flashT -= dt;
       if (this.q.type === 'choice') {
         const n = this.options.length;
@@ -200,36 +245,53 @@ export class QuizScene extends Scene {
     let ty = y + 26;
     if (q.image && typeof q.image === 'object') {
       ty += drawPicture(r, q.image, W / 2, ty, s) + 6;
-    } else if (q.image) {
+    } else if (q.image && q.type !== 'dictation') {
       const count = [...q.image].length;
       const size = count > 6 ? 16 : count > 3 ? 22 : 34;
       r.text(q.image, W / 2, ty, { size, font: EMOJI_FONT, align: 'center', color: s.text });
       ty += size + 8;
     }
     if (q.type === 'dictation') {
+      const mode = this.mode;
       const b = this.listenButton;
-      const pulse = this.phase === 'ask' && !this.spoke && Math.floor(this.game.time * 2) % 2 === 0;
-      r.rect(b.x, b.y, b.w, b.h, pulse ? s.accent : s.border);
-      r.rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, pulse ? s.box : s.box);
-      r.text(this.voiceOk ? '🔊 Écouter l’énigme' : '👁 Voir le mot (3 s)', W / 2, b.y + 6, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
-      ty = b.y + b.h + 6;
-      const fb = this.flashButton;
+      if (b) {
+        const pulse = this.phase === 'ask' && !this.spoke && Math.floor(this.game.time * 2) % 2 === 0;
+        r.rect(b.x, b.y, b.w, b.h, pulse ? s.accent : s.border);
+        r.rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, s.box);
+        r.text(mode === 'voice' ? '🔊 Écouter l’énigme' : '👁 Voir le mot (3 s)', W / 2, b.y + 6, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
+        ty = b.y + b.h + 4;
+      }
+      const fb = this.fallbackButton;
       if (fb) {
-        r.text('Pas de son ? 👁 Voir le mot', W / 2, fb.y + 2, { color: s.dim, size: 7, font: s.font, align: 'center' });
-        ty = fb.y + fb.h + 4;
+        r.text(q.image ? 'Pas de son ? 🖼 Voir l’image' : 'Pas de son ? 👁 Voir le mot', W / 2, fb.y + 2, { color: s.dim, size: 7, font: s.font, align: 'center' });
+        ty = fb.y + fb.h + 2;
+      }
+      if (mode === 'image') {
+        // L'objet à écrire
+        const size = b ? 24 : 34;
+        r.text(q.image, W / 2, ty + 2, { size, font: EMOJI_FONT, align: 'center', color: s.text });
+        ty += size + 8;
       }
       if (this.flashT > 0 && this.phase === 'ask') {
-        // Le mot, bien visible, pendant 3 secondes
-        r.text(q.answer, W / 2, ty + 4, { color: s.text, size: 18, font: s.font, bold: true, align: 'center' });
-        ty += 30;
-      } else if (!this.voiceOk) {
-        for (const line of this._wrapped(r, 'Ton appareil ne sait pas parler : dictée flash ! Regarde bien le mot, il va disparaître, puis écris-le.', w - 24, 7)) {
-          r.text(line, W / 2, ty, { color: s.dim, size: 7, font: s.font, align: 'center' });
-          ty += 9;
-        }
+        r.text(q.answer, W / 2, ty + 2, { color: s.text, size: 18, font: s.font, bold: true, align: 'center' });
+        ty += 26;
+      }
+      const prompt = mode === 'voice' ? 'Écris le mot que tu entends.' : mode === 'image' ? 'Écris le nom de ce que tu vois.' : 'Regarde bien le mot, puis écris-le.';
+      r.text(prompt, W / 2, ty, { color: s.text, size: 8, font: s.font, align: 'center' });
+      ty += 12;
+      // Indices
+      if (this.hintLevel > 0 && this.phase === 'ask') {
+        r.text(this.hintPattern(), W / 2, ty, { color: s.accent, size: 10, font: s.font, bold: true, align: 'center' });
+        ty += 14;
+      }
+      const hb = this.hintButton;
+      if (hb) {
+        r.rect(hb.x, hb.y, hb.w, hb.h, s.border);
+        r.rect(hb.x + 1, hb.y + 1, hb.w - 2, hb.h - 2, s.box);
+        r.text(`💡 Indice ${this.hintLevel + 1}/2`, W / 2, hb.y + 3, { color: s.text, size: 7, font: s.font, align: 'center' });
       }
     }
-    const prompt = q.type === 'dictation' && !this.voiceOk ? '' : q.prompt;
+    const prompt = q.type === 'dictation' ? '' : q.prompt;
     for (const line of prompt ? this._wrapped(r, prompt, w - 24, 9) : []) {
       r.text(line, W / 2, ty, { color: s.text, size: 9, font: s.font, align: 'center' });
       ty += 12;
@@ -253,8 +315,8 @@ export class QuizScene extends Scene {
         const hint =
           q.type === 'dictation'
             ? narrow
-              ? (this.voiceOk ? 'Bouton : écouter' : 'Bouton : voir le mot') + ' · Entrée : valider'
-              : (this.voiceOk ? 'Touche le bouton (ou Tab) pour écouter' : 'Touche le bouton (ou Tab) pour voir le mot') + ' · Entrée : valider'
+              ? 'Entrée : valider' + (this.complex ? ' · ? : indice' : '')
+              : (this.mode === 'voice' ? 'Bouton (ou Tab) : écouter' : this.mode === 'image' ? 'Écris le mot' : 'Bouton (ou Tab) : voir le mot') + ' · Entrée : valider' + (this.complex ? ' · ? : indice' : '')
             : narrow
               ? 'Entrée ou A : valider · B : je ne sais pas'
               : 'Écris ta réponse puis Entrée (ou A) · B : je ne sais pas';

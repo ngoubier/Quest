@@ -311,7 +311,9 @@ export class AdventureScene extends Scene {
     this._lastSubject = subject;
     // Une dictée = un seul mot.
     const count = subject === 'dictee' ? 1 : spec.count ?? 3;
-    const okType = () => true;
+    // Sans voix, une dictée n'est possible qu'avec une image de l'objet à écrire.
+    const canSpeak = Speech.available;
+    const okType = (q) => canSpeak || q.type !== 'dictation' || !!q.image || !!q.custom;
     const questions = [];
     const ids = new Set();
     const add = (q) => {
@@ -325,7 +327,7 @@ export class AdventureScene extends Scene {
     if (custom.length && Math.random() < 0.7) add(custom[0]);
     if (bank) {
       bank
-        .pick({ age: st.effectiveAge(subject), subject, count: count - questions.length + 1, seen: st.quiz.seen, excludeTypes: [] })
+        .pick({ age: st.effectiveAge(subject), subject, count: count - questions.length + 1, seen: st.quiz.seen, excludeTypes: [], accept: okType })
         .forEach(add);
     }
     if (!questions.length) return this.say('Je n’ai pas de question pour toi aujourd’hui.', { speaker, onClose: () => done({ correct: 0, total: 0, results: [] }) });

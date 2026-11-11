@@ -74,3 +74,14 @@ test('Caméra « salles » plus étroite que la salle : suit le héros sans sort
   cam.update(0.016);
   assert.ok(cam.isTransitioning);
 });
+
+test('Dictées sans voix : assez de mots illustrés à chaque âge', () => {
+  const bank = frenchSchoolBank();
+  for (let age = 6; age <= 10; age++) {
+    const illustrated = QUESTIONS_DICTEE.filter((q) => q.image && age >= q.ages[0] && age <= q.ages[1]);
+    assert.ok(illustrated.length >= 5, `${age} ans : ${illustrated.length} mots illustrés`);
+    const picked = bank.pick({ age, subject: 'dictee', count: 1, accept: (q) => !!q.image });
+    assert.equal(picked.length, 1);
+    assert.ok(picked[0].image);
+  }
+});
