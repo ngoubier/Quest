@@ -29,8 +29,22 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'] } = {}
     icons.draw(r, item, x, 4);
     x -= 7;
   }
+  // Objet équipé (bouton Objet), juste après les cœurs.
+  let heartsEnd = 4 + hearts * 9;
+  const tool = adv.equipped;
+  if (tool) {
+    r.rect(heartsEnd + 1, 1, 14, 14, s.border);
+    r.rect(heartsEnd + 2, 2, 12, 12, s.box);
+    const c = r.ctx;
+    c.save();
+    c.beginPath();
+    c.rect(heartsEnd + 2, 2, 12, 12);
+    c.clip();
+    game.themes.current.sprites.objects.draw(r, adv.itemIcon(tool), heartsEnd, 0);
+    c.restore();
+    heartsEnd += 17;
+  }
   // Boutons Quêtes et Sac, centrés entre les cœurs et les compteurs.
-  const heartsEnd = 4 + hearts * 9;
   const gap = x - heartsEnd;
   const active = adv.quests.journal().filter((q) => q.status === 'active').length;
   const wide = gap >= 110;

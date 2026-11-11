@@ -3,8 +3,9 @@
 // (carte du royaume, pierres magiques).
 import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
+import { GIVRE_TILES, GIVRE_ROLES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti } from './theme-givre.js';
 
-export { TILE_ROLES };
+export const ROLES = [...TILE_ROLES, ...GIVRE_ROLES];
 
 /** Couleurs des 6 pierres : [couleur, reflet, ombre]. */
 export const STONE_COLORS = {
@@ -40,16 +41,36 @@ function paintNew(c, name) {
 
 const base = ALL.find((t) => t.id === 'medieval');
 const objects = base.sprites.objects;
+const chars = base.sprites.chars;
+const boss = base.sprites.boss;
+
+const GAME_FRAMES = new Set(NEW_FRAMES);
+const GIVRE_FRAMES = new Set(GIVRE_OBJECT_FRAMES);
+const NEW_CHARS = GIVRE_CHARS.flatMap((who) => ['down', 'up', 'side'].flatMap((d) => [0, 1].map((st) => `${who}_${d}_${st}`)));
 
 export const THEME = {
   ...base,
   name: 'Royaume d’Iris',
+  tiles: { ...base.tiles, ...GIVRE_TILES },
   sprites: {
     ...base.sprites,
     objects: {
       ...objects,
-      frames: [...objects.frames, ...NEW_FRAMES],
-      paint: (c, name, i) => (NEW_FRAMES.includes(name) ? paintNew(c, name) : objects.paint(c, name, i)),
+      frames: [...objects.frames, ...NEW_FRAMES, ...GIVRE_OBJECT_FRAMES],
+      paint: (c, name, i) => (GAME_FRAMES.has(name) ? paintNew(c, name) : GIVRE_FRAMES.has(name) ? paintGivreObject(c, name) : objects.paint(c, name, i)),
+    },
+    chars: {
+      ...chars,
+      frames: [...chars.frames, ...NEW_CHARS],
+      paint: (c, name, i) => {
+        const [who, dir, step] = name.split('_');
+        return GIVRE_CHARS.includes(who) ? paintGivrePerson(c, who, dir, Number(step)) : chars.paint(c, name, i);
+      },
+    },
+    boss: {
+      ...boss,
+      frames: [...boss.frames, 'yeti_0', 'yeti_1'],
+      paint: (c, name) => (name.startsWith('yeti') ? paintYeti(c, name === 'yeti_1' ? 1 : 0) : boss.paint(c, name)),
     },
   },
 };

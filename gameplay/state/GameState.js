@@ -30,6 +30,7 @@ export class GameState {
     this.cooldowns = {};
     this.bagSize = 10;
     this.petTime = 0;
+    this.equipped = null; // objet utilisé avec le bouton Objet
   }
 
   // --- difficulté automatique : décalage d'âge par matière (-2 à +2)
@@ -194,7 +195,7 @@ export class GameState {
 
   // --- sauvegarde
   toJSON() {
-    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns, bagSize: this.bagSize, petTime: this.petTime });
+    return structuredClone({ flags: this.flags, counters: this.counters, items: this.items, hp: this.hp, maxHp: this.maxHp, quests: this.quests, profile: this.profile, quiz: this.quiz, playTime: this.playTime, cooldowns: this.cooldowns, bagSize: this.bagSize, petTime: this.petTime, equipped: this.equipped });
   }
 
   load(data) {

@@ -276,21 +276,23 @@ export class Sign extends WorldObject {
 
 // ------------------------------------------------------------------ bloc à pousser
 export class PushBlock extends WorldObject {
-  /** props : { once?: bool } — once : ne bouge qu'une fois (classique Zelda) */
+  /** props : { once?: bool, slide?: bool, sprite?: 'block' }
+   *  once : ne bouge qu'une fois (classique Zelda) ; slide : glisse jusqu'au prochain obstacle (bloc de glace) */
   constructor({ x, y, uid, props }) {
     super({ x, y, w: 16, h: 16, uid, props, solid: true, tags: ['block', 'heavy'] });
     this.sliding = null;
     this.pushes = 0;
   }
 
-  tryPush(dir) {
-    if (this.sliding || (this.props.once && this.pushes > 0)) return;
+  tryPush(dir, by = null, carryOn = false) {
+    if (this.sliding || (!carryOn && this.props.once && this.pushes > 0)) return;
     const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
     const tx = this.x + d[0] * 16;
     const ty = this.y + d[1] * 16;
     if (this.world.isBlocked(tx, ty, 16, 16, this)) return;
     if (this.world.query({ x: tx, y: ty, w: 16, h: 16 }, (e) => e !== this && (e.solid || e.has('enemy'))).length) return;
-    this.sliding = { fx: this.x, fy: this.y, tx, ty, t: 0 };
+    this.sliding = { fx: this.x, fy: this.y, tx, ty, t: 0, dir };
+    if (carryOn) return;
     this.pushes++;
     this.world.game.audio.play('push');
   }
@@ -298,14 +300,17 @@ export class PushBlock extends WorldObject {
   update(dt) {
     const s = this.sliding;
     if (!s) return;
-    s.t = Math.min(1, s.t + dt / 0.35);
+    s.t = Math.min(1, s.t + dt / (this.props.slide ? 0.16 : 0.35));
     this.x = s.fx + (s.tx - s.fx) * s.t;
     this.y = s.fy + (s.ty - s.fy) * s.t;
-    if (s.t >= 1) this.sliding = null;
+    if (s.t >= 1) {
+      this.sliding = null;
+      if (this.props.slide) this.tryPush(s.dir, null, true); // continue tant que la voie est libre
+    }
   }
 
   draw(r) {
-    objSheet(this).draw(r, 'block', this.x, this.y);
+    objSheet(this).draw(r, this.props.sprite ?? 'block', this.x, this.y);
   }
 }
 
@@ -475,5 +480,88 @@ export class StrayPet extends WorldObject {
   draw(r) {
     const hop = Math.floor(this.t * 2) % 4 === 0 ? -1 : 0;
     objSheet(this).draw(r, Math.floor(this.t * 3) % 2 ? 'pet_1' : 'pet_0', this.x - 3, this.y - 8 + hop);
+  }
+}
+
+// ------------------------------------------------------------------ brasero (s'allume avec du feu)
+export class Brazier extends WorldObject {
+  /** props : { flag? } — allumé par un projectile de feu ; lève le drapeau (par défaut lit:<uid>) et le reste */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 2, y: y + 5, w: 12, h: 10, uid, props, solid: true, tags: ['brazier'] });
+    this.hint = 0;
+  }
+
+  get flag() {
+    return this.props.flag ?? `lit:${this.uid}`;
+  }
+
+  get lit() {
+    return this.state.flag(this.flag);
+  }
+
+  update(dt) {
+    this.hint -= dt;
+  }
+
+  onProjectile(p) {
+    if (p.kind === 'fire' && !this.lit) {
+      this.state.setFlag(this.flag);
+      this.world.game.audio.play('secret');
+      this.world.add(new Effect(this.cx, this.cy - 6));
+    }
+    return true;
+  }
+
+  talk() {
+    if (this.lit || this.hint > 0) return;
+    this.hint = 2;
+    this.adv.toast('Un brasero éteint. Il faudrait du feu pour l’allumer.');
+  }
+
+  canTalk() {
+    return !this.lit;
+  }
+
+  draw(r) {
+    const frame = this.lit ? `brazier_${Math.floor(this.world.game.time * 8) % 2}` : 'brazier_off';
+    objSheet(this).draw(r, frame, this.x - 2, this.y - 5);
+  }
+}
+
+// ------------------------------------------------------------------ mur de glace (fond avec du feu)
+export class IceWall extends WorldObject {
+  /** Bloque le passage jusqu'à ce qu'un projectile de feu le fasse fondre (drapeau melted:<uid>). */
+  constructor({ x, y, uid, props }) {
+    super({ x, y, w: 16, h: 16, uid, props, solid: true, tags: ['icewall'] });
+    this.hint = 0;
+  }
+
+  added() {
+    if (this.state.flag(`melted:${this.uid}`)) this.kill();
+  }
+
+  update(dt) {
+    this.hint -= dt;
+  }
+
+  onProjectile(p) {
+    if (p.kind === 'fire') {
+      this.state.setFlag(`melted:${this.uid}`);
+      this.world.game.audio.play('gate_open');
+      this.world.add(new Effect(this.cx, this.cy));
+      this.kill();
+    }
+    return true;
+  }
+
+  onSwordHit() {
+    if (this.hint > 0) return;
+    this.hint = 2.5;
+    this.world.game.audio.play('boss_shield');
+    this.adv.toast('La glace est trop dure pour l’épée. Il faudrait du feu !');
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, 'icewall', this.x, this.y);
   }
 }

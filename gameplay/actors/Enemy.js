@@ -1,6 +1,7 @@
 import { Animator, rectsOverlap, createRng } from '../../engine/index.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
+import { Projectile } from './Projectile.js';
 
 // MONSTRES. Un monstre = des statistiques + un comportement (fonction réutilisable).
 // Les monstres hors de l'écran sont figés (économie, et lisibilité comme dans Zelda).
@@ -39,6 +40,39 @@ export const BEHAVIORS = {
       e.move(((dx / d) + wob * (dy / d)) * e.speed * dt, ((dy / d) - wob * (dx / d)) * e.speed * dt);
     } else BEHAVIORS.wander(e, dt);
   },
+
+  /** Erre, et lance un projectile (boule de neige...) vers le héros quand il est en vue. */
+  shooter(e, dt) {
+    BEHAVIORS.wander(e, dt);
+    e.cool = (e.cool ?? 1 + e.rng()) - dt;
+    if (e.cool > 0) return;
+    const h = e.adv.hero;
+    const dx = h.cx - e.cx;
+    const dy = h.cy - e.cy;
+    if (Math.hypot(dx, dy) > (e.sight ?? 88)) return;
+    e.cool = 2 + e.rng();
+    e.world.add(new Projectile({ x: e.cx, y: e.cy, dir: { x: dx, y: dy }, kind: e.shot, speed: 70, hostile: true, range: 120, owner: e }));
+    e.game.audio.play('throw');
+  },
+
+  /** Fonce tout droit quand le héros est dans sa ligne ou sa colonne, puis se repose. */
+  charger(e, dt) {
+    if (e.charge) {
+      e.charge.t -= dt;
+      const res = e.move(e.charge.x * e.speed * 3.4 * dt, e.charge.y * e.speed * 3.4 * dt);
+      if (e.charge.t <= 0 || res.hitX || res.hitY) (e.charge = null), (e.rest = 0.9);
+      return;
+    }
+    if ((e.rest = (e.rest ?? 0) - dt) > 0) return;
+    const h = e.adv.hero;
+    const dx = h.cx - e.cx;
+    const dy = h.cy - e.cy;
+    if (Math.hypot(dx, dy) < (e.sight ?? 96)) {
+      if (Math.abs(dy) < 9) return void (e.charge = { x: Math.sign(dx), y: 0, t: 1.1 });
+      if (Math.abs(dx) < 9) return void (e.charge = { x: 0, y: Math.sign(dy), t: 1.1 });
+    }
+    BEHAVIORS.wander(e, dt);
+  },
 };
 
 export class Enemy extends Actor {
@@ -48,7 +82,7 @@ export class Enemy extends Actor {
    * @param {string} o.sprite   préfixe d'images
    * @param {keyof BEHAVIORS | Function} o.behavior
    */
-  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
+  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, shot = 'snowball', drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
     super({ x: x + 2, y: y + 6, w: 12, h: 10, tags: ['enemy'], solid: false, hp, invulnTime: 0.3 });
     this.uid = uid;
     this.kind = kind;
@@ -56,6 +90,7 @@ export class Enemy extends Actor {
     this.damage = damage;
     this.behavior = typeof behavior === 'function' ? behavior : BEHAVIORS[behavior];
     this.sight = sight;
+    this.shot = shot; // projectile lancé (comportement 'shooter')
     this.drops = drops;
     this.rng = createRng(seed);
     this.timer = 0;

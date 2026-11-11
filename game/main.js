@@ -2,8 +2,8 @@
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
 import { Game, Scene, MenuScene, TouchControls } from '../engine/index.js';
 import { AdventureScene, openParentSpace, PromptScene, MessageScene, StoryScene } from '../gameplay/index.js';
-import { THEME, TILE_ROLES } from './themes.js';
-import { MAPS, LEGEND, ITEMS, QUESTS } from './data/prebois.js';
+import { THEME, ROLES } from './themes.js';
+import { MAPS, LEGEND, ITEMS, QUESTS } from './data/index.js';
 import { WORLD_MAP, colorLoss } from './data/worldmap.js';
 import { INTRO_STORY, drawUnicorn } from './data/story.js';
 import { frenchSchoolBank } from '../content/quiz/index.js';
@@ -34,6 +34,11 @@ const logicalWidth = () => (touch && innerHeight > innerWidth ? 12 : 16) * TS;
 const game = new Game({ width: logicalWidth(), height: 11 * TS + HUD_H, parent: screen });
 if (touch) {
   new TouchControls(game.input, {
+    buttons: [
+      { action: 'item', label: 'X' }, // objet équipé (bâton de feu...)
+      { action: 'secondary', label: 'B' },
+      { action: 'action', label: 'A' },
+    ],
     parent: root,
     screen,
     onLayout: () => {
@@ -75,12 +80,14 @@ const sfx = {
   boss_dash: { type: 'sawtooth', notes: [[90, 0.25]], vol: 0.2, slide: 60 },
   boss_shield: { type: 'triangle', notes: [[880, 0.05], [660, 0.08]], vol: 0.2 },
   boss_open: { type: 'square', notes: [[523, 0.06], [659, 0.06], [784, 0.12]], vol: 0.2 },
+  fire: { type: 'sawtooth', notes: [[520, 0.04], [320, 0.08]], vol: 0.12 },
+  throw: { type: 'triangle', notes: [[300, 0.05], [200, 0.06]], vol: 0.12 },
   gameover: { type: 'triangle', notes: [[392, 0.2], [330, 0.2], [262, 0.4]], vol: 0.25 },
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
 
 // ------------------------------------------------------------------ ambiances
-game.themes.configure({ roles: TILE_ROLES, tileSize: TS });
+game.themes.configure({ roles: ROLES, tileSize: TS });
 game.themes.register(THEME); // une seule ambiance : le royaume d'Iris
 game.themes.use(THEME.id);
 
@@ -209,8 +216,8 @@ class TitleScene extends Scene {
     drawUnicorn(r, r.width - 26, 12 + Math.round(Math.sin(game.time * 2)), 1);
     r.text('Délivre la licorne du royaume d’Iris', r.width / 2, 42, { color: s.text, size: 8, font: s.font, align: 'center' });
     const lines = touch
-      ? ['Croix : bouger · A : parler, frapper', 'Start : menu']
-      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'Entrée : menu · L : quêtes · I : sac'];
+      ? ['Croix : bouger · A : parler, frapper', 'X : objet · Start : menu']
+      : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'E : objet · Entrée : menu · L : quêtes · I : sac'];
     lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
     r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
     // Liste qui défile si elle est longue (jusqu'à 8 joueurs + 2 options)

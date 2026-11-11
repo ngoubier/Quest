@@ -34,3 +34,6 @@ export { StoryScene } from './ui/StoryScene.js';
 export { MINIGAMES, createMinigame } from './minigames/index.js';
 export { TicTacToeScene } from './minigames/TicTacToeScene.js';
 export * as tictactoe from './minigames/tictactoe.js';
+export { NimScene } from './minigames/NimScene.js';
+export * as nim from './minigames/nim.js';
+export { Projectile } from './actors/Projectile.js';

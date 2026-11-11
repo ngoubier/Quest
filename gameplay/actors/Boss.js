@@ -1,6 +1,7 @@
 import { Animator, rectsOverlap } from '../../engine/index.js';
 import { Enemy } from './Enemy.js';
 import { Effect } from './Effect.js';
+import { Projectile } from './Projectile.js';
 
 // BOSS de fin de donjon : combat + questions.
 // Il est protégé par un BOUCLIER. Le frapper déclenche une question :
@@ -8,10 +9,12 @@ import { Effect } from './Effect.js';
 //  - mauvaise réponse → le héros est blessé.
 // Vaincu, il lève un drapeau (props.flag) qui peut ouvrir une porte, faire apparaître un coffre...
 //
-// Sprites attendus (planche 'boss', 32x32) : boss_0, boss_1, boss_shield
+// Options : meltWith: 'fire' — le bouclier ne réagit qu'à ce projectile (carapace de glace du Yéti) ;
+//           shots: 'snowball' — il lance ce projectile de temps en temps.
+// Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1 }) {
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage: 1, behavior: 'wander', drops: [], seed });
     this.x = x - 4;
     this.y = y + 4;
@@ -19,6 +22,10 @@ export class Boss extends Enemy {
     this.h = 18;
     this._name = name;
     this.flag = flag;
+    this.meltWith = meltWith;
+    this.shots = shots;
+    this.shotTimer = 3;
+    this.hintCooldown = 0;
     this.invulnTime = 0.6;
     this.shield = true;
     this.openTime = 0;
@@ -47,6 +54,12 @@ export class Boss extends Enemy {
     }
     // Ruée vers le héros de temps en temps
     const hero = this.adv.hero;
+    this.hintCooldown -= dt;
+    if (this.shots && hero && !this.asking && (this.shotTimer -= dt) <= 0) {
+      this.shotTimer = 2.6 + this.rng() * 1.2;
+      this.world.add(new Projectile({ x: this.cx, y: this.cy, dir: { x: hero.cx - this.cx, y: hero.cy - this.cy }, kind: this.shots, speed: 80, hostile: true, range: 170, owner: this }));
+      this.game.audio.play('throw');
+    }
     if (this.dash) {
       this.dash.t -= dt;
       const res = this.move(this.dash.vx * dt, this.dash.vy * dt);
@@ -80,11 +93,32 @@ export class Boss extends Enemy {
       }
       return;
     }
+    if (this.meltWith) {
+      if (this.hintCooldown <= 0) (this.hintCooldown = 2.5), this.adv.toast('Sa carapace de glace résiste à l’épée : il faut du feu !');
+      this.game.audio.play('boss_shield');
+      return;
+    }
+    this._challenge(hero);
+  }
+
+  /** Projectile du héros : blesse le boss sans bouclier ; fait fondre la carapace si c'est le bon. */
+  onProjectile(p) {
+    if (p.hostile) return false;
+    const hero = this.adv.hero;
+    if (!this.shield) {
+      if (this.hurt(1, p, { knockback: 60 })) (this.hitsThisWindow++, this.game.audio.play('hit'));
+    } else if (!this.meltWith || p.kind === this.meltWith) this._challenge(hero);
+    else this.game.audio.play('boss_shield');
+    return true;
+  }
+
+  /** Bouclier touché : une question. Juste → le bouclier tombe ; faux → le héros est blessé. */
+  _challenge(hero) {
     if (this.asking) return;
     this.asking = true;
     this.game.audio.play('boss_shield');
     hero.knock = { vx: Math.sign(hero.cx - this.cx) * 120, vy: Math.sign(hero.cy - this.cy) * 120, t: 0.12 };
-    this.adv.say('« Mon bouclier ne tombera que si tu réponds juste ! »', {
+    this.adv.say(this.meltWith ? '« Grrr ! Ma carapace fond... mais elle ne tombera que si tu réponds juste ! »' : '« Mon bouclier ne tombera que si tu réponds juste ! »', {
       speaker: this.displayName,
       onClose: () =>
         this.adv.quiz(

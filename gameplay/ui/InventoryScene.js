@@ -42,6 +42,16 @@ export class InventoryScene extends Scene {
     const adv = this.adv;
     const def = adv.itemDef(item);
     const options = [];
+    if (def.tool) {
+      options.push({
+        label: adv.state.equipped === item ? 'Déjà équipé' : 'Équiper (bouton Objet)',
+        onSelect: (m) => {
+          m.close();
+          adv.equip(item);
+          this.msg = `${cap(adv.itemName(item))} : touche E ou bouton X pour l’utiliser.`;
+        },
+      });
+    }
     if (def.use) {
       options.push({
         label: 'Utiliser',

@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, lot 1 réalisé** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, niveaux 1 et 2 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -66,7 +66,7 @@ Sud : Prébois (départ) · **Centre : le Volcan Noir**, fermé tant que les 6 p
 
 ### Niveau 2 — Le Mont Givré · Pierre de Givre
 - **Ambiance** : neige, sapins, igloos et maisons en briques de neige, lac gelé, temple de glace.
-- **Objet** : **bâton de feu** (fait fondre la glace, allume les braseros).
+- **Objet** : **bâton de feu**, dans le coffre du lac gelé (bouton Objet : fait fondre la glace, allume les braseros).
 - **Monstres** : bonhommes de neige (boules), loups blancs (rapides), pingouins glisseurs, stalactites.
 - **Astuces** : lac gelé où l'on glisse jusqu'à l'obstacle ; blocs de glace qui glissent ; 4 braseros pour ouvrir le temple ; murs de glace fissurés.
 - **Mini-jeu** : *Le dernier glaçon* (Nim) avec Pingo. **Quêtes** : pelotes de Mamie Flocon, bois pour le chocolat chaud.
@@ -342,7 +342,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | Lot | Contenu | Effort |
 |---|---|---|
 | 1 ✓ | Histoire en images, carte du monde, décoloration, intro réécrite, Morpion, ambiance médiévale seule | L |
-| 2 | Mont Givré : bouton Objet, glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
+| 2 ✓ | Mont Givré : bouton Objet, glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
 | 3 | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
 | 4 | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
 | 5 | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
@@ -373,4 +373,22 @@ Le jeu se lance depuis `game/` (`npm start` puis http://localhost:8080/game/).
 - **Morpion** contre Bastien le garde (une fois sa quête finie) ; force selon l'âge ; 3 pièces par victoire
   (les 5 premières) — `gameplay/minigames/`, action `{ minigame: 'morpion', win, lose, draw, quit }`.
 - **Une seule ambiance** (médiéval) : la touche Tab ne change plus rien dans le jeu.
-- Le **bouton Objet** arrive avec le lot 2 (premier objet à utiliser : le bâton de feu).
+
+## 11. Lot 2 — le Mont Givré (fait)
+
+Données : `game/data/givre.js` · dessins : `game/theme-givre.js`.
+
+- **Bouton Objet** (touche E ou X, bouton X manette, bouton X tactile) : utilise l'objet équipé, affiché
+  à côté des cœurs. On choisit l'objet dans le sac (« Équiper »). `items[id].tool(adv, hero)`.
+- **Bâton de feu** : lance une flammèche (`gameplay/actors/Projectile.js`). Dans le coffre du lac gelé.
+- **Glace glissante** (propriété de tuile `slippery`) : le héros glisse tout droit jusqu'à un obstacle.
+  Le lac est une petite énigme (au moins deux glissades pour atteindre le coffre — vérifié par un test).
+- **Braseros** (`brazier`) : les 4 allumés ouvrent la grille du temple. **Murs de glace** (`icewall`) : fondent au feu.
+- **Bloc de glace** (`block` avec `slide: true`) : glisse jusqu'au prochain obstacle ; à amener sur la dalle.
+- **Monstres** : bonhommes de neige (lancent des boules, `shooter`), loups (rapides), pingouins (foncent tout droit, `charger`).
+- **Yéti Grondeur** : carapace de glace (`meltWith: 'fire'`) → question → coups d'épée ; il lance des boules de neige.
+  Vaincu : coffre de la **Pierre de Givre**, +1 cœur, et le Mont Givré retrouve ses couleurs.
+- **Mini-jeu** : *Le dernier glaçon* contre Pingo (`gameplay/minigames/NimScene.js`), force selon l'âge.
+- **Quêtes** : « La Pierre de Givre » (Nanouk), « Les pelotes de Mamie Flocon » (récompense : 20 pièces + 1 cœur).
+- **Habitants** : Nanouk, Mamie Flocon, Pingo, Igor le savant (questions, 2 pièces par bonne réponse), Anouchka (igloo-magasin, chocolat chaud).
+- Le pouvoir de la Pierre de Givre (geler la lave) servira au Volcan Noir.

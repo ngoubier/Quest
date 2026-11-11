@@ -31,7 +31,8 @@ import { createMinigame } from './minigames/index.js';
 //   items:  { coin: { icon: 'coin', word: 'coin', max: 999, bag: false },   // bag:false = hors du sac (compteur)
 //             apple: { icon: 'apple', name: 'Pomme', use: (adv) => ... },     // utilisable depuis le sac
 //             planks: { ..., quest: true },                                    // objet de quête : ne se jette pas
-//             heart: { icon: 'heart', instant: (adv) => adv.state.heal(2) } },
+//             heart: { icon: 'heart', instant: (adv) => adv.state.heal(2) },
+//             fire_staff: { ..., tool: (adv, hero) => hero.shoot('fire') } },  // bouton Objet
 //   bagSize: 10,                               // places dans le sac au départ
 //   quests: [ ... ],
 //   startMap: 'overworld',
@@ -401,8 +402,30 @@ export class AdventureScene extends Scene {
     }
     if (def.instant) def.instant(this, n);
     else this.state.give(item, n, def.max ?? Infinity);
+    // Premier objet à utiliser : il s'équipe tout seul.
+    if (def.tool && !this.state.equipped) this.state.equipped = item;
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
     return true;
+  }
+
+  /** Équipe un objet (bouton Objet). */
+  equip(item) {
+    this.state.equipped = item;
+    this.game.audio.play('menu_ok');
+    this.toast(`Objet équipé : ${this.itemName(item)}`);
+  }
+
+  /** Objet équipé, s'il est toujours dans le sac. */
+  get equipped() {
+    const id = this.state.equipped;
+    return id && this.state.count(id) > 0 && this.itemDef(id).tool ? id : null;
+  }
+
+  /** Bouton Objet : utilise l'objet équipé (items[id].tool(adv, hero)). */
+  useTool() {
+    const id = this.equipped;
+    if (!id) return false;
+    return this.itemDef(id).tool(this, this.hero) !== false;
   }
 
   /** Fait apparaître le compagnon à côté du héros. */
