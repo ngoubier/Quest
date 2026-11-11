@@ -3,7 +3,8 @@ import { clamp, lerp, easeInOut } from '../core/math.js';
 // Caméra. Deux modes :
 //  - 'follow' : centrée sur la cible, bornée à la carte (jeux type RPG moderne) ;
 //  - 'rooms'  : écran fixe par "salle", défilement animé quand on change de salle
-//               (comme le Zelda original).
+//               (comme le Zelda original). Si l'écran est plus petit que la salle
+//               (téléphone), la caméra suit le héros sans sortir de la salle.
 
 export class Camera {
   constructor({ width, height, bounds = null, mode = 'follow', roomWidth = width, roomHeight = height, scrollDuration = 0.75 }) {
@@ -47,14 +48,22 @@ export class Camera {
     return { x: room.x * this.roomWidth, y: room.y * this.roomHeight, w: this.roomWidth, h: this.roomHeight };
   }
 
+  /** Position de la caméra dans une salle : centrée sur la cible, bornée à la salle. */
+  _inRoom(room, px, py) {
+    const rr = this.roomRect(room);
+    const fit = (p, size, start, len) => (size >= len ? start : clamp(p - size / 2, start, start + len - size));
+    return { x: fit(px, this.width, rr.x, rr.w), y: fit(py, this.height, rr.y, rr.h) };
+  }
+
   /** Place la caméra immédiatement sur la cible, sans animation. */
   snap() {
     this.transition = null;
     if (!this.target) return;
     if (this.mode === 'rooms') {
       this.room = this.roomOf(this.target.cx, this.target.cy);
-      this.x = this.room.x * this.roomWidth;
-      this.y = this.room.y * this.roomHeight;
+      const p = this._inRoom(this.room, this.target.cx, this.target.cy);
+      this.x = p.x;
+      this.y = p.y;
     } else this._centerOn(this.target.cx, this.target.cy);
   }
 
@@ -109,10 +118,14 @@ export class Camera {
           t: 0,
           duration: this.scrollDuration,
           from: { x: this.x, y: this.y },
-          to: { x: r.x * this.roomWidth, y: r.y * this.roomHeight },
+          to: this._inRoom(r, this.target.cx, this.target.cy),
           dir: { x: Math.sign(r.x - oldRoom.x), y: Math.sign(r.y - oldRoom.y) },
           oldRoom,
         };
+      } else {
+        const p = this._inRoom(this.room, this.target.cx, this.target.cy);
+        this.x = p.x;
+        this.y = p.y;
       }
     } else this._centerOn(this.target.cx, this.target.cy);
   }

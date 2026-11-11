@@ -54,14 +54,15 @@ export class MenuScene extends Scene {
     if (this.dimBackground) r.withAlpha(0.45, () => r.rect(0, 0, r.width, r.height, '#000'));
     const lineH = s.fontSize + 6;
     const h = this.items.length * lineH + (this.title ? lineH + 6 : 0) + 14;
-    const x = Math.round((r.width - this.width) / 2);
+    const width = Math.min(this.width, r.width - 8);
+    const x = Math.round((r.width - width) / 2);
     const y = Math.round((r.height - h) / 2);
-    r.rect(x, y, this.width, h, s.box);
-    r.strokeRect(x, y, this.width, h, s.border);
-    r.strokeRect(x + 2, y + 2, this.width - 4, h - 4, s.border);
+    r.rect(x, y, width, h, s.box);
+    r.strokeRect(x, y, width, h, s.border);
+    r.strokeRect(x + 2, y + 2, width - 4, h - 4, s.border);
     let ty = y + 8;
     if (this.title) {
-      r.text(this.title, x + this.width / 2, ty, { color: s.accent, size: s.fontSize, font: s.font, bold: true, align: 'center' });
+      r.text(this.title, x + width / 2, ty, { color: s.accent, size: s.fontSize, font: s.font, bold: true, align: 'center' });
       ty += lineH + 6;
     }
     this.items.forEach((it, i) => {

@@ -143,19 +143,47 @@ export class Tilemap {
     return false;
   }
 
-  /** Dessine les tuiles visibles dans `view` ({x,y,w,h} en pixels monde). */
+  /**
+   * Dessine les tuiles visibles dans `view` ({x,y,w,h} en pixels monde).
+   * Effets automatiques (selon les propriétés des tuiles) :
+   *  - variantes choisies selon la position ;
+   *  - `props.shadow` : ombre portée sur la tuile du dessous ;
+   *  - `props.edge`   : liseré de couleur là où la tuile touche une autre tuile (berges...).
+   */
   draw(r, view, time = 0, { above = false } = {}) {
     const ts = this.tileSize;
     const x0 = Math.max(0, Math.floor(view.x / ts));
     const y0 = Math.max(0, Math.floor(view.y / ts));
     const x1 = Math.min(this.width - 1, Math.floor((view.x + view.w) / ts));
     const y1 = Math.min(this.height - 1, Math.floor((view.y + view.h) / ts));
+    const ground = this.layers[0];
     for (const layer of this.layers) {
       if (layer.above !== above) continue;
       for (let ty = y0; ty <= y1; ty++) {
         for (let tx = x0; tx <= x1; tx++) {
           const id = layer.data[ty * this.width + tx];
-          if (id) this.tileset.draw(r, id, tx * ts, ty * ts, time);
+          if (!id) continue;
+          const v = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
+          this.tileset.draw(r, id, tx * ts, ty * ts, time, v % 97);
+          if (layer !== ground) continue;
+          const def = this.tileset.def(id);
+          // Liseré
+          if (def.props.edge) {
+            const other = (nx, ny) => this.inBounds(nx, ny) && this.tileset.def(ground.data[ny * this.width + nx]).name !== def.name;
+            const c = def.props.edge;
+            if (other(tx, ty - 1)) r.rect(tx * ts, ty * ts, ts, 1, c);
+            if (other(tx, ty + 1)) r.rect(tx * ts, ty * ts + ts - 1, ts, 1, c);
+            if (other(tx - 1, ty)) r.rect(tx * ts, ty * ts, 1, ts, c);
+            if (other(tx + 1, ty)) r.rect(tx * ts + ts - 1, ty * ts, 1, ts, c);
+          }
+          // Ombre portée par la tuile du dessus
+          if (ty > 0 && !def.solid) {
+            const up = this.tileset.def(ground.data[(ty - 1) * this.width + tx]);
+            if (up.props.shadow) {
+              r.rect(tx * ts, ty * ts, ts, 3, 'rgba(0,0,0,0.22)');
+              r.rect(tx * ts, ty * ts, ts, 1, 'rgba(0,0,0,0.18)');
+            }
+          }
         }
       }
     }

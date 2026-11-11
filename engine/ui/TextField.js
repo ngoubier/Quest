@@ -18,9 +18,9 @@ export class TextField {
 
   /**
    * @param {{x:number,y:number,w:number,h:number}} rect  zone en pixels logiques
-   * @param {{onSubmit?:(v:string)=>void, placeholder?:string, maxLength?:number, inputMode?:string}} opts
+   * @param {{onSubmit?:(v:string)=>void, onKey?:(e:KeyboardEvent)=>boolean, placeholder?:string, maxLength?:number, inputMode?:string}} opts
    */
-  open(rect, { onSubmit, placeholder = '', maxLength = 40, inputMode = 'text' } = {}) {
+  open(rect, { onSubmit, onKey = null, placeholder = '', maxLength = 40, inputMode = 'text' } = {}) {
     this.close();
     const s = this.game.style;
     const el = document.createElement('input');
@@ -39,6 +39,7 @@ export class TextField {
       `font-family:${s.font};padding:0 6px;`;
     el.addEventListener('keydown', (e) => {
       e.stopPropagation();
+      if (onKey?.(e)) return e.preventDefault();
       if (e.key === 'Enter') {
         e.preventDefault();
         onSubmit?.(el.value);

@@ -86,6 +86,17 @@ export class Game {
     this.renderer.resize(Math.max(1, Math.round(cssScale * dpr)));
   }
 
+  /** Change la résolution logique (ex. téléphone en portrait). Émet 'logical-resize'. */
+  setLogicalSize(width, height) {
+    if (width === this.width && height === this.height) return;
+    this.width = width;
+    this.height = height;
+    this.renderer.width = width;
+    this.renderer.height = height;
+    this.resize();
+    this.events.emit('logical-resize', { width, height });
+  }
+
   start() {
     if (this._running) return;
     this._running = true;

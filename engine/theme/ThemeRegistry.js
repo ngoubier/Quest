@@ -10,7 +10,8 @@ import { SpriteSheet } from '../graphics/SpriteSheet.js';
 // Forme d'un thème :
 // {
 //   id, name,
-//   tiles:   { [rôle]: { solid?, frames?, fps?, props?, paint(ctx, {size, frame, rng}) } },
+//   tiles:   { [rôle]: { solid?, frames?, fps?, variants?, props?, paint(ctx, {size, frame, variant, rng}) } },
+//            props.shadow : projette une ombre sur la tuile du dessous ; props.edge : liseré (écume...)
 //   sprites: { [planche]: { frameW, frameH, frames: string[], paint(ctx, name, i) } },
 //   ui:      { box, border, text, accent, ... }   // style des boîtes de dialogue / menus
 //   sfx:     { [nom]: spec audio },
@@ -23,21 +24,23 @@ export function buildTileset(theme, roles, tileSize = 16) {
   if (missing.length) throw new Error(`Thème "${theme.id}" : rôles de tuiles manquants : ${missing.join(', ')}`);
   const tiles = roles.map((name) => {
     const t = theme.tiles[name];
-    return { name, solid: !!t.solid, frames: t.frames || 1, fps: t.fps || 3, props: t.props || {}, paint: t.paint };
+    return { name, solid: !!t.solid, frames: t.frames || 1, fps: t.fps || 3, variants: t.variants || 1, props: t.props || {}, paint: t.paint };
   });
-  const maxFrames = Math.max(...tiles.map((t) => t.frames));
-  const canvas = createCanvas(maxFrames * tileSize, (tiles.length + 1) * tileSize);
+  const maxCols = Math.max(...tiles.map((t) => t.frames * t.variants));
+  const canvas = createCanvas(maxCols * tileSize, (tiles.length + 1) * tileSize);
   if (canvas) {
     const ctx = canvas.getContext('2d');
     tiles.forEach((t, i) => {
-      for (let f = 0; f < t.frames; f++) {
-        ctx.save();
-        ctx.translate(f * tileSize, (i + 1) * tileSize);
-        ctx.beginPath();
-        ctx.rect(0, 0, tileSize, tileSize);
-        ctx.clip();
-        t.paint?.(ctx, { size: tileSize, frame: f, rng: createRng(hashString(theme.id + t.name)) });
-        ctx.restore();
+      for (let v = 0; v < t.variants; v++) {
+        for (let f = 0; f < t.frames; f++) {
+          ctx.save();
+          ctx.translate((v * t.frames + f) * tileSize, (i + 1) * tileSize);
+          ctx.beginPath();
+          ctx.rect(0, 0, tileSize, tileSize);
+          ctx.clip();
+          t.paint?.(ctx, { size: tileSize, frame: f, variant: v, rng: createRng(hashString(theme.id + t.name) + v * 7919) });
+          ctx.restore();
+        }
       }
     });
   }
