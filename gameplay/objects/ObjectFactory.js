@@ -1,4 +1,4 @@
-import { Pickup, Chest, Npc, Sign, PushBlock, PressurePlate, Gate, LockedDoor, Lever, TileSwitch, StrayPet, Brazier, IceWall, Target } from './objects.js';
+import { Pickup, Chest, Npc, Sign, PushBlock, PressurePlate, Gate, LockedDoor, Lever, TileSwitch, StrayPet, Brazier, IceWall, Target, CrystalSwitch, Spikes, ArrowTrap, Crumble } from './objects.js';
 import { Boss } from '../actors/Boss.js';
 import { Enemy } from '../actors/Enemy.js';
 
@@ -45,6 +45,10 @@ export function standardFactory() {
   f.register('brazier', (s) => new Brazier(s));
   f.register('icewall', (s) => new IceWall(s));
   f.register('target', (s) => new Target(s));
+  f.register('crystal', (s) => new CrystalSwitch(s));
+  f.register('spikes', (s) => new Spikes(s));
+  f.register('arrowtrap', (s) => new ArrowTrap(s));
+  f.register('crumble', (s) => new Crumble(s));
   f.register('boss', (s) => new Boss({ x: s.x, y: s.y, uid: s.uid, seed: s.tx * 31 + s.ty, ...s.props }));
   f.register('enemy', (s) => new Enemy({ x: s.x, y: s.y, uid: s.uid, seed: s.tx * 31 + s.ty, ...s.props }));
   return f;

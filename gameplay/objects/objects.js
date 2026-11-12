@@ -3,6 +3,7 @@ import { check } from '../script/conditions.js';
 import { runActions } from '../script/actions.js';
 import { Effect } from '../actors/Effect.js';
 import { DigitLockScene } from '../ui/DigitLockScene.js';
+import { Projectile } from '../actors/Projectile.js';
 
 // OBJETS DU MONDE — les briques des énigmes et de l'exploration.
 // Ils s'appuient sur GameState (drapeaux) : un coffre ouvert le reste après sauvegarde,
@@ -411,24 +412,35 @@ export class PressurePlate extends WorldObject {
 
 // ------------------------------------------------------------------ grille (s'ouvre sous condition)
 export class Gate extends WorldObject {
-  /** props : { openWhen: condition, sprite?: 'gate' } */
+  /** props : { openWhen: condition, sprite?: 'gate', openSprite?: image dessinée quand elle est ouverte,
+   *           every?: secondes — porte à horloge : ouverte/fermée à tour de rôle (phase 0 ou 1) } */
   constructor({ x, y, uid, props }) {
     super({ x, y, w: 16, h: 16, uid, props, solid: true, tags: ['gate'] });
     this.open = null;
   }
 
+  /** Porte à horloge : secondes avant le prochain changement. */
+  get clockLeft() {
+    const e = this.props.every;
+    return e ? e - (this.state.playTime % e) : 0;
+  }
+
   update() {
-    const want = check(this.props.openWhen, this.state);
+    const e = this.props.every;
+    const want = e ? Math.floor(this.state.playTime / e) % 2 === (this.props.phase ?? 0) : check(this.props.openWhen, this.state);
     if (want === this.open) return;
     // Ne pas refermer sur quelqu'un.
     if (!want && this.world.query(this, (e) => e !== this && (e.has('hero') || e.has('enemy') || e.has('block'))).length) return;
-    if (this.open !== null) this.world.game.audio.play(want ? 'gate_open' : 'gate_close');
+    if (this.open !== null) this.world.game.audio.play(e ? 'chime' : want ? 'gate_open' : 'gate_close');
     this.open = want;
     this.solid = !want;
   }
 
   draw(r) {
     if (!this.open) objSheet(this).draw(r, this.props.sprite ?? 'gate', this.x, this.y);
+    else if (this.props.openSprite) objSheet(this).draw(r, this.props.openSprite, this.x, this.y);
+    // Porte à horloge : elle clignote juste avant de changer.
+    if (this.props.every && this.clockLeft < 1 && Math.floor(this.world.game.time * 8) % 2) r.withAlpha(0.5, () => r.rect(this.x + 2, this.y + 2, 12, 12, '#ffe066'));
   }
 }
 
@@ -693,5 +705,132 @@ export class Target extends WorldObject {
 
   draw(r) {
     objSheet(this).draw(r, this.hit ? 'target_hit' : 'target', this.x - 2, this.y - 3);
+  }
+}
+
+// ------------------------------------------------------------------ interrupteur cristal (bleu ↔ rouge)
+export class CrystalSwitch extends WorldObject {
+  /** props : { flag } — frappé (épée, flèche, boomerang, bombe), il bascule le drapeau.
+   *  Les blocs bleus / rouges sont des grilles : openWhen: flag (rouges) ou { flag, is: false } (bleus). */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 2, y: y + 3, w: 12, h: 12, uid, props, solid: true, tags: ['crystal'] });
+    this.cooldown = 0;
+  }
+
+  update(dt) {
+    this.cooldown -= dt;
+  }
+
+  hit() {
+    if (this.cooldown > 0) return;
+    this.cooldown = 0.5;
+    this.state.setFlag(this.props.flag, !this.state.flag(this.props.flag));
+    this.world.game.audio.play('switch');
+    this.world.add(new Effect(this.cx, this.cy, { duration: 0.2 }));
+  }
+
+  onSwordHit() {
+    this.hit();
+  }
+
+  onProjectile(p) {
+    if (p.hostile) return false;
+    this.hit();
+    return true;
+  }
+
+  onBomb() {
+    this.hit();
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, this.state.flag(this.props.flag) ? 'crystal_red' : 'crystal_blue', this.x - 2, this.y - 3);
+  }
+}
+
+// ------------------------------------------------------------------ piques qui sortent en rythme
+export class Spikes extends WorldObject {
+  /** props : { period?: 2, phase?: 0 } — sorties la moitié du temps ; elles blessent le héros. */
+  constructor({ x, y, uid, props }) {
+    super({ x, y, w: 16, h: 16, uid, props, tags: ['spikes'] });
+    this.z = -900;
+  }
+
+  get up() {
+    const p = this.props.period ?? 2;
+    const t = (this.world.game.time + (this.props.phase ?? 0) * p) % p;
+    return t >= p / 2;
+  }
+
+  /** Bientôt dehors : elles tremblent (pour prévenir l'enfant). */
+  get warning() {
+    const p = this.props.period ?? 2;
+    const t = (this.world.game.time + (this.props.phase ?? 0) * p) % p;
+    return t >= p / 2 - 0.35 && t < p / 2;
+  }
+
+  update() {
+    if (!this.up) return;
+    const h = this.adv.hero;
+    if (h && rectsOverlap({ x: this.x + 3, y: this.y + 3, w: 10, h: 10 }, h)) h.hurt(1, this);
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, this.up ? 'spikes_up' : 'spikes_down', this.x, this.y + (this.warning && Math.floor(this.world.game.time * 20) % 2 ? 1 : 0));
+  }
+}
+
+// ------------------------------------------------------------------ lance-flèches dans un mur
+export class ArrowTrap extends WorldObject {
+  /** props : { dir: 'down' | 'up' | 'left' | 'right', every?: 2, phase?: 0 } — tire une flèche à intervalle régulier. */
+  constructor({ x, y, uid, props }) {
+    super({ x, y, w: 16, h: 16, uid, props, solid: true, tags: ['trap'] });
+    this.timer = (props.every ?? 2) * (props.phase ?? 0);
+  }
+
+  update(dt) {
+    // seulement à l'écran
+    const v = this.world.camera.view;
+    if (!rectsOverlap({ x: v.x - 16, y: v.y - 16, w: v.w + 32, h: v.h + 32 }, this)) return;
+    this.timer += dt;
+    const every = this.props.every ?? 2;
+    if (this.timer < every) return;
+    this.timer -= every;
+    const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[this.props.dir ?? 'down'];
+    this.world.add(new Projectile({ x: this.cx + d[0] * 12, y: this.cy + d[1] * 12, dir: { x: d[0], y: d[1] }, kind: 'arrow', speed: 110, hostile: true, range: 200, owner: this }));
+    this.world.game.audio.play('arrow');
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, `trap_${this.props.dir ?? 'down'}`, this.x, this.y);
+  }
+}
+
+// ------------------------------------------------------------------ dalle qui s'effondre
+export class Crumble extends WorldObject {
+  /** Le héros marche dessus : elle tremble, puis devient un trou (tuile props.to, par défaut 'pit'). */
+  constructor({ x, y, uid, props }) {
+    super({ x, y, w: 16, h: 16, uid, props, tags: ['crumble'] });
+    this.z = -950;
+    this.t = null;
+  }
+
+  update(dt) {
+    const h = this.adv.hero;
+    if (this.t === null) {
+      if (h && rectsOverlap({ x: this.x + 2, y: this.y + 2, w: 12, h: 12 }, h)) (this.t = 0), this.world.game.audio.play('crack');
+      return;
+    }
+    this.t += dt;
+    if (this.t < (this.props.delay ?? 0.6)) return;
+    const tm = this.world.tilemap;
+    tm.set('ground', Math.floor(this.x / tm.tileSize), Math.floor(this.y / tm.tileSize), this.props.to ?? 'pit');
+    this.world.add(new Effect(this.cx, this.cy, { duration: 0.3 }));
+    this.kill();
+  }
+
+  draw(r) {
+    const shake = this.t !== null && Math.floor(this.t * 30) % 2 ? 1 : 0;
+    objSheet(this).draw(r, this.t === null ? 'crumble' : 'crumble_crack', this.x + shake, this.y);
   }
 }

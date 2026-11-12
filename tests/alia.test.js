@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, runActions, check, tictactoe, nim, memory, connect4 } from '../gameplay/index.js';
+import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind } from '../gameplay/index.js';
 import { MAPS, ITEMS, QUESTS } from '../game/data/index.js';
 import { WORLD_NODES, WORLD_MAP, STONES, colorLoss, stoneCount } from '../game/data/worldmap.js';
 
@@ -57,7 +57,7 @@ test('Action « minigame » : la suite dépend du résultat', () => {
   assert.deepEqual(run('quit'), [], 'abandon : rien ne se passe');
 });
 
-test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt et Bourg-Lanterne ouverts, le reste fermé pour l’instant', () => {
+test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lanterne et le Labyrinthe ouverts, le reste fermé pour l’instant', () => {
   assert.equal(WORLD_NODES.length, 8);
   const st = new GameState();
   for (const n of WORLD_NODES) {
@@ -66,7 +66,7 @@ test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt et Bourg-Lan
       const row = MAPS[n.mapId].rows[n.at[1]];
       assert.ok(row && row[n.at[0]] !== '#', `${n.id} : arrivée sur une case libre`);
     }
-    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore'].includes(n.id), n.id);
+    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore', 'temps'].includes(n.id), n.id);
   }
   assert.equal(WORLD_NODES.filter((n) => n.kind === 'stone').length, 6);
   STONES.forEach((k) => assert.ok(ITEMS[`stone_${k}`], `objet stone_${k}`));
@@ -472,4 +472,81 @@ test('Égouts : leviers au boomerang, salle à vider, clé, puis le Chef des Mas
   assert.equal(o.A.item, 'stone_aurore');
   assert.equal(o.A.appearWhen, o.M.flag);
   for (const id of ['aurore', 'letters', 'cat', 'bread']) assert.ok(QUESTS.some((q) => q.id === id), id);
+});
+
+// ------------------------------------------------------------------ niveau 5 : le Labyrinthe des Mille Portes
+test('Code secret : bien placées et mal placées', () => {
+  const { score, makeCode, settingsForAge } = mastermind;
+  assert.deepEqual(score([0, 1, 2], [0, 1, 2]), { exact: 3, near: 0 });
+  assert.deepEqual(score([0, 1, 2], [2, 0, 1]), { exact: 0, near: 3 });
+  assert.deepEqual(score([0, 0, 1], [0, 1, 1]), { exact: 2, near: 0 }, 'une couleur ne compte qu’une fois');
+  assert.deepEqual(score([1, 1, 2], [2, 2, 1]), { exact: 0, near: 2 });
+  assert.deepEqual(score([3, 3, 3], [0, 1, 2]), { exact: 0, near: 0 });
+  const c = makeCode(3, 4, () => 0.99);
+  assert.deepEqual(c, [3, 3, 3]);
+  assert.ok(settingsForAge(6).colors < settingsForAge(10).colors);
+  assert.equal(settingsForAge(8).tries, 8);
+});
+
+test('Labyrinthe : bombes, cristaux, dalles, clé de bronze, puis la porte du Minotaure', () => {
+  const m = MAPS.temps;
+  const o = m.objects;
+  const start = findIn(m.rows, 'P');
+  // Solides : murs, murs fissurés, haies, trous, blocs, portes, objets, habitants.
+  const base = '#ykOrbcCLuvwTKZQNIW';
+  const at = (st) => reach(m, start, { solid: st, ice: '' });
+  // 1. sans bombes : le sac de bombes est accessible, la suite non.
+  const s1 = at(base);
+  assert.ok(near(s1, findIn(m.rows, 'T')), 'sac de bombes');
+  assert.equal(o.T.item, 'bomb');
+  assert.ok(!near(s1, findIn(m.rows, 'K')), 'clé de bronze pas encore');
+  // 2. le mur fissuré du bout de la galerie s'ouvre à la bombe (une case de sol juste devant)
+  assert.equal(m.rows[18][36], 'k');
+  assert.ok(s1.has('36,19'), 'on peut poser la bombe devant le mur');
+  const open = (rows, cells) => rows.map((r, y) => [...r].map((ch, x) => (cells.some(([cx, cy]) => cx === x && cy === y) ? '.' : ch)).join(''));
+  const rows2 = open(m.rows, [[36, 18]]);
+  const s2 = reach({ rows: rows2 }, start, { solid: base, ice: '' });
+  // 3. cristaux : le premier est avant le bloc rouge, le second entre le rouge et le bleu
+  const [rx] = findIn(m.rows, 'r');
+  const [bx] = findIn(m.rows, 'b');
+  const crystals = [];
+  m.rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'u' && crystals.push([x, y])));
+  assert.equal(crystals.length, 2);
+  assert.ok(crystals.some(([x]) => x > rx) && crystals.some(([x]) => x < rx && x > bx));
+  assert.ok(crystals.every((c) => near(s2, c) || near(reach({ rows: rows2 }, start, { solid: base.replace('r', ''), ice: '' }), c)));
+  assert.equal(o.r.openWhen, o.u.flag);
+  assert.deepEqual(o.b.openWhen, { flag: o.u.flag, is: false });
+  // 4. au-dessus des trous, un pont de dalles qui s'effondrent mène à la clé de bronze
+  const s3 = reach({ rows: rows2 }, start, { solid: base.replace(/[rb]/g, ''), ice: '' });
+  assert.ok(near(s3, findIn(m.rows, 'K')), 'clé de bronze');
+  const [kx, ky] = findIn(m.rows, 'x');
+  assert.equal(m.rows[ky - 1][kx], 'O');
+  assert.equal(m.rows[ky + 1][kx], 'O');
+  // 5. portes à horloge (l'une ou l'autre ouverte), porte de bronze, puis l'arène
+  assert.equal(o.c.every, o.C.every);
+  assert.notEqual(o.c.phase, o.C.phase);
+  const s4 = reach({ rows: rows2 }, start, { solid: base.replace(/[rbcCL]/g, ''), ice: '' });
+  assert.ok(near(s4, findIn(m.rows, 'W')), 'porte de l’arène');
+  assert.equal(o.L.key, 'key_bronze');
+  assert.deepEqual(MAPS.temps_arene.objects.D.at, [36, 3]);
+  assert.equal(m.rows[3][36], '.');
+  // 6. chaque sablier est derrière un mur fissuré qu'on peut faire sauter
+  const glasses = [];
+  m.rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'H' && glasses.push([x, y])));
+  assert.equal(glasses.length, 3);
+  for (const [x, y] of glasses) {
+    const crack = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy]).find(([cx, cy]) => m.rows[cy][cx] === 'k');
+    assert.ok(crack, `sablier ${x},${y} derrière un mur fissuré`);
+    assert.ok(near(s4, crack), `mur fissuré ${crack} accessible`);
+  }
+  // 7. raccourci : un mur fissuré relie la salle de la clé à la salle des bombes
+  assert.equal(m.rows[17][3], 'k');
+  assert.ok(near(s1, [3, 17]));
+  // 8. le Minotaure et la pierre
+  const a = MAPS.temps_arene.objects;
+  assert.equal(a.B.meltWith, 'wall');
+  assert.equal(a.A.item, 'stone_temps');
+  assert.equal(a.A.appearWhen, a.B.flag);
+  assert.ok(ITEMS.bomb.tool && ITEMS.maze_map.use);
+  for (const id of ['temps', 'sabliers']) assert.ok(QUESTS.some((q) => q.id === id), id);
 });

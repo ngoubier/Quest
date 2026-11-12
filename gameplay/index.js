@@ -42,4 +42,8 @@ export { Connect4Scene } from './minigames/Connect4Scene.js';
 export * as connect4 from './minigames/connect4.js';
 export { DigitLockScene } from './ui/DigitLockScene.js';
 export { Boomerang } from './actors/Boomerang.js';
+export { Bomb } from './actors/Bomb.js';
+export { MastermindScene } from './minigames/MastermindScene.js';
+export * as mastermind from './minigames/mastermind.js';
+export { MiniMapScene } from './ui/MiniMapScene.js';
 export { Projectile } from './actors/Projectile.js';

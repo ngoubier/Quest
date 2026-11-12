@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, niveaux 1 à 4 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, niveaux 1 à 5 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -345,7 +345,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | 2 ✓ | Mont Givré : bouton Objet, glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
 | 3 ✓ | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
 | 4 ✓ | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
-| 5 | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
+| 5 ✓ | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
 | 6 | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
 | 7 | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
 | 8 | Volcan, armure, château, Morgor, fin | L |
@@ -356,7 +356,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 |---|---|
 | Sous l'eau | **Bouteille d'oxygène à temps limité** ; temps écoulé = on recommence le niveau |
 | Ambiances | **Médiéval-fantastique seulement** (plus de station spatiale ni de ville) |
-| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures et Bourg-Lanterne |
+| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures, Bourg-Lanterne et le Labyrinthe |
 | Noms, ordre libre, pouvoir dès chaque pierre, armure à 300 pièces | retenus par défaut (pas d'objection) |
 
 ## 10. Lot 1 — ce qui est fait
@@ -466,4 +466,33 @@ portes, beffroi et son horloge, lanternes, habitants humains : aussi en haute d�
   Fernand, Mme Pélagie et Gaston ; 20 pièces + un gâteau).
 - **Ajustement général** : un monstre blesse le héros dès qu’il le touche, même si le héros ne bouge pas
   (avant, il s’arrêtait juste contre lui).
+
+## 15. Lot 5 — le Labyrinthe des Mille Portes (fait)
+
+Données : `game/data/temps.js` · dessins : `game/theme-temps.js` (murs, sols et murs fissurés du labyrinthe, haies,
+habitants humains : aussi en haute définition sur PC).
+
+- **La cour d'entrée** : Chronos (quête principale), la boutique de Lulu (plan, bombes à l'unité, potions) et Gnomo.
+- **Bombes** (`gameplay/actors/Bomb.js`, `hero.placeBomb()`, une à la fois) : le sac de 10 bombes est dans la
+  première galerie. Elles ouvrent les **murs fissurés** (propriété de tuile `bombable`, mémorisée : drapeau
+  `blast:carte:x,y`), blessent les monstres (et le héros trop proche). Le nombre restant s'affiche sur l'objet
+  équipé (`showCount`). Les monstres du labyrinthe en lâchent parfois.
+- **Interrupteurs cristal** (`crystal`) : épée, flèche, boomerang ou bombe les basculent ; les blocs rouges et bleus
+  sont des grilles (`openWhen` sur le même drapeau, images levée / baissée avec `openSprite`). Deux cristaux :
+  un avant le bloc rouge, un entre le rouge et le bleu.
+- **Portes à horloge** (`gate` avec `every: 4, phase: 0|1`) : l'une s'ouvre quand l'autre se ferme ;
+  elles clignotent avant de changer, un carillon sonne.
+- **Pièges** : piques en rythme (`spikes`, elles tremblent avant de sortir), lance-flèches dans les murs (`arrowtrap`),
+  **dalles qui s'effondrent** (`crumble`) au-dessus des **trous** (propriété de tuile `pit` : on tombe, on perd un
+  demi-cœur et on revient au dernier endroit sûr).
+- **Plan du labyrinthe** (`gameplay/ui/MiniMapScene.js`) : acheté chez Lulu, utilisable depuis le sac ; il montre les
+  murs, le héros, les coffres et les murs fissurés.
+- **Monstres** : squelettes, **fantômes** (comportement `ghost` : ils traversent les murs), armures animées (lentes, 2 de dégâts).
+- **Le Minotaure de bronze** (`meltWith: 'wall'`, `dashSpeed`) : il fonce tout droit jusqu'au mur ou à un pilier ;
+  sonné 3 secondes, un coup d'épée déclenche la question, puis on frappe.
+- **Mini-jeu** : *Code secret* avec Gnomo (`gameplay/minigames/MastermindScene.js`, logique dans `mastermind.js`) :
+  3 couleurs, 8 essais, carrés verts (bien placées) et jaunes (mal placées).
+- **Quête secondaire** : « Les 3 sabliers de Lulu », chacun derrière un mur fissuré (10 pièces + 1 cœur).
+- **Raccourci** : un mur fissuré relie la salle de la clé de bronze à la salle des bombes (pour revenir après les
+  dalles effondrées).
 

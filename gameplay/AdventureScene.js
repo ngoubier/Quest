@@ -139,13 +139,16 @@ export class AdventureScene extends Scene {
     this.mapDef = def;
     this.warps = [];
 
-    // Cases d'eau comblées (rondins coulés...) : mémorisées dans les drapeaux « fill:carte:x,y ».
-    const prefix = `fill:${mapId}:`;
-    for (const f of Object.keys(this.state.flags)) {
-      if (!f.startsWith(prefix)) continue;
-      const [fx, fy] = f.slice(prefix.length).split(',').map(Number);
-      const to = tilemap.propAt(fx, fy, 'fillable');
-      if (to) tilemap.set('ground', fx, fy, to);
+    // Cases changées pour toujours : eau comblée (« fill:carte:x,y », rondin coulé) et mur fissuré
+    // ouvert par une bombe (« blast:carte:x,y »).
+    for (const [kind, prop] of [['fill', 'fillable'], ['blast', 'bombable']]) {
+      const prefix = `${kind}:${mapId}:`;
+      for (const f of Object.keys(this.state.flags)) {
+        if (!f.startsWith(prefix)) continue;
+        const [fx, fy] = f.slice(prefix.length).split(',').map(Number);
+        const to = tilemap.propAt(fx, fy, prop);
+        if (to) tilemap.set('ground', fx, fy, to);
+      }
     }
 
     const ts = this.cfg.tileSize;
@@ -541,6 +544,12 @@ export class AdventureScene extends Scene {
   fillTile(tx, ty, tile) {
     this.world.tilemap.set('ground', tx, ty, tile);
     this.state.setFlag(`fill:${this.mapId}:${tx},${ty}`);
+  }
+
+  /** Mur fissuré ouvert par une bombe : il reste ouvert. */
+  blastTile(tx, ty, tile) {
+    this.world.tilemap.set('ground', tx, ty, tile);
+    this.state.setFlag(`blast:${this.mapId}:${tx},${ty}`);
   }
 
   spawnPickup(item, x, y, lifetime = 10, count = 1) {

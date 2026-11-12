@@ -5,6 +5,7 @@ import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
 import { GIVRE_TILES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti } from './theme-givre.js';
 import { SEVE_TILES, SEVE_OBJECT_FRAMES, paintSeveObject, SEVE_CHARS, paintSevePerson, paintSevePersonHD, paintRonce } from './theme-seve.js';
+import { TEMPS_TILES, TEMPS_OBJECT_FRAMES, paintTempsObject, TEMPS_CHARS, paintTempsPerson, paintTempsPersonHD, paintMinotaure } from './theme-temps.js';
 import { AURORE_TILES, AURORE_OBJECT_FRAMES, paintAuroreObject, AURORE_CHARS, paintAurorePerson, paintAurorePersonHD, paintMasque } from './theme-aurore.js';
 
 // Dessins propres à chaque niveau : tuiles, objets et monstres, habitants, boss.
@@ -13,6 +14,7 @@ const LEVELS = [
   { tiles: GIVRE_TILES, objects: GIVRE_OBJECT_FRAMES, paintObject: paintGivreObject, chars: GIVRE_CHARS, paintChar: paintGivrePerson, boss: ['yeti_0', 'yeti_1'], paintBoss: (c, name) => paintYeti(c, name === 'yeti_1' ? 1 : 0) },
   { tiles: SEVE_TILES, objects: SEVE_OBJECT_FRAMES, paintObject: paintSeveObject, chars: SEVE_CHARS, paintChar: paintSevePerson, paintCharHD: paintSevePersonHD, boss: ['ronce_0', 'ronce_1', 'ronce_shield'], paintBoss: paintRonce },
   { tiles: AURORE_TILES, objects: AURORE_OBJECT_FRAMES, paintObject: paintAuroreObject, chars: AURORE_CHARS, paintChar: paintAurorePerson, paintCharHD: paintAurorePersonHD, boss: ['masque_0', 'masque_1', 'masque_shield'], paintBoss: paintMasque },
+  { tiles: TEMPS_TILES, objects: TEMPS_OBJECT_FRAMES, paintObject: paintTempsObject, chars: TEMPS_CHARS, paintChar: paintTempsPerson, paintCharHD: paintTempsPersonHD, boss: ['minotaure_0', 'minotaure_1', 'minotaure_shield'], paintBoss: paintMinotaure },
 ];
 
 /** Couleurs des 6 pierres : [couleur, reflet, ombre]. */

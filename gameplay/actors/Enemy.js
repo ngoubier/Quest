@@ -75,6 +75,22 @@ export const BEHAVIORS = {
     e.hop = { vx: dx * e.speed * 2.5, vy: dy * e.speed * 2.5, t: 0.3 };
   },
 
+  /** Fantôme : flotte vers le héros en traversant les murs. */
+  ghost(e, dt) {
+    const h = e.adv.hero;
+    const dx = h.cx - e.cx;
+    const dy = h.cy - e.cy;
+    const d = Math.hypot(dx, dy);
+    e.jitter = (e.jitter ?? 0) + dt;
+    if (d > (e.sight ?? 110) || d < 1) {
+      e.x += Math.cos(e.jitter) * e.speed * 0.4 * dt;
+      e.y += Math.sin(e.jitter * 1.3) * e.speed * 0.4 * dt;
+      return;
+    }
+    e.x += (dx / d) * e.speed * dt + Math.sin(e.jitter * 5) * 0.3;
+    e.y += (dy / d) * e.speed * dt;
+  },
+
   /** Voleur : s'approche du héros ; une fois les pièces volées, il s'enfuit. */
   thief(e, dt) {
     const h = e.adv.hero;

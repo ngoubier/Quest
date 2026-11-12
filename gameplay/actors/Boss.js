@@ -15,11 +15,13 @@ import { Projectile } from './Projectile.js';
 //           still: true       — il ne bouge pas (arbre enraciné) ;
 //           shieldText / resistText — ce qu'il dit quand le bouclier est touché / quand l'épée ne sert à rien ;
 //           defeatedText — message quand il est vaincu (« Ronce-Noire est vaincue ! ») ;
-//           invisible: true   — presque invisible tant que son bouclier tient (on le devine à son ombre).
+//           invisible: true   — presque invisible tant que son bouclier tient (on le devine à son ombre) ;
+//           meltWith: 'wall'  — il fonce jusqu'au mur ; sonné, il devient vulnérable (Minotaure) ;
+//           dashSpeed : vitesse de ses ruées.
 // Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, et {sprite}_shield ou boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false }) {
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95 }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage: 1, behavior: 'wander', drops: [], seed });
     this.x = x - 4;
     this.y = y + 4;
@@ -34,6 +36,8 @@ export class Boss extends Enemy {
     this.resistText = resistText;
     this.defeatedText = defeatedText;
     this.invisible = invisible;
+    this.dashSpeed = dashSpeed;
+    this.dizzy = 0;
     this.revealed = 0;
     this.shotTimer = 3;
     this.hintCooldown = 0;
@@ -73,19 +77,33 @@ export class Boss extends Enemy {
       this.world.add(new Projectile({ x: this.cx, y: this.cy, dir: { x: hero.cx - this.cx, y: hero.cy - this.cy }, kind: this.shots, speed: 80, hostile: true, range: 170, owner: this }));
       this.game.audio.play('throw');
     }
-    if (this.still) {
+    const wall = this.meltWith === 'wall';
+    if (this.dizzy > 0) {
+      // sonné contre un mur : il ne bouge plus
+      this.dizzy -= dt;
+    } else if (this.still) {
       // enraciné : ne bouge pas
     } else if (this.dash) {
       this.dash.t -= dt;
       const res = this.move(this.dash.vx * dt, this.dash.vy * dt);
-      if (this.dash.t <= 0 || res.hitX || res.hitY) this.dash = null;
+      if (res.hitX || res.hitY) {
+        this.dash = null;
+        if (wall && this.shield) {
+          this.dizzy = 3;
+          this.world.camera.shake(4, 0.4);
+          this.game.audio.play('boom');
+          if (this.hintCooldown <= 0) (this.hintCooldown = 3), this.adv.toast('Il est sonné ! Frappe-le vite !');
+        }
+      } else if (this.dash.t <= 0) this.dash = null;
     } else {
       this.dashCooldown -= dt;
       if (this.dashCooldown <= 0 && hero) {
         const dx = hero.cx - this.cx;
         const dy = hero.cy - this.cy;
         const d = Math.hypot(dx, dy) || 1;
-        this.dash = { vx: (dx / d) * 95, vy: (dy / d) * 95, t: 0.55 };
+        // Le Minotaure fonce tout droit jusqu'au mur (sur l'axe principal).
+        const sp = this.dashSpeed;
+        this.dash = wall ? (Math.abs(dx) > Math.abs(dy) ? { vx: Math.sign(dx) * sp, vy: 0, t: 4 } : { vx: 0, vy: Math.sign(dy) * sp, t: 4 }) : { vx: (dx / d) * sp, vy: (dy / d) * sp, t: 0.55 };
         this.dashCooldown = 2 + this.rng() * 1.5;
         this.game.audio.play('boss_dash');
       } else this.behavior(this, dt);
@@ -108,6 +126,7 @@ export class Boss extends Enemy {
       }
       return;
     }
+    if (this.meltWith === 'wall' && this.dizzy > 0) return this._challenge(hero);
     if (this.meltWith) {
       if (this.hintCooldown <= 0) (this.hintCooldown = 2.5), this.adv.toast(this.resistText ?? 'Sa carapace de glace résiste à l’épée : il faut du feu !');
       this.game.audio.play('boss_shield');
@@ -172,6 +191,10 @@ export class Boss extends Enemy {
   draw(r) {
     if (this.flashing) return;
     const sheet = this.game.themes.current.sprites.boss;
+    if (this.dizzy > 0) {
+      const t = this.game.time * 6;
+      for (let k = 0; k < 4; k++) r.rect(Math.round(this.cx - 1 + Math.cos(t + k * 1.6) * 10), Math.round(this.y - 18 + Math.sin(t + k * 1.6) * 3), 2, 2, '#ffe066');
+    }
     if (this.invisible && this.shield && this.revealed <= 0 && !this.asking) {
       // Invisible : seulement une ombre et un reflet qui tremble.
       r.withAlpha(0.35, () => r.rect(this.x + 2, this.y + 14, this.w - 4, 3, '#000'));

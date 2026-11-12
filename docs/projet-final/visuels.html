@@ -107,7 +107,7 @@ tr:last-child td { border-bottom: 0; }
 
 <div class="wrap">
 <header class="hero">
-  <span class="eyebrow">Quest · projet final · niveaux 1 à 4 jouables</span>
+  <span class="eyebrow">Quest · projet final · niveaux 1 à 5 jouables</span>
   <h1>La Quête d'Alia</h1>
   <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
   <div class="story">
@@ -451,15 +451,15 @@ const LEVELS = [
     ['Boss', '<b>Le Chef des Masques</b>, dans les égouts : il devient invisible. Le boomerang l’étourdit, on répond à sa question, puis on frappe.'],
    ]},
  { id:'labyrinthe', key:'labyrinthe', num:'Niveau 5', tag:'Pierre du Temps', name:'Le Labyrinthe des Mille Portes', sub:'Pièges, clés et portes qui changent le chemin', color:'#b36bff',
-   caption:'Entrée en bas, avec le magasin et le gnome. La sortie et la pierre sont en haut à gauche. Portes bleues et rouges, piques, trous, mur fissuré.',
+   caption:'Plan d’origine. Entrée en bas, avec le magasin et le gnome. Portes bleues et rouges, piques, trous, mur fissuré. Le niveau est jouable.',
    sheet:[
     ['Ambiance', 'Un grand dédale de pierre mauve, sous un ciel violet. Un <b>magasin à l’entrée</b>.'],
-    ['Habitants', 'Lulu la marchande (plan du labyrinthe, bombes, clés, potions), Gnomo le gnome portier.'],
+    ['Habitants', 'Chronos le gardien du temps, Lulu la marchande (plan du labyrinthe, bombes, potions), Gnomo le gnome.'],
     ['Nouvel objet', '<b>Bombes</b> (au magasin et dans des coffres) : elles cassent les murs fissurés et ouvrent des raccourcis.'],
     ['Monstres', 'Squelettes, fantômes (rapides, traversent les murs), armures animées.'],
     ['Pièges', 'Piques qui sortent en rythme, flèches tirées par les murs, dalles qui s’effondrent, trous.'],
-    ['Astuces', ['<b>Interrupteurs cristal</b> : on les frappe, les portes bleues s’abaissent et les rouges se lèvent (ou l’inverse). Le chemin change.','<b>Portes à horloge</b> : toutes les 20 secondes elles changent ; un carillon prévient.','<b>Portes à clé</b>, et un <b>plan</b> à acheter qui affiche le labyrinthe.']],
-    ['Mini-jeu', '<b>Code secret</b> avec Gnomo : deviner ses 3 couleurs en 8 essais. Gagner donne une clé.'],
+    ['Astuces', ['<b>Interrupteurs cristal</b> : on les frappe, les portes bleues s’abaissent et les rouges se lèvent (ou l’inverse). Le chemin change.','<b>Portes à horloge</b> : toutes les 4 secondes, l’une s’ouvre et l’autre se ferme ; elles clignotent et un carillon sonne.','<b>Portes à clé</b>, et un <b>plan</b> à acheter qui affiche le labyrinthe.']],
+    ['Mini-jeu', '<b>Code secret</b> avec Gnomo : deviner ses 3 couleurs en 8 essais (4 couleurs possibles jusqu’à 7 ans, 5 ensuite). Gagner donne des pièces.'],
     ['Boss', '<b>Le Minotaure de bronze</b> : il charge tout droit. L’esquiver pour qu’il percute un mur, répondre pendant qu’il est sonné, frapper.'],
    ]},
  { id:'desert', key:'desert', num:'Niveau 6', tag:'Pierre du Soleil', name:'Le Désert des Mirages', sub:'Serpents, huttes, oasis et la grande dune', color:'#ff8a1f',
@@ -544,7 +544,7 @@ const ROADMAP = [
  ['2 ✓', 'Mont Givré (fait)', 'Thème neige, glace glissante, blocs qui glissent, braseros, bouton Objet et bâton de feu (projectile), Le dernier glaçon, Yéti.', 'L'],
  ['3 ✓', 'Forêt des Murmures (fait)', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
  ['4 ✓', 'Bourg-Lanterne (fait)', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
- ['5', 'Labyrinthe', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
+ ['5 ✓', 'Labyrinthe (fait)', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
  ['6', 'Désert des Mirages', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
  ['7', 'Abysses de Corail', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
  ['8', 'Volcan Noir et fin', 'Thème volcan, lave et geysers, armure, château, Morgor en 3 phases, scène de fin.', 'L'],
@@ -553,7 +553,7 @@ const ROADMAP = [
 const QUESTIONS = [
  ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
  ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
- ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures et Bourg-Lanterne faits. Suite : le Labyrinthe.'],
+ ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures, Bourg-Lanterne et Labyrinthe faits. Suite : le Désert des Mirages.'],
  ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
  ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
  ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],

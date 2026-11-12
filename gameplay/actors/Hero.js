@@ -3,6 +3,7 @@ import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
 import { Projectile } from './Projectile.js';
 import { Boomerang } from './Boomerang.js';
+import { Bomb } from './Bomb.js';
 
 // LE HÉROS, réutilisable d'un jeu à l'autre.
 //  - déplacement 8 directions, aide aux coins
@@ -12,6 +13,7 @@ import { Boomerang } from './Boomerang.js';
 //  - la vie est stockée dans GameState (sauvegardée), pas dans l'entité
 //  - bouton Objet : utilise l'objet équipé (bâton de feu...)
 //  - glace (propriété de tuile `slippery`) : on glisse tout droit jusqu'au prochain obstacle
+//  - trou (propriété de tuile `pit`) : on tombe, on perd un demi-cœur et on revient au dernier endroit sûr
 //
 // Sprites attendus (planche 'chars') : player_{down|up|side}_{0|1}
 // et (planche 'objects') : sword_{down|up|side}
@@ -70,6 +72,7 @@ export class Hero extends Actor {
       return;
     }
 
+    if (this._checkPit()) return;
     this.toolCooldown -= dt;
     if (input.pressed('item')) {
       input.consume('item');
@@ -120,6 +123,38 @@ export class Hero extends Actor {
       input.consume('action');
       if (!this.interact()) this.startAttack();
     }
+  }
+
+  /** Trous : mémorise le dernier endroit sûr ; tombe si le centre du héros est au-dessus d'un trou. */
+  _checkPit() {
+    const tm = this.world.tilemap;
+    const ts = tm.tileSize;
+    const tx = Math.floor(this.cx / ts);
+    const ty = Math.floor(this.cy / ts);
+    if (tm.propAt(tx, ty, 'pit')) {
+      this.game.audio.play('fall');
+      const back = this.safe ?? this.adv.entry; // dernier endroit sûr, sinon l'entrée de la carte
+      if (back) (this.x = back.x), (this.y = back.y);
+      this.slide = null;
+      this.invuln = 0;
+      this.hurt(1, null, { knockback: 0 });
+      this.adv.toast('Tu es tombé dans un trou !');
+      return true;
+    }
+    let near = false;
+    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) if (tm.propAt(tx + dx, ty + dy, 'pit')) near = true;
+    if (!near) this.safe = { x: this.x, y: this.y };
+    return false;
+  }
+
+  /** Pose une bombe devant soi (une seule à la fois). Renvoie false s'il n'y en a plus. */
+  placeBomb() {
+    if (this.world.entities.some((e) => e instanceof Bomb && !e.dead)) return false;
+    if (!this.adv.state.take('bomb', 1)) return (this.adv.toast('Tu n’as plus de bombes !'), false);
+    const d = DIRS[this.facing];
+    this.world.add(new Bomb(this.cx + d.x * 12, this.cy + d.y * 12));
+    this.game.audio.play('push');
+    return true;
   }
 
   /** Le héros est-il sur une tuile glissante ? */
