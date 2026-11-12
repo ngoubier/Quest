@@ -3,6 +3,7 @@
 // (carte du royaume, pierres magiques).
 import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
+import { paintContext } from '../engine/index.js';
 import { GIVRE_TILES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintGivrePersonHD, paintYeti, paintYetiShield } from './theme-givre.js';
 import { SEVE_TILES, SEVE_OBJECT_FRAMES, paintSeveObject, SEVE_CHARS, paintSevePerson, paintSevePersonHD, paintRonce } from './theme-seve.js';
 import { MAREES_TILES, MAREES_OBJECT_FRAMES, paintMareesObject, MAREES_CHARS, paintMareesPerson, paintMareesPersonHD, paintKraken } from './theme-marees.js';
@@ -58,6 +59,10 @@ function paintNew(c, name) {
   P(c, 6, 5, 2, 1, '#ffffff');
 }
 
+// Profil « art » (essai sur mobile) : seules les créatures dessinées en lisse (game/art/) sont détaillées ;
+// les humains et les objets du thème de base gardent leur image agrandie.
+const fullHD = () => paintContext.profile.hd;
+
 const base = ALL.find((t) => t.id === 'medieval');
 const objects = base.sprites.objects;
 const chars = base.sprites.chars;
@@ -90,7 +95,7 @@ export const THEME = {
       paint: (c, name, i) => (GAME_FRAMES.has(name) ? paintNew(c, name) : objectLevel.has(name) ? objectLevel.get(name).paintObject(c, name) : objects.paint(c, name, i)),
       // PC : dessins haute définition du thème de base, et monstres des niveaux en dessins lisses (game/art/monsters.js) ;
       // les autres nouvelles images sont agrandies automatiquement.
-      paintHD: (c, name, i, k) => (GAME_FRAMES.has(name) ? false : objectLevel.has(name) ? k === 2 && paintMonsterHD(c, name) : objects.paintHD ? objects.paintHD(c, name, i, k) : false),
+      paintHD: (c, name, i, k) => (GAME_FRAMES.has(name) ? false : objectLevel.has(name) ? k === 2 && paintMonsterHD(c, name) : objects.paintHD && fullHD() ? objects.paintHD(c, name, i, k) : false),
     },
     chars: {
       ...chars,
@@ -102,16 +107,19 @@ export const THEME = {
       paintHD: (c, name, i, k) => {
         const [who, dir, step] = name.split('_');
         // habitants non humains (chouette, sirène, Alia...) en dessins lisses ; les humains : characterHD.
-        if (charLevel.has(who)) return (k === 2 && paintFolkHD(c, who, dir, Number(step))) || (charLevel.get(who).paintCharHD?.(c, who, dir, Number(step)) ?? false);
-        return chars.paintHD ? chars.paintHD(c, name, i, k) : false;
+        if (charLevel.has(who)) return (k === 2 && paintFolkHD(c, who, dir, Number(step))) || (fullHD() && (charLevel.get(who).paintCharHD?.(c, who, dir, Number(step)) ?? false));
+        return chars.paintHD && fullHD() ? chars.paintHD(c, name, i, k) : false;
       },
     },
     boss: {
       ...boss,
+      // La carapace de glace et les boucliers dessinés en détail sont translucides : pas de contour
+      // (il ferait des traits noirs par-dessus le boss).
+      outline: (name, hd) => (name === 'yeti_shield' || (hd && /_(shield2?|under)$/.test(name)) ? null : boss.outline),
       frames: [...boss.frames, ...bossLevel.keys()],
       paint: (c, name) => (bossLevel.has(name) ? bossLevel.get(name).paintBoss(c, name) : boss.paint(c, name)),
       // PC : les boss des niveaux en dessins lisses (game/art/bosses.js).
-      paintHD: (c, name, i, k) => (bossLevel.has(name) ? k === 2 && paintBossHD(c, name) : boss.paintHD ? boss.paintHD(c, name, i, k) : false),
+      paintHD: (c, name, i, k) => (bossLevel.has(name) ? k === 2 && paintBossHD(c, name) : boss.paintHD && fullHD() ? boss.paintHD(c, name, i, k) : false),
     },
   },
 };

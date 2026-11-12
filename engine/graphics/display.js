@@ -18,6 +18,7 @@ export const DISPLAY_PROFILES = {
     name: 'Classique',
     detail: 1, // pixels d'image par pixel de jeu
     hd: false, // dessins « haute définition » faits à la main (paintHD)
+    art: false, // seulement les sprites (personnages, monstres) en haute définition ; les tuiles restent agrandies
     smooth: false, // lissage des diagonales (agrandissement Scale2x)
     outline: 1, // épaisseur du contour des personnages, en pixels d'image
     contrast: 1,
@@ -32,6 +33,7 @@ export const DISPLAY_PROFILES = {
     hd: false,
     smooth: true,
     outline: 3, // 1,5 pixel de jeu : silhouettes bien découpées sur un petit écran
+    outlineHD: 2, // dessins détaillés (essai art=1) : contour plus fin, pour ne pas écraser les détails
     contrast: 1.12,
     saturation: 1.22,
     shading: false,
@@ -72,6 +74,8 @@ export function detectDisplay({ search, hash, touch } = {}) {
   const id = forced ?? (touch ? 'mobile' : 'pc');
   const p = { ...DISPLAY_PROFILES[id], forced };
   if (q.get('hd') === '0' && id === 'pc') Object.assign(p, { detail: 1, hd: false, smooth: false, shading: false, name: 'PC' });
+  if (q.get('hd') === '1' && p.detail > 1) p.hd = true; // essai : tout en haute définition (mobile)
+  if (q.get('art') === '1' && p.detail > 1) p.art = true; // essai : créatures en dessins détaillés (mobile)
   return p;
 }
 
