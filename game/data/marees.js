@@ -254,11 +254,11 @@ export const MAREES_MAPS = {
     region: 'marees',
     camera: 'follow',
     underwater: AIR,
-    legend: { '.': B, R: 'reef', '*': 'coral', a: 'algae', '^': 'current_up', v: 'current_down', '<': 'current_left' },
+    legend: { '.': B, R: 'reef', '*': 'coral', a: 'algae', '^': 'current_up', v: 'current_down', '<': 'current_left', Q: 'rope' },
     rows: [
       'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
       'RRRRRRRRRRRRRRRRRRRRURRRRRRRRRRRRRRRRRRR',
-      'RR.....................I..............RR',
+      'RR..................Q..I..............RR',
       'RR............C.....................apRR',
       'RR........o.........................a.RR',
       'RR.......................J....o.......RR',
@@ -282,8 +282,8 @@ export const MAREES_MAPS = {
       'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR',
     ],
     objects: {
-      U: { type: 'warp', tile: B, to: 'marees', at: [20, 3], facing: 'down' }, // la corde : retour à la surface
-      I: { type: 'sign', tile: B, text: ['La corde, juste au-dessus, te ramène à la surface (et remplit ta bouteille).', 'Le courant du milieu remonte ; celui de l’est descend.'] },
+      U: { type: 'warp', tile: 'rope_top', to: 'marees', at: [20, 3], facing: 'down' }, // la corde : retour à la surface
+      I: { type: 'sign', tile: B, text: ['La corde rouge, juste à côté : nage vers le haut le long de la corde pour remonter à la surface (et remplir ta bouteille).', 'Le courant du milieu remonte ; celui de l’est descend.'] },
       T: { type: 'chest', tile: B, item: 'trident' },
       1: { type: 'target', tile: 'coral', flag: SHELLS[0], hitBy: 'any', sword: true, sprite: 'shell', hint: 'Un coquillage magique ! Touche-le.' },
       2: { type: 'target', tile: B, flag: SHELLS[1], hitBy: 'any', sword: true, sprite: 'shell', hint: 'Un coquillage magique ! Touche-le.' },

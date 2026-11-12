@@ -338,6 +338,12 @@ export class Hero extends Actor {
     this.anim.update(dt);
   }
 
+  /** Image du héros : en scaphandre sous l'eau (diver_*), si l'ambiance a ce dessin. */
+  frameName(name) {
+    const chars = this.game.themes.current.sprites.chars;
+    return this.adv.mapDef?.underwater && chars.has?.('diver_down_0') ? name.replace('player_', 'diver_') : name;
+  }
+
   draw(r) {
     if (this.flashing) return;
     const th = this.game.themes.current.sprites;
@@ -355,7 +361,7 @@ export class Hero extends Actor {
         else th.objects.draw(r, swordFrame, sw.x - 5, sw.y - 3);
       };
       if (dir === 'up') drawSword();
-      th.chars.draw(r, `player_${dir}_1`, sx, sy, { flipX });
+      th.chars.draw(r, this.frameName(`player_${dir}_1`), sx, sy, { flipX });
       if (dir !== 'up') drawSword();
       if (this.adv.power('fireSword')) {
         // épée de feu : des flammèches le long de la lame
@@ -367,12 +373,12 @@ export class Hero extends Actor {
     if (this.sinking > 0) {
       // s'enfonce dans le sable : le bas du corps disparaît
       const k = Math.min(7, Math.round(this.sinking * 3.5));
-      th.chars.draw(r, this.anim.frame, sx, sy + k, { flipX });
+      th.chars.draw(r, this.frameName(this.anim.frame), sx, sy + k, { flipX });
       r.rect(sx + 1, this.y + 5, 14, 4, '#c8a050');
       r.rect(sx + 3, this.y + 4, 10, 1, '#e0c070');
       return;
     }
-    th.chars.draw(r, this.anim.frame, sx, sy, { flipX });
+    th.chars.draw(r, this.frameName(this.anim.frame), sx, sy, { flipX });
     this._drawBubble(r);
   }
 

@@ -45,8 +45,6 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'], objec
   const tool = adv.equipped;
   if (tool) {
     const side = height - 2;
-    r.rect(heartsEnd + 1, 1, side, side, s.border);
-    r.rect(heartsEnd + 2, 2, side - 2, side - 2, s.box);
     const c = r.ctx;
     c.save();
     c.beginPath();
@@ -78,16 +76,12 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'], objec
   let bLabel = `${used}/${cap}`;
   if (heartsEnd + 2 + qw + 4 + bWidth(bLabel) > x - 2) bLabel = `${used}`;
   const bw = bWidth(bLabel);
-  const bh = height - Math.round(4 * k);
-  const by = Math.round(2 * k);
   const total = qw + 4 + bw;
   // Objectif en cours (écran large) : les boutons se rangent à gauche, l'objectif prend le reste.
   const goal = objective ? currentGoal(adv) : null;
   const showGoal = goal && gap - total >= 90;
   const start = showGoal ? heartsEnd + 4 : Math.round(Math.max(heartsEnd + 2, (heartsEnd + x) / 2 - total / 2));
   const button = (bx, w, ic, label, color) => {
-    r.rect(bx, by, w, bh, s.border);
-    r.rect(bx + 1, by + 1, w - 2, bh - 2, s.box);
     icon(ic, bx + Math.round(3 * k), iy);
     r.text(label, bx + Math.round(13 * k), iy + (k > 1 ? 1 : 0), { color, size: bs, font: s.font });
   };

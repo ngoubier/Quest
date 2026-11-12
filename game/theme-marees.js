@@ -127,6 +127,52 @@ export const MAREES_TILES = {
     },
   },
   seabed: { variants: 3, paint: (c, { rng }) => seabed(c, rng), paintHD: seabedHD },
+  // La corde du ponton qui pend jusqu'au fond : rope_top (dans le creux du récif, on la touche pour remonter),
+  // puis rope, avec la bouée au bout.
+  rope_top: {
+    frames: 2,
+    fps: 2,
+    paint: (c, { rng, frame }) => {
+      seabed(c, rng);
+      P(c, 4, 0, 8, 16, 'rgba(200,240,255,.18)'); // la lumière de la surface
+      for (let y = 0; y < 16; y++) P(c, 7, y, 2, 1, y % 3 === 0 ? '#a8803a' : '#d8b060');
+      for (const [x, y] of [[4, 5], [11, 10]]) P(c, x, y - frame, 1, 1, '#d8f4ff');
+    },
+    paintHD: (c, { rng, frame }) => {
+      seabedHD(c, { rng, variant: 0 });
+      H(c, 8, 0, 16, 32, 'rgba(200,240,255,.18)');
+      for (let y = 0; y < 32; y++) (H(c, 15, y, 3, 1, y % 4 < 2 ? '#d8b060' : '#a8803a'), y % 4 === 0 && H(c, 17, y, 1, 1, '#f4d890'));
+      for (const [x, y] of [[8, 10], [24, 20]]) (disc(c, x, y - frame * 2, 1, 'rgba(220,245,255,.8)'), H(c, x, y - 1 - frame * 2, 1, 1, '#ffffff'));
+    },
+  },
+  rope: {
+    frames: 2,
+    fps: 2,
+    paint: (c, { rng, frame }) => {
+      seabed(c, rng);
+      const sway = frame;
+      for (let y = 0; y < 10; y++) P(c, 7 + (y > 4 ? sway : 0), y, 2, 1, y % 3 === 0 ? '#a8803a' : '#d8b060');
+      P(c, 4 + sway, 10, 8, 5, '#e83a3a'); // bouée
+      P(c, 5 + sway, 9, 6, 1, '#e83a3a');
+      P(c, 4 + sway, 12, 8, 1, '#ffffff');
+      P(c, 5 + sway, 10, 2, 1, '#ff9a9a');
+      P(c, 5 + sway, 15, 6, 1, 'rgba(0,0,0,.25)');
+    },
+    paintHD: (c, { rng, frame }) => {
+      seabedHD(c, { rng, variant: 0 });
+      const sway = frame * 2;
+      for (let y = 0; y < 18; y++) {
+        const x = 15 + (y > 8 ? Math.round(((y - 8) / 10) * sway) : 0);
+        H(c, x, y, 3, 1, y % 4 < 2 ? '#d8b060' : '#a8803a');
+        if (y % 4 === 0) H(c, x + 2, y, 1, 1, '#f4d890');
+      }
+      ellipse(c, 16 + sway, 30, 8, 1, 'rgba(0,0,0,.25)');
+      ellipse(c, 16 + sway, 24, 9, 6, '#a82020');
+      ellipse(c, 16 + sway, 23, 9, 6, '#e83a3a');
+      H(c, 7 + sway, 23, 19, 3, '#ffffff');
+      H(c, 10 + sway, 18, 5, 2, '#ff9a9a');
+    },
+  },
   reef: {
     solid: true,
     props: { shadow: true },
@@ -326,9 +372,56 @@ export function paintMermaid(c, dir, step) {
   P(c, 13, 1 + step, 1, 1, '#ffd35a'); // étoile de mer
 }
 
-export const MAREES_CHARS = ['barnabe', 'mermaid'];
-export const paintMareesPerson = (c, who, dir, step) => (who === 'mermaid' ? paintMermaid(c, dir, step) : humanoid(c, dir, step, MAREES_PEOPLE[who]));
-export const paintMareesPersonHD = (c, who, dir, step) => (who === 'mermaid' ? false : (characterHD(c, dir, step, MAREES_PEOPLE[who], MAREES_LOOKS[who]), true));
+/**
+ * Le héros en scaphandre, sous l'eau : casque de cuivre à hublot, combinaison, bouteille dans le dos,
+ * palmes jaunes. Remplace l'image du héros quand la carte est sous l'eau (planche 'chars' : diver_*).
+ */
+export function paintDiver(c, dir, step) {
+  const SUIT = '#2a6a7a';
+  const SUIT_D = '#1a4a5a';
+  const BRASS = '#d8a040';
+  const BRASS_L = '#f4cc70';
+  const BRASS_D = '#9a6a20';
+  P(c, 3, 15, 10, 1, 'rgba(0,0,0,.3)');
+  const side = dir === 'side';
+  // palmes
+  if (side) (P(c, 7, 14, 5 + step, 2, '#ffd23a'), P(c, 4, 14 - step, 4, 2, '#e8b020'));
+  else (P(c, 3, 13 + step, 4, 3 - step, '#ffd23a'), P(c, 9, 14 - step, 4, 2 + step, '#ffd23a'));
+  // combinaison
+  P(c, 4, 8, 8, 6, SUIT);
+  P(c, 4, 13, 8, 1, SUIT_D);
+  P(c, 4, 11, 8, 1, '#5a3a1c'); // ceinture lestée
+  P(c, 7, 11, 2, 1, '#c8c8d0');
+  // bouteille d'oxygène dans le dos
+  if (dir === 'up') (P(c, 5, 7, 6, 6, '#c8ccd8'), P(c, 5, 7, 2, 6, '#e8ecf4'), P(c, 7, 6, 2, 1, '#8a8a9a'));
+  if (side) (P(c, 2, 7, 3, 6, '#c8ccd8'), P(c, 2, 7, 1, 6, '#e8ecf4'));
+  // bras (gants)
+  if (!side) (P(c, 2, 8 + step, 2, 4, SUIT), P(c, 12, 9 - step, 2, 4, SUIT), P(c, 2, 12 + step, 2, 1, '#e8b020'), P(c, 12, 13 - step, 2, 1, '#e8b020'));
+  else (P(c, 8, 9 - step, 4, 2, SUIT), P(c, 12, 9 - step, 1, 2, '#e8b020'));
+  // casque de cuivre
+  P(c, 4, 2, 8, 7, BRASS);
+  P(c, 5, 1, 6, 1, BRASS);
+  P(c, 5, 2, 2, 2, BRASS_L);
+  P(c, 4, 8, 8, 1, BRASS_D); // collerette
+  if (dir === 'down') {
+    P(c, 5, 3, 6, 5, BRASS_D); // hublot : cadre
+    P(c, 6, 4, 4, 3, '#a8e0f4');
+    P(c, 6, 5, 4, 2, '#f2c49b'); // le visage derrière la vitre
+    P(c, 7, 5, 1, 1, '#222');
+    P(c, 9, 5, 1, 1, '#222');
+    P(c, 6, 4, 1, 1, '#ffffff');
+  } else if (side) {
+    P(c, 9, 3, 3, 5, BRASS_D);
+    P(c, 10, 4, 2, 3, '#a8e0f4');
+    P(c, 10, 5, 2, 2, '#f2c49b');
+    P(c, 11, 5, 1, 1, '#222');
+    P(c, 4, 4, 1, 3, BRASS_D); // tuyau
+  } else P(c, 7, 3, 2, 4, BRASS_D);
+}
+
+export const MAREES_CHARS = ['barnabe', 'mermaid', 'diver'];
+export const paintMareesPerson = (c, who, dir, step) => (who === 'mermaid' ? paintMermaid(c, dir, step) : who === 'diver' ? paintDiver(c, dir, step) : humanoid(c, dir, step, MAREES_PEOPLE[who]));
+export const paintMareesPersonHD = (c, who, dir, step) => (who === 'mermaid' || who === 'diver' ? false : (characterHD(c, dir, step, MAREES_PEOPLE[who], MAREES_LOOKS[who]), true));
 
 // ------------------------------------------------------------------ le Kraken (32 x 32)
 export function paintKraken(c, name) {
