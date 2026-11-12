@@ -9,6 +9,7 @@ export { SpriteSheet, addOutline } from './graphics/SpriteSheet.js';
 export { Animator } from './graphics/Animator.js';
 export { createCanvas } from './graphics/canvas.js';
 export { DISPLAY_PROFILES, detectDisplay, paintContext, lowDetail, detailCount } from './graphics/display.js';
+export { Ambience } from './graphics/Ambience.js';
 export { buildAtlas, scale2x, scaleNearest, outlineImage, adjustColors, shadeImage } from './graphics/pixelart.js';
 export { Assets } from './assets/Assets.js';
 export { Tileset } from './world/Tileset.js';

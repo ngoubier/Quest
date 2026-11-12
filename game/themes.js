@@ -11,6 +11,7 @@ import { SOLEIL_TILES, SOLEIL_OBJECT_FRAMES, paintSoleilObject, SOLEIL_CHARS, pa
 import { TEMPS_TILES, TEMPS_OBJECT_FRAMES, paintTempsObject, TEMPS_CHARS, paintTempsPerson, paintTempsPersonHD, paintMinotaure } from './theme-temps.js';
 import { VOLCAN_TILES, VOLCAN_OBJECT_FRAMES, paintVolcanObject, VOLCAN_CHARS, paintVolcanPerson, paintVolcanPersonHD, paintMorgor } from './theme-volcan.js';
 import { paintBossHD } from './art/bosses.js';
+import { tallTree, villageTree, forestTree, snowPine, palmTree, deadTree } from './art/trees.js';
 import { paintMonsterHD } from './art/monsters.js';
 import { paintFolkHD } from './art/folk.js';
 import { AURORE_TILES, AURORE_OBJECT_FRAMES, paintAuroreObject, AURORE_CHARS, paintAurorePerson, paintAurorePersonHD, paintMasque } from './theme-aurore.js';
@@ -81,12 +82,18 @@ const river = { ...base.tiles.water, props: { ...(base.tiles.water.props ?? {}),
 const canal = { ...base.tiles.water, props: { ...(base.tiles.water.props ?? {}), low: true } };
 const LEVEL_TILES = Object.assign({ river, canal }, ...LEVELS.map((l) => l.tiles));
 
+// Grands arbres sur 2 cases : la cime déborde sur la case du dessus et passe devant le héros
+// (game/art/trees.js). La case de l'arbre (et donc le passage bloqué) ne change pas.
+const ALL_TILES = { ...base.tiles, ...LEVEL_TILES };
+const TALL = { obstacle: ['floor', villageTree], forest_tree: ['floor', forestTree], pine: ['snow', snowPine], palm: ['sand', palmTree], dead_tree: ['ash', deadTree] };
+const TALL_TILES = Object.fromEntries(Object.entries(TALL).map(([name, [ground, draw]]) => [name, { ...ALL_TILES[name], variants: 2, tall: tallTree(ALL_TILES, ground, draw) }]));
+
 export const ROLES = [...TILE_ROLES, ...Object.keys(LEVEL_TILES)];
 
 export const THEME = {
   ...base,
   name: 'Royaume d’Iris',
-  tiles: { ...base.tiles, ...LEVEL_TILES },
+  tiles: { ...ALL_TILES, ...TALL_TILES },
   sprites: {
     ...base.sprites,
     objects: {

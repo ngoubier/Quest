@@ -15,6 +15,9 @@ import { SpriteSheet } from '../graphics/SpriteSheet.js';
 //                        paintHD?(ctx, {size, k, frame, variant, rng}) } },
 //            props.shadow : projette une ombre sur la tuile du dessous ; props.edge : liseré (écume...)
 //            paintHD : version haute définition dessinée à la main (size = 16×k pixels), utilisée sur PC
+//            tall : { ground(ctx, o), groundHD?, paint(ctx, o), paintHD? } — GRAND ÉLÉMENT SUR 2 CASES (arbre) :
+//                   paint dessine dans un repère de 16 × 32 (sol en bas). La moitié basse va sur la case
+//                   (par-dessus `ground`), la moitié haute (la cime) sur la case du dessus, devant les personnages.
 //   sprites: { [planche]: { frameW, frameH, frames: string[], paint(ctx, name, i), paintHD?(ctx, name, i, k) } },
 //   profiles: { mobile?: {...}, pc?: {...} }   // retouches propres à un profil d'affichage :
 //            mêmes clés que le thème (tiles, sprites, ui...), fusionnées par-dessus
@@ -29,12 +32,19 @@ export function buildTileset(theme, roles, tileSize = 16, profile = DISPLAY_PROF
   if (missing.length) throw new Error(`Thème "${theme.id}" : rôles de tuiles manquants : ${missing.join(', ')}`);
   const tiles = roles.map((name) => {
     const t = theme.tiles[name];
-    return { name, solid: !!t.solid, frames: t.frames || 1, fps: t.fps || 3, variants: t.variants || 1, props: t.props || {}, paint: t.paint, paintHD: t.paintHD };
+    return { name, solid: !!t.solid, frames: t.frames || 1, fps: t.fps || 3, variants: t.variants || 1, props: t.props || {}, paint: t.paint, paintHD: t.paintHD, tall: t.tall };
   });
   // Une case par (tuile, variante, image) ; la tuile d'id N est sur la ligne N.
+  // Les cimes des grands éléments (tall) viennent ensuite, une ligne chacune.
   const cells = [];
   tiles.forEach((t, i) => {
     for (let v = 0; v < t.variants; v++) for (let f = 0; f < t.frames; f++) cells.push({ t, row: i + 1, col: v * t.frames + f, v, f });
+  });
+  const crownRows = {};
+  tiles.filter((t) => t.tall).forEach((t, j) => {
+    const row = tiles.length + 1 + j;
+    crownRows[tiles.indexOf(t) + 1] = row;
+    for (let v = 0; v < t.variants; v++) for (let f = 0; f < t.frames; f++) cells.push({ t, row, col: v * t.frames + f, v, f, crown: true });
   });
   const rng = (c) => createRng(hashString(theme.id + c.t.name) + c.v * 7919);
   const k = profile.detail || 1;
@@ -42,23 +52,44 @@ export function buildTileset(theme, roles, tileSize = 16, profile = DISPLAY_PROF
     count: cells.length,
     place: (i) => cells[i],
     cols: Math.max(...tiles.map((t) => t.frames * t.variants)),
-    rows: tiles.length + 1,
+    rows: tiles.length + 1 + Object.keys(crownRows).length,
     cellW: tileSize,
     cellH: tileSize,
     paint: (ctx, i) => {
       const c = cells[i];
-      c.t.paint?.(ctx, { size: tileSize, frame: c.f, variant: c.v, rng: rng(c) });
+      const o = { size: tileSize, frame: c.f, variant: c.v, rng: rng(c) };
+      if (c.t.tall) return paintTall(ctx, c, c.t.tall.ground, c.t.tall.paint, o, tileSize, rng);
+      c.t.paint?.(ctx, o);
     },
     paintHD: (ctx, i) => {
       const c = cells[i];
+      const o = { size: tileSize * k, k, frame: c.f, variant: c.v, rng: rng(c) };
+      if (c.t.tall) {
+        const { groundHD, paintHD } = c.t.tall;
+        if (!paintHD || (!c.crown && !groundHD)) return false;
+        return paintTall(ctx, c, groundHD, paintHD, o, tileSize * k, rng);
+      }
       if (!c.t.paintHD) return false;
-      return c.t.paintHD(ctx, { size: tileSize * k, k, frame: c.f, variant: c.v, rng: rng(c) });
+      return c.t.paintHD(ctx, o);
     },
     kind: 'tile',
     profile,
     seed: hashString(theme.id),
   });
-  return new Tileset({ tileSize, tiles: tiles.map(({ paint, paintHD, ...rest }) => rest), image: canvas, detail });
+  return new Tileset({ tileSize, tiles: tiles.map(({ paint, paintHD, tall, ...rest }) => rest), image: canvas, detail, crowns: crownRows });
+}
+
+/**
+ * Une case d'un grand élément : la cime (moitié haute du dessin 16 × 32) ou la case du bas
+ * (le sol, puis la moitié basse). Le dessin a son propre tirage au hasard : les deux moitiés se raccordent.
+ */
+function paintTall(ctx, c, ground, draw, o, size, rng) {
+  if (!c.crown) ground(ctx, o);
+  ctx.save();
+  if (!c.crown) ctx.translate(0, -size);
+  draw(ctx, { ...o, rng: rng({ ...c, v: c.v + 101 }) });
+  ctx.restore();
+  return true;
 }
 
 /** Applique les retouches d'un profil (theme.profiles[id]) par-dessus le thème. */

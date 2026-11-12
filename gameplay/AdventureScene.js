@@ -1,4 +1,4 @@
-import { Scene, World, Camera, Tilemap, MenuScene, DialogScene, SaveStore, Speech, wrapText } from '../engine/index.js';
+import { Scene, World, Camera, Tilemap, MenuScene, DialogScene, SaveStore, Speech, wrapText, Ambience } from '../engine/index.js';
 import { GameState } from './state/GameState.js';
 import { QuestSystem } from './quests/QuestSystem.js';
 import { formatText } from './script/text.js';
@@ -52,6 +52,9 @@ import { Boss } from './actors/Boss.js';
 //            slow (monstres rapides ralentis), fireSword (coups d'épée doubles), bubble (bloque un coup),
 //            armor (dégâts de 2 et plus divisés par 2), freeze (marcher contre la lave la fige)
 //   end: { message, story: [pages] },          // fin : histoire en images (facultative), puis félicitations
+//   ambience: (mapId, mapDef) => ({ tint, sky, ambient, particles, ... }),  // lumière et atmosphère d'un lieu
+//   tileLights: { torch: { r: 48, color: '#ffb060', flicker: 0.06 } },     // tuiles qui éclairent
+//                                              // (voir engine/graphics/Ambience.js ; ?fx=0 pour comparer)
 // })
 //
 // Cartes : `darkRooms: [[x, y]]` (salles sombres, on n'y voit qu'autour du héros) ;
@@ -98,6 +101,9 @@ export class AdventureScene extends Scene {
       this.world.camera.height = vp.h;
       this.world.camera.snap();
     });
+    // Ambiance (lumière, ombres douces, particules) selon le profil d'affichage : complète sur PC, légère sur mobile.
+    this.fx = g.themes.profile?.fx ?? false;
+    this.ambience = new Ambience({ tileLights: this.cfg.tileLights, level: this.fx });
     if (load && this.hasSave()) this._applySave(this.saves.load(this.slot).data);
     else {
       this.state.bagSize = this.cfg.bagSize ?? 10;
@@ -146,6 +152,8 @@ export class AdventureScene extends Scene {
     const world = new World({ game: this.game, tilemap, camera, viewport: vp });
     world.adv = this;
     this.world = world;
+    world.softShadows = !!this.fx;
+    this.ambience.set(this.cfg.ambience?.(mapId, def, this) ?? null);
     this.mapId = mapId;
     this.mapDef = def;
     this.warps = [];
@@ -974,6 +982,7 @@ export class AdventureScene extends Scene {
 
   draw(r) {
     this.world.draw(r);
+    this.ambience.draw(r, this.world, { hero: this.hero });
     this._drawDark(r);
     this._drawUnderwater(r);
     this._drawStorm(r);

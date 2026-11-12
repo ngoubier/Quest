@@ -59,7 +59,52 @@ adaptés à l'appareil**. Le jeu choisit tout seul ; on peut forcer un profil da
 - **Bandeau plus riche** : quand une quête est en cours, son **objectif** s'affiche à côté
   des boutons, s'il y a la place.
 
+## Lumière, ambiance et profondeur
+
+Chaque lieu a sa **lumière** et son **atmosphère**, dessinées par-dessus le monde. Pour comparer,
+ajoutez `?fx=0` à l'adresse (sans effets), `?fx=lite` (version mobile) ou `?fx=1` (version PC).
+
+| Lieu | Ambiance |
+|---|---|
+| Prébois | fin d'après-midi d'été : lumière dorée, ombres de nuages qui passent, rayons de soleil, pollen |
+| Grottes, égouts, temple enfoui | pénombre ; les **torches** éclairent, le héros porte une lanterne |
+| Mont Givré | lumière froide, **neige qui tombe** ; temple de glace bleuté et scintillant |
+| Forêt des Murmures | sous-bois vert et doré, rayons entre les arbres, **feuilles qui tombent** ; lucioles dans le Grand Chêne |
+| Bourg-Lanterne | **le soir tombe**, les lanternes des rues s'allument |
+| Labyrinthe | lumière irréelle, poussière d'étoiles |
+| Désert des Mirages | soleil écrasant, **sable qui vole** |
+| Plage / Abysses | lumière fraîche ; sous l'eau, bleu profond et rayons venus de la surface |
+| Volcan Noir | ciel de braise, **cendres**, la **lave éclaire** ; dans le château, braises et pénombre |
+| Maisons et boutiques | lumière chaude et feutrée, poussière dans la lumière |
+
+En plus :
+
+- **Ombres douces** sous les personnages, monstres et objets (le soleil vient d'en haut à gauche).
+- **Ombres au pied des murs** (en dégradé) et **ombres rondes** sous les arbres et rochers isolés.
+- **Grands arbres sur 2 cases** (arbres du village et de la forêt, sapins, palmiers, arbres morts) :
+  la cime déborde sur la case du dessus et passe **devant** le héros ; elle devient transparente quand
+  quelqu'un passe derrière. Le passage bloqué ne change pas (seule la case du tronc bloque).
+- Les **sources de lumière** brillent : torches, lanternes, cheminées, forges, lave, braseros allumés,
+  flammèches du bâton de feu.
+- Le jeu reste **très lisible** : la pénombre ne descend jamais trop bas, et les salles sombres
+  du château gardent leur règle (on n'y voit qu'autour du héros).
+
+| Profil | Ambiance |
+|---|---|
+| PC | complète |
+| Mobile | légère : sans rayons de soleil ni ombres de nuages, moitié moins de particules |
+| Classique | aucune |
+
 ## Comment ça marche (technique)
+
+- `engine/graphics/Ambience.js` : la couche d'ambiance du moteur (teinte, lumière du ciel, pénombre
+  percée par les lumières, rayons, ombres de nuages, particules, vignette). Le jeu décrit chaque lieu
+  par un préréglage : `game/ambience.js` (`AMBIENCES` par niveau, `TILE_LIGHTS` pour les tuiles qui éclairent).
+  Une entité éclaire avec un getter `light` (`{ r, color, flicker }`).
+- Grands éléments sur 2 cases : une tuile déclare `tall: { ground, paint, paintHD? }` (dessin 16 × 32,
+  sol en bas) ; la cime est dessinée par la carte après les personnages. Arbres du jeu : `game/art/trees.js`.
+- Ombres douces : `world.softShadows` ; une entité choisit la taille de son ombre avec `shadow`
+  (et `shadowY` pour ce qui vole). Les tuiles avec `props.shadow` font de l'ombre sur le sol.
 
 - `engine/graphics/display.js` : les profils et leur détection.
 - `engine/graphics/pixelart.js` : fabrication des planches d'images. Chaque case est dessinée

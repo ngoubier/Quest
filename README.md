@@ -48,3 +48,4 @@ npm test       # tests automatiques du moteur
 Sur téléphone, une manette tactile s'affiche automatiquement.
 
 Les graphismes s'adaptent à l'appareil (mobile ou PC). Pour comparer, ajoutez `?mobile`, `?pc` ou `?classic` à l'adresse d'un essai.
+Chaque lieu a sa lumière et son ambiance (neige, lucioles, lave qui éclaire...) : `?fx=0` pour comparer sans.

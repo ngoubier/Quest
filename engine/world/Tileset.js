@@ -12,8 +12,10 @@ export class Tileset {
    * @param {CanvasImageSource|null} [opts.image]
    * @param {number} [opts.detail=1]  l'image est `detail` fois plus fine que la grille du jeu
    */
-  constructor({ tileSize = 16, tiles = [], image = null, detail = 1 } = {}) {
+  constructor({ tileSize = 16, tiles = [], image = null, detail = 1, crowns = {} } = {}) {
     this.tileSize = tileSize;
+    // Grands éléments sur 2 cases (arbres) : ligne de l'atlas où est dessinée la cime, par id de tuile.
+    this.crowns = new Map(Object.entries(crowns).map(([id, row]) => [Number(id), row]));
     this.image = image;
     this.detail = detail; // pixels d'image par pixel de jeu (2 = haute définition)
     this.defs = [{ id: 0, name: null, solid: false, frames: 1, fps: 0, variants: 1, props: {} }];
@@ -37,6 +39,22 @@ export class Tileset {
 
   isSolid(id) {
     return !!this.def(id).solid;
+  }
+
+  hasCrown(id) {
+    return this.crowns.has(id);
+  }
+
+  /** Cime d'un grand élément, dessinée sur la case (x, y) — celle au-dessus de l'élément. */
+  drawCrown(r, id, x, y, time = 0, variant = 0) {
+    const row = this.crowns.get(id);
+    if (row === undefined || !this.image) return;
+    const d = this.defs[id];
+    const f = d.frames > 1 ? Math.floor(time * d.fps) % d.frames : 0;
+    const v = d.variants > 1 ? variant % d.variants : 0;
+    const ts = this.tileSize;
+    const s = ts * this.detail;
+    r.image(this.image, (v * d.frames + f) * s, row * s, s, s, x, y, ts, ts);
   }
 
   draw(r, id, x, y, time = 0, variant = 0) {

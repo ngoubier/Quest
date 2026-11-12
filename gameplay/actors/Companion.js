@@ -6,6 +6,7 @@ import { Entity } from '../../engine/index.js';
 export class Companion extends Entity {
   constructor(hero, { hintEvery = 480 } = {}) {
     super({ x: hero.x, y: hero.y + 10, w: 10, h: 8, tags: ['companion'] });
+    this.shadow = 5;
     this.hero = hero;
     this.trail = [];
     this.hintEvery = hintEvery; // secondes de jeu entre deux indices

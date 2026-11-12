@@ -145,6 +145,7 @@ export class Enemy extends Actor {
    */
   constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, shot = 'snowball', steals = 0, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1, fast = false }) {
     super({ x: x + 2, y: y + 6, w: 12, h: 10, tags: ['enemy'], solid: false, hp, invulnTime: 0.3 });
+    this.shadow = 6;
     this.fast = fast;
     this.uid = uid;
     this.kind = kind;

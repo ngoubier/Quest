@@ -10,6 +10,7 @@ import { Effect } from './Effect.js';
 export class Bomb extends Entity {
   constructor(x, y, { fuse = 1.8, radius = 22 } = {}) {
     super({ x: x - 6, y: y - 6, w: 12, h: 12, tags: ['bomb'] });
+    this.shadow = 5;
     this.fuse = fuse;
     this.radius = radius;
     this.t = 0;

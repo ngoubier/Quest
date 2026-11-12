@@ -852,3 +852,11 @@ test('Château de Morgor : chaque salle demande un objet ou un pouvoir, puis Mor
 test('Pierres : chacune donne un pouvoir', () => {
   for (const k of STONES) assert.ok(ITEMS[`stone_${k}`].power, k);
 });
+
+test('Ambiances : chaque niveau du jeu a la sienne, et les tuiles qui éclairent existent', async () => {
+  const { MAPS } = await import('../game/data/index.js');
+  const { ambienceFor, TILE_LIGHTS } = await import('../game/ambience.js');
+  const { THEME } = await import('../game/themes.js');
+  for (const [id, def] of Object.entries(MAPS)) assert.ok(ambienceFor(id, def), `carte ${id} sans ambiance`);
+  for (const name of Object.keys(TILE_LIGHTS)) assert.ok(THEME.tiles[name], `tuile ${name} inconnue`);
+});

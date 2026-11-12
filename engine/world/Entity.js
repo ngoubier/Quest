@@ -18,6 +18,13 @@ export class Entity {
     this.visible = true;
     this.world = null;
     this.z = 0; // décalage de tri d'affichage (positif = devant)
+    // this.shadow : ombre douce au sol, demi-largeur en pixels (absente ou 0 = aucune) ;
+    // this.shadowY : décalage de l'ombre vers le bas (ce qui vole). Voir World._drawShadow.
+  }
+
+  /** Source de lumière portée (ambiance) : { r, color, flicker? } ou null. */
+  get light() {
+    return null;
   }
 
   get cx() {
