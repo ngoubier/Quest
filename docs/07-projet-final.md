@@ -599,5 +599,12 @@ Le système de l'histoire d'ouverture (`StoryScene`) sert maintenant aussi dans 
   `folk.js` (Pingo, Hulotte, le chat, le gnome, le puits, la sirène, Alia).
   Les habitants humains du Mont Givré ont aussi leur version haute définition. Le même dessin sert pour le sprite
   du jeu (64 × 64 pour un boss, 32 × 32 sinon) et pour la grande image de présentation.
-- Sur mobile, le jeu garde les images pixel agrandies (choix du profil d'affichage) ; les scènes en images, elles,
+- **Sur tablette** (écran tactile dont le petit côté fait au moins 600 points) : les créatures (boss, monstres,
+  habitants non humains) sont aussi en dessins détaillés, avec un contour plus fin (`art` du profil d'affichage,
+  `outlineHD`) ; les sols et les humains restent en pixel agrandi. **Sur téléphone**, les images pixel restent : les
+  traits fins s'y lisent mal. Adresse : `?art=1` / `?art=0` pour forcer, `?hd=1` pour tout en haute définition.
+  Même mémoire dans tous les cas (les images ont la même taille), seul le dessin change. Les scènes en images
   sont dessinées en lisse sur tous les appareils.
+- **Corrections mobiles** : la carapace du Yéti n'a plus de traits noirs (pas de contour sur les boucliers) ;
+  sur iPad en paysage, les boutons A et B ne sortent plus de l'écran, et le bouton Sac ne cache plus les pièces
+  (il n'écrit que le nombre d'objets quand la barre manque de place).

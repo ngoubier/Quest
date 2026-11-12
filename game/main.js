@@ -22,7 +22,7 @@ const style = document.createElement('style');
 style.textContent = `
   html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none}
   #quest{display:flex;flex-direction:column;height:100%;width:100%}
-  #screen{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  #screen{flex:1;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
   #screen canvas{outline:none}
 `;
 document.head.appendChild(style);

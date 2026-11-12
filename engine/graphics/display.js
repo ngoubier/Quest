@@ -18,7 +18,7 @@ export const DISPLAY_PROFILES = {
     name: 'Classique',
     detail: 1, // pixels d'image par pixel de jeu
     hd: false, // dessins « haute définition » faits à la main (paintHD)
-    art: false, // seulement les sprites (personnages, monstres) en haute définition ; les tuiles restent agrandies
+    art: false, // les sprites qui ont un dessin détaillé (créatures) en haute définition ; les tuiles restent agrandies
     smooth: false, // lissage des diagonales (agrandissement Scale2x)
     outline: 1, // épaisseur du contour des personnages, en pixels d'image
     contrast: 1,
@@ -31,9 +31,10 @@ export const DISPLAY_PROFILES = {
     name: 'Mobile',
     detail: 2,
     hd: false,
+    art: false, // true sur tablette (detectDisplay)
     smooth: true,
     outline: 3, // 1,5 pixel de jeu : silhouettes bien découpées sur un petit écran
-    outlineHD: 2, // dessins détaillés (essai art=1) : contour plus fin, pour ne pas écraser les détails
+    outlineHD: 2, // dessins détaillés (tablette) : contour plus fin, pour ne pas écraser les détails
     contrast: 1.12,
     saturation: 1.22,
     shading: false,
@@ -44,6 +45,7 @@ export const DISPLAY_PROFILES = {
     name: 'PC (haute définition)',
     detail: 2,
     hd: true,
+    art: false,
     smooth: true,
     outline: 1, // contour fin (½ pixel de jeu) : on a la place de montrer les détails
     contrast: 1,
@@ -59,12 +61,15 @@ export const DISPLAY_PROFILES = {
  * @param {string} [o.search]  paramètres d'adresse (par défaut location.search)
  * @param {string} [o.hash]    ancre d'adresse (par défaut location.hash), ex. '#mobile'
  * @param {boolean} [o.touch]  écran tactile (par défaut : détecté)
+ * @param {boolean} [o.tablet] grand écran tactile (par défaut : détecté)
  * @returns {typeof DISPLAY_PROFILES.pc & {forced: string|null}} forced : profil imposé par l'adresse
  */
-export function detectDisplay({ search, hash, touch } = {}) {
+export function detectDisplay({ search, hash, touch, tablet } = {}) {
   search ??= typeof location !== 'undefined' ? location.search : '';
   hash ??= typeof location !== 'undefined' ? location.hash : '';
   touch ??= typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  // Tablette : écran tactile dont le petit côté fait au moins 600 points (iPad...), un téléphone en a moins de 500.
+  tablet ??= typeof screen !== 'undefined' && Math.min(screen.width, screen.height) >= 600;
   const q = new URLSearchParams(search);
   const h = hash.replace(/^#/, '');
   let forced = null;
@@ -75,7 +80,10 @@ export function detectDisplay({ search, hash, touch } = {}) {
   const p = { ...DISPLAY_PROFILES[id], forced };
   if (q.get('hd') === '0' && id === 'pc') Object.assign(p, { detail: 1, hd: false, smooth: false, shading: false, name: 'PC' });
   if (q.get('hd') === '1' && p.detail > 1) p.hd = true; // essai : tout en haute définition (mobile)
-  if (q.get('art') === '1' && p.detail > 1) p.art = true; // essai : créatures en dessins détaillés (mobile)
+  // Créatures (boss, monstres, habitants non humains) en dessins détaillés : sur tablette par défaut ;
+  // ?art=1 pour les avoir aussi sur téléphone, ?art=0 pour les enlever.
+  if (id === 'mobile' && tablet) p.art = true;
+  if (q.has('art') && p.detail > 1) p.art = q.get('art') !== '0';
   return p;
 }
 
