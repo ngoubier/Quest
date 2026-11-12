@@ -2,6 +2,7 @@ import { Animator, rectsOverlap } from '../../engine/index.js';
 import { Enemy } from './Enemy.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
+import { flashOver } from './juice.js';
 import { Projectile } from './Projectile.js';
 import { check } from '../script/conditions.js';
 
@@ -35,6 +36,7 @@ import { check } from '../script/conditions.js';
 export class Boss extends Enemy {
   constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false, guardedBy = null, guardText = null, damage = 1, phases = null, intro = null }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage, behavior: 'wander', drops: [], seed });
+    this.bigHit = true; // coups forts : plus d'étincelles et un arrêt sur image plus long
     this.phases = phases;
     this.intro = intro; // pages d'histoire qui le présentent, la première fois qu'on le voit
     this.phase = -1;
@@ -334,7 +336,7 @@ export class Boss extends Enemy {
   }
 
   draw(r) {
-    if (this.flashing || this.hidden) return;
+    if ((this.flashing && !(this.hitFlash > 0)) || this.hidden) return; // clignote, sauf pendant l'éclair du coup
     const sheet = this.game.themes.current.sprites.boss;
     if (this.buried) return sheet.draw(r, sheet.has(`${this.sprite}_under`) ? `${this.sprite}_under` : this.anim.frame, this.x - 4, this.y - 14);
     if (this.dizzy > 0) {
@@ -347,7 +349,9 @@ export class Boss extends Enemy {
       r.withAlpha(0.12 + 0.08 * Math.sin(this.game.time * 9), () => sheet.draw(r, this.anim.frame, this.x - 4, this.y - 14));
       return;
     }
-    sheet.draw(r, this.anim.frame, this.x - 4, this.y - 14);
+    const body = () => sheet.draw(r, this.anim.frame, this.x - 4, this.y - 14);
+    body();
+    flashOver(r, this, body);
     // Bouclier : image propre au boss ({sprite}_shield) si elle existe.
     const shield = this.shieldSprite && sheet.has(this.shieldSprite) ? this.shieldSprite : sheet.has(`${this.sprite}_shield`) ? `${this.sprite}_shield` : 'boss_shield';
     if (this.shield && Math.floor(this.game.time * 6) % 3 !== 0) sheet.draw(r, shield, this.x - 4, this.y - 14);

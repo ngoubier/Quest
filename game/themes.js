@@ -96,9 +96,19 @@ const BLEND = {
 };
 // Décor vivant : brins d'herbe au vent (couleur de la base, de la pointe) et reflets sur l'eau.
 const GRASS = ['#2f6e24', '#8ad66a'];
+// Couleur de la poussière sous les pas du héros (gameplay/actors/juice.js) ; false = pas de poussière.
 const LIFE = {
-  floor: { grass: GRASS },
-  floor_alt: { grass: GRASS },
+  floor: { grass: GRASS, dust: '#e4eec4' },
+  floor_alt: { grass: GRASS, dust: '#e4eec4' },
+  path: { dust: '#ecd8a8' },
+  snow: { dust: '#ffffff' },
+  snow_alt: { dust: '#ffffff' },
+  snow_path: { dust: '#f2f7ff' },
+  sand: { dust: '#f6e0ac' },
+  sand_dug: { dust: '#f6e0ac' },
+  ash: { dust: '#a49a98' },
+  ash_soft: { dust: '#a49a98' },
+  ice: { dust: false },
   water: { glint: '#ffffff' },
   river: { glint: '#ffffff' },
   canal: { glint: '#ffffff' },

@@ -1,3 +1,4 @@
+import { drawPanel } from '../../engine/index.js';
 // Bandeau d'informations : cœurs à gauche, boutons Quêtes et Sac au centre, compteurs à droite.
 // Icônes 8x8 attendues (planche 'icons') : heart_full, heart_half, heart_empty, quest, bag, et une par compteur.
 // Renvoie les zones des boutons (pour le toucher / clic) : { quests, bag }.
@@ -16,8 +17,8 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'], objec
   const pad = Math.round(4 * k);
   const iy = Math.round((height - 8 * k) / 2);
   const icon = (name, x, y) => icons.draw(r, name, x, y, { scale: k });
-  r.rect(0, 0, r.width, height, s.box);
-  r.rect(0, height - 1, r.width, 1, s.border);
+  if (s.panel) drawPanel(r, -8, -8, r.width + 16, height + 10, s);
+  else (r.rect(0, 0, r.width, height, s.box), r.rect(0, height - 1, r.width, 1, s.border));
 
   // Cœurs : 2 points de vie par cœur.
   const hearts = Math.ceil(st.maxHp / 2);

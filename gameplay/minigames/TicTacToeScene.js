@@ -1,5 +1,6 @@
 import { Scene } from '../../engine/index.js';
 import { winner, winningLine, aiMove, skillForAge } from './tictactoe.js';
+import { drawPanel } from '../../engine/index.js';
 
 // MORPION contre un habitant. L'enfant joue les croix et commence.
 // Croix directionnelle pour choisir une case, Action pour jouer, B pour abandonner.
@@ -96,8 +97,7 @@ export class TicTacToeScene extends Scene {
     const size = this.cell * 3;
     const bw = Math.min(r.width - 8, 170);
     const box = { x: Math.round((r.width - bw) / 2), y: o.y - 34, w: bw, h: size + 58 };
-    r.rect(box.x, box.y, box.w, box.h, s.box);
-    r.strokeRect(box.x, box.y, box.w, box.h, s.border);
+    drawPanel(r, box.x, box.y, box.w, box.h, s);
     r.fitText(`Morpion contre ${this.opponent}`, r.width / 2, box.y + 5, box.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const status = this.result
       ? { win: 'Gagné, bravo !', lose: 'Perdu... Rejoue !', draw: 'Égalité !' }[this.result]

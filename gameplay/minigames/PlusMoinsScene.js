@@ -1,5 +1,6 @@
 import { Scene } from '../../engine/index.js';
 import { settingsForAge, judge, range } from './plusmoins.js';
+import { drawPanel } from '../../engine/index.js';
 
 // PLUS OU MOINS contre un habitant. Il pense à un nombre ; l'enfant le choisit (Haut/Bas : 1 de plus
 // ou de moins, Gauche/Droite : 10 de moins ou de plus, ou les boutons à l'écran) et le propose (Action).
@@ -91,8 +92,7 @@ export class PlusMoinsScene extends Scene {
     const s = this.game.style;
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
     const b = this.box;
-    r.rect(b.x, b.y, b.w, b.h, s.box);
-    r.strokeRect(b.x, b.y, b.w, b.h, s.border);
+    drawPanel(r, b.x, b.y, b.w, b.h, s);
     const cx = b.x + b.w / 2;
     r.fitText(`Plus ou moins avec ${this.opponent}`, cx, b.y + 5, b.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const left = this.cfg.tries - this.history.length;

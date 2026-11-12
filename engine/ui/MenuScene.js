@@ -1,5 +1,6 @@
 import { Scene } from '../scene/Scene.js';
 import { wrapText } from './text.js';
+import { drawPanel } from './panel.js';
 
 // Menu vertical générique (pause, choix, réglages...).
 // items : [{ label: string | () => string, onSelect: (menu) => void, enabled?: () => boolean }]
@@ -65,9 +66,7 @@ export class MenuScene extends Scene {
     const width = Math.min(this.width, r.width - 8);
     const x = Math.round((r.width - width) / 2);
     const y = Math.round((r.height - h) / 2);
-    r.rect(x, y, width, h, s.box);
-    r.strokeRect(x, y, width, h, s.border);
-    r.strokeRect(x + 2, y + 2, width - 4, h - 4, s.border);
+    drawPanel(r, x, y, width, h, s);
     let ty = y + 8;
     if (this.title) {
       titleLines.forEach((l, i) => r.fitText(l, x + width / 2, ty + i * (s.fontSize + 3), width - 16, { color: s.accent, size: s.fontSize, font: s.font, bold: true, align: 'center' }));

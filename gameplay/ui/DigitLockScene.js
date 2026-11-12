@@ -1,4 +1,5 @@
 import { Scene } from '../../engine/index.js';
+import { drawPanel } from '../../engine/index.js';
 
 // CADENAS À CHIFFRES (coffre à code). Chaque chiffre est une petite roue :
 // Haut/Bas : changer le chiffre · Gauche/Droite : chiffre suivant · Action : ouvrir · B : annuler.
@@ -72,8 +73,7 @@ export class DigitLockScene extends Scene {
     const s = this.game.style;
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
     const b = this.box;
-    r.rect(b.x, b.y, b.w, b.h, s.box);
-    r.strokeRect(b.x, b.y, b.w, b.h, s.border);
+    drawPanel(r, b.x, b.y, b.w, b.h, s);
     r.fitText(this.title, r.width / 2, b.y + 5, b.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     r.fitText('Trouve le bon code !', r.width / 2, b.y + 17, b.w - 8, { color: s.dim, size: 6, font: s.font, align: 'center' });
     this.values.forEach((v, k) => {

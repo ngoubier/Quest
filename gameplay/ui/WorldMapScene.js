@@ -1,4 +1,4 @@
-import { Scene } from '../../engine/index.js';
+import { Scene, drawPanel } from '../../engine/index.js';
 import { check } from '../script/conditions.js';
 
 // CARTE DU MONDE — un écran plein qui montre les lieux du jeu et permet d'y voyager.
@@ -136,8 +136,8 @@ export class WorldMapScene extends Scene {
     // panneau du bas
     const n = this.nodes[this.index];
     const py = r.height - 30;
-    r.rect(0, py, r.width, 30, s.box);
-    r.rect(0, py, r.width, 1, s.border);
+    if (s.panel) drawPanel(r, -8, py - 2, r.width + 16, 40, s);
+    else (r.rect(0, py, r.width, 30, s.box), r.rect(0, py, r.width, 1, s.border));
     r.fitText(this.fmt(n.label), 6, py + 4, r.width - 12, { color: s.accent, size: 8, font: s.font, bold: true });
     const status = this.message?.text ?? (this.isDone(n) ? (n.doneText ?? 'Terminé ✓') : this.isOpen(n) ? (this.cfg.travel ? 'Action : y aller · B : fermer' : 'B : fermer') : (n.closedText ?? 'Fermé'));
     r.fitText(this.fmt(status), 6, py + 16, r.width - 12, { color: this.message ? s.text : s.dim, size: 7, font: s.font });

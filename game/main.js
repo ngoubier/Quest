@@ -1,13 +1,15 @@
 // LA QUÊTE D'ALIA — le jeu. Ce fichier branche les données (data/) et l'ambiance (themes.js)
 // sur la scène d'aventure réutilisable (gameplay/AdventureScene.js).
-import { Game, Scene, MenuScene, TouchControls, detectDisplay, clamp } from '../engine/index.js';
+import { Game, Scene, MenuScene, TouchControls, detectDisplay, clamp, drawPanel } from '../engine/index.js';
 import { AdventureScene, openParentSpace, PromptScene, MessageScene, StoryScene } from '../gameplay/index.js';
 import { THEME, ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './data/index.js';
 import { WORLD_MAP, colorLoss } from './data/worldmap.js';
 import { ambienceFor, TILE_LIGHTS } from './ambience.js';
-import { INTRO_STORY, END_STORY, drawUnicorn } from './data/story.js';
+import { INTRO_STORY, END_STORY } from './data/story.js';
 import { frenchSchoolBank } from '../content/quiz/index.js';
+import { FONT, TITLE_FONT, loadFonts, makeWoodPanel } from './art/ui.js';
+import { drawTitleArt } from './art/title.js';
 
 const TS = 16;
 // Profil d'affichage : 'mobile' (lisible) ou 'pc' (haute définition, vue large).
@@ -123,6 +125,12 @@ for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
 game.themes.configure({ roles: ROLES, tileSize: TS });
 game.themes.register(THEME); // une seule ambiance : le royaume d'Iris
 game.themes.use(THEME.id);
+
+// ------------------------------------------------------------------ interface
+// Police ronde et lisible (Nunito), titres en Fredoka, fenêtres dans un cadre en bois (game/art/ui.js).
+loadFonts();
+Object.assign(game.style, { font: FONT, titleFont: TITLE_FONT, panel: makeWoodPanel(display.detail || 1) });
+game.renderer.defaultFont = FONT;
 
 const makeAdventure = () =>
   new AdventureScene({
@@ -261,32 +269,39 @@ class TitleScene extends Scene {
 
   draw(r) {
     const s = game.style;
-    const t = game.themes.current;
-    const roles = ['floor', 'floor', 'floor_alt', 'path', 'floor'];
-    for (let y = 0; y < r.height; y += TS) for (let x = 0; x < r.width; x += TS) t.tileset.draw(r, t.tileset.id(roles[((x * 7 + y * 3) / TS) % roles.length]), x, y, game.time);
-    r.withAlpha(0.72, () => r.rect(0, 0, r.width, r.height, '#000'));
-    r.fitText('LA QUÊTE D’ALIA', r.width / 2, 12, r.width - 60, { color: s.accent, size: 20, font: s.font, bold: true, align: 'center', shadow: '#000' });
-    drawUnicorn(r, r.width - 26, 12 + Math.round(Math.sin(game.time * 2)), 1);
-    r.text('Délivre la licorne du royaume d’Iris', r.width / 2, 42, { color: s.text, size: 8, font: s.font, align: 'center' });
-    const lines = touch
+    // Fenêtre « Qui joue ? » en bas, l'illustration au-dessus (game/art/title.js).
+    const opts = this.options;
+    const rowH = 12;
+    const visible = clamp(Math.floor((r.height - 112) / rowH), 3, 5);
+    const helpLines = touch
       ? ['Croix : bouger · A : parler, frapper', 'X : objet · Start : menu · B : annuler']
       : ['Flèches/ZQSD : bouger · Espace : parler, frapper', 'E : objet · Entrée : menu · L : quêtes · I : sac'];
-    lines.forEach((l, i) => r.text(l, r.width / 2, 62 + i * 11, { color: s.dim, size: 7, font: s.font, align: 'center' }));
-    // Liste qui défile si elle est longue (jusqu'à 8 joueurs + 2 options) ;
-    // le nombre de lignes visibles suit la hauteur de l'écran (mobile en paysage : plus basse).
-    const opts = this.options;
-    const visible = clamp(Math.floor((r.height - 20 - 108) / 12), 3, 5);
-    r.text('Qui joue ?', r.width / 2, 92, { color: s.text, size: 9, font: s.font, bold: true, align: 'center' });
+    const w = Math.min(212, r.width - 12);
+    const h = 18 + Math.min(visible, opts.length) * rowH + 6 + helpLines.length * 8 + 6;
+    const x = Math.round((r.width - w) / 2);
+    const y = r.height - h - 4;
+    drawTitleArt(r, game.time, { titleFont: s.titleFont, font: s.font, groundY: y });
+    drawPanel(r, x, y, w, h, s);
+    r.text('Qui joue ?', r.width / 2, y + 6, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
+    // Liste qui défile si elle est longue (jusqu'à 8 joueurs + 2 options).
     const first = Math.max(0, Math.min(this.choice - 2, opts.length - visible));
-    if (first > 0) r.text('▲', r.width / 2, 100, { color: s.dim, size: 6, font: s.font, align: 'center' });
-    if (first + visible < opts.length) r.text('▼', r.width / 2, 108 + visible * 12, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    const ly = y + 19;
+    if (first > 0) r.text('▲', x + w - 12, ly, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    if (first + visible < opts.length) r.text('▼', x + w - 12, ly + (visible - 1) * rowH + 2, { color: s.dim, size: 6, font: s.font, align: 'center' });
     opts.slice(first, first + visible).forEach((o, k) => {
       const i = first + k;
       const sel = i === this.choice;
-      const blink = !sel || Math.floor(game.time * 2) % 2 === 0;
-      if (blink) r.text(`${sel ? '▶ ' : '  '}${o.label}`, r.width / 2, 108 + k * 12, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, align: 'center' });
+      const ty = ly + k * rowH;
+      if (sel) {
+        r.withAlpha(0.18 + 0.08 * Math.sin(game.time * 5), () => r.rect(x + 8, ty - 2, w - 16, rowH, s.accent));
+        r.text('▶', x + 12 + Math.round(Math.sin(game.time * 6)), ty, { color: s.accent, size: 8, font: s.font });
+      }
+      r.fitText(o.label, r.width / 2, ty, w - 44, { color: sel ? s.accent : o.action ? s.dim : s.text, size: 8, font: s.font, bold: sel, align: 'center' });
     });
-    r.text(`Affichage : ${display.name}`, r.width / 2, r.height - 10, { color: s.dim, size: 7, font: s.font, align: 'center' });
+    const hy = ly + Math.min(visible, opts.length) * rowH + 4;
+    r.rect(x + 10, hy - 2, w - 20, 1, 'rgba(255,220,150,.18)');
+    helpLines.forEach((l, i) => r.fitText(l, r.width / 2, hy + 1 + i * 8, w - 16, { color: s.dim, size: 6, font: s.font, align: 'center' }));
+    r.text(`Affichage : ${display.name}`, r.width - 3, 2, { color: 'rgba(255,255,255,.7)', size: 5, font: s.font, align: 'right' });
   }
 }
 

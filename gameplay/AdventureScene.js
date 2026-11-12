@@ -21,6 +21,7 @@ import { WorldMapScene } from './ui/WorldMapScene.js';
 import { createMinigame } from './minigames/index.js';
 import { StoryScene } from './ui/StoryScene.js';
 import { Boss } from './actors/Boss.js';
+import { drawPanel } from '../engine/index.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -270,6 +271,8 @@ export class AdventureScene extends Scene {
     this.state.playTime += dt;
     this._updateRegen(dt);
     if (this._updateAir(dt)) return;
+    // arrêt sur image d'un coup fort : le monde attend une fraction de seconde
+    if (this.freeze > 0) return void (this.freeze -= dt);
     this._prevHero = this.hero ? { x: this.hero.x, y: this.hero.y } : null;
     this.world.update(dt);
     this._checkRoomClear();
@@ -677,7 +680,13 @@ export class AdventureScene extends Scene {
   }
 
   spawnPickup(item, x, y, lifetime = 10, count = 1) {
-    this.world.add(new Pickup({ x, y, uid: null, props: { item, count, persist: false, lifetime } }));
+    // butin qui saute en sortant (effets activés)
+    this.world.add(new Pickup({ x, y, uid: null, props: { item, count, persist: false, lifetime, pop: !!this.fx } }));
+  }
+
+  /** Arrêt sur image (secondes) : un coup fort se sent. Seulement avec les effets. */
+  hitstop(seconds) {
+    if (this.fx) this.freeze = Math.max(this.freeze ?? 0, seconds);
   }
 
   /** Appelé quand l'épée coupe une tuile (buisson...) : petite chance de butin. */
@@ -998,8 +1007,7 @@ export class AdventureScene extends Scene {
       const x = Math.round((r.width - w) / 2);
       const lines = wrapText(t.text, w - 10, (str) => r.measure(str, 8, s.font)).slice(0, 2);
       const h = lines.length * 11 + 4;
-      r.rect(x, y, w, h, s.box);
-      r.strokeRect(x, y, w, h, s.border);
+      drawPanel(r, x, y, w, h, s);
       lines.forEach((l, i) => r.fitText(l, r.width / 2, y + 3 + i * 11, w - 8, { color: s.text, size: 8, font: s.font, align: 'center' }));
     }
   }

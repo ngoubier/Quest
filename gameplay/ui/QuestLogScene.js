@@ -1,4 +1,5 @@
 import { Scene, wrapText } from '../../engine/index.js';
+import { drawPanel } from '../../engine/index.js';
 
 // Liste des quêtes : celles à faire d'abord (principale ★ en tête), avec leur DIFFICULTÉ,
 // l'objectif en cours et les indices déjà révélés ; puis les quêtes terminées.
@@ -40,9 +41,7 @@ export class QuestLogScene extends Scene {
     const y = 6;
     const w = r.width - 12;
     const h = r.height - 12;
-    r.rect(x, y, w, h, s.box);
-    r.strokeRect(x, y, w, h, s.border);
-    r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
+    drawPanel(r, x, y, w, h, s);
     const list = adv.quests.journal();
     const active = list.filter((q) => q.status === 'active');
     const done = list.filter((q) => q.status === 'done');

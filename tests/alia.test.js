@@ -868,3 +868,23 @@ test('Transitions : chaque terrain qui déborde « comme » un autre désigne un
   for (const [name, t] of blending) if (t.props.blendAs) assert.ok(ROLES.includes(t.props.blendAs), `${name} : ${t.props.blendAs} inconnue`);
   assert.ok(THEME.tiles.floor.props.grass && THEME.tiles.river.props.glint, 'herbe au vent, reflets sur la rivière');
 });
+
+test('Effets de jeu : les gerbes de particules disparaissent seules ; rien sans les effets', async () => {
+  const { Burst, hitFx, dustFx } = await import('../gameplay/actors/juice.js');
+  const b = new Burst(10, 10, { count: 5, life: [0.1, 0.2] });
+  assert.equal(b.parts.length, 5);
+  for (let i = 0; i < 20; i++) b.update(1 / 60);
+  assert.ok(b.dead, 'disparue après sa durée de vie');
+  // sans effets (?fx=0) : pas de particules, pas d'arrêt sur image
+  const added = [];
+  const world = { adv: { fx: false, hitstop: () => added.push('stop') }, add: (e) => added.push(e) };
+  const target = { world, cx: 0, cy: 0 };
+  hitFx(target, null);
+  dustFx(world, 0, 0);
+  assert.equal(added.length, 0);
+  assert.equal(target.hitFlash, undefined);
+  // avec : étincelles, éclair, arrêt sur image
+  world.adv.fx = 'full';
+  hitFx(target, { cx: -10, cy: 0 }, { big: true });
+  assert.ok(added.includes('stop') && added.filter((e) => e instanceof Burst).length === 1 && target.hitFlash > 0);
+});

@@ -102,7 +102,33 @@ En plus :
 | Mobile | légère : sans rayons de soleil ni ombres de nuages, moitié moins de particules |
 | Classique | aucune |
 
+## Effets de jeu et interface
+
+- **Coups** : quand on touche un monstre, une petite étoile blanche marque l'impact, des étincelles
+  partent dans le sens du coup et le monstre devient tout blanc un instant. Sur un boss, l'image
+  s'arrête une fraction de seconde : on sent que le coup est fort.
+- **Monstre vaincu** : une gerbe d'éclats colorés en plus du petit nuage habituel.
+- **Pas du héros** : de petits nuages de poussière, de la couleur du sol (blancs sur la neige, dorés
+  sur le sable, gris sur les cendres ; rien sur la glace ni sous l'eau).
+- **Butin** : les pièces et objets qui tombent d'un monstre sautent deux fois avant de se poser ;
+  tout ce qui est à ramasser brille de temps en temps.
+- **Police** : une police ronde et très lisible pour les enfants (Nunito), et Fredoka pour le nom du jeu.
+  Les fichiers sont dans `game/fonts/` (licence libre OFL), le jeu marche donc sans Internet.
+- **Fenêtres** : dialogues, menus, sac, quêtes, magasin, quiz et mini-jeux sont dans un cadre en bois
+  aux coins en laiton ; le bandeau du haut et le bas de l'histoire en images aussi.
+- **Écran titre** : une vraie illustration (le royaume d'Iris au lever du jour, son arc-en-ciel,
+  Alia la licorne entourée d'étincelles) et le nom du jeu en lettres dorées.
+
+Les effets de jeu se coupent avec `?fx=0` comme le reste ; la police et les cadres restent.
+
 ## Comment ça marche (technique)
+
+- Effets de jeu : `gameplay/actors/juice.js` (`Burst` : gerbe de particules, `Impact`, `hitFx`,
+  `defeatFx`, `dustFx`, `flashOver`). Arrêt sur image : `adv.hitstop(secondes)`. Un acteur avec
+  `bigHit` (le boss) a des coups plus forts. Poussière : `props.dust` des tuiles (`game/themes.js`).
+- Cadres : `engine/ui/panel.js` (`drawPanel`, image posée en 9 morceaux, ou fond uni et liseré si le
+  style n'a pas d'image). Le cadre en bois et les polices : `game/art/ui.js` ; l'écran titre :
+  `game/art/title.js`.
 
 - `engine/graphics/Ambience.js` : la couche d'ambiance du moteur (teinte, lumière du ciel, pénombre
   percée par les lumières, rayons, ombres de nuages, particules, vignette). Le jeu décrit chaque lieu

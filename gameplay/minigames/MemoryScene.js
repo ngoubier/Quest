@@ -1,6 +1,7 @@
 import { Scene } from '../../engine/index.js';
 import { makeDeck, remember, aiFirst, aiSecond, result } from './memory.js';
 import { skillForAge } from './tictactoe.js';
+import { drawPanel } from '../../engine/index.js';
 
 // MEMORY DES ANIMAUX contre un habitant. 12 cartes (6 paires d'animaux de la forêt).
 // Croix : choisir une carte · Action : la retourner · B : abandonner. Tactile : toucher la carte.
@@ -191,8 +192,7 @@ export class MemoryScene extends Scene {
     const s = this.game.style;
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
     const b = this.box;
-    r.rect(b.x, b.y, b.w, b.h, s.box);
-    r.strokeRect(b.x, b.y, b.w, b.h, s.border);
+    drawPanel(r, b.x, b.y, b.w, b.h, s);
     r.fitText(`Memory contre ${this.opponent}`, r.width / 2, b.y + 4, b.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const status = this.result ? { win: 'Tu as gagné, bravo !', lose: `${this.opponent} a gagné... Rejoue !`, draw: 'Égalité !' }[this.result] : this.message;
     r.fitText(status, r.width / 2, b.y + 15, b.w - 8, { color: s.text, size: 7, font: s.font, align: 'center' });

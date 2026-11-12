@@ -1,4 +1,5 @@
 import { Entity } from '../../engine/index.js';
+import { hitFx } from './juice.js';
 
 // Acteur = entité qui a des points de vie, peut être blessée, repoussée, et clignote
 // pendant son invulnérabilité. Base commune du héros et des monstres.
@@ -43,6 +44,8 @@ export class Actor extends Entity {
     const ky = kx ? 0 : Math.sign(dy) || 1;
     this.knock = { vx: kx * knockback, vy: ky * knockback, t: duration };
     this.onHurt(amount, from);
+    // étincelles, éclair blanc, arrêt sur image (pas pour le héros : il clignote déjà)
+    if (!this.has('hero')) hitFx(this, from, { big: !!this.bigHit });
     if (left <= 0) this.die(from);
     return true;
   }
@@ -50,6 +53,7 @@ export class Actor extends Entity {
   /** Met à jour invulnérabilité et recul. Renvoie true tant que l'acteur est repoussé. */
   updateStatus(dt) {
     if (this.invuln > 0) this.invuln -= dt;
+    if (this.hitFlash > 0) this.hitFlash -= dt;
     if (this.knock) {
       this.move(this.knock.vx * dt, this.knock.vy * dt);
       this.knock.t -= dt;

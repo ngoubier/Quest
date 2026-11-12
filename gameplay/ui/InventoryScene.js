@@ -1,4 +1,5 @@
 import { Scene, MenuScene } from '../../engine/index.js';
+import { drawPanel } from '../../engine/index.js';
 
 // Le sac : une grille de cases (10 au départ). Chaque case contient un type d'objet,
 // empilé jusqu'à son maximum. Action sur une case : Utiliser / Jeter.
@@ -93,9 +94,7 @@ export class InventoryScene extends Scene {
     const h = rows * CELL + 84;
     const x = Math.round((r.width - w) / 2);
     const y = Math.max(4, Math.round((r.height - h) / 2));
-    r.rect(x, y, w, h, s.box);
-    r.strokeRect(x, y, w, h, s.border);
-    r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
+    drawPanel(r, x, y, w, h, s);
     r.text(`SAC  ${items.length}/${n}`, r.width / 2, y + 7, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
     for (let k = 0; k < n; k++) {
       const cx = x + gx + (k % COLS) * CELL;
