@@ -102,6 +102,8 @@ const sfx = {
   boss_open: { type: 'square', notes: [[523, 0.06], [659, 0.06], [784, 0.12]], vol: 0.2 },
   fire: { type: 'sawtooth', notes: [[520, 0.04], [320, 0.08]], vol: 0.12 },
   throw: { type: 'triangle', notes: [[300, 0.05], [200, 0.06]], vol: 0.12 },
+  dig: { type: 'noise', notes: [[1, 0.12]], vol: 0.12 },
+  drum: { type: 'triangle', notes: [[110, 0.12], [82, 0.2]], vol: 0.35 },
   boom: { type: 'noise', notes: [[1, 0.35]], vol: 0.3 },
   chime: { type: 'triangle', notes: [[1047, 0.08], [784, 0.12]], vol: 0.15 },
   fall: { type: 'square', notes: [[600, 0.06], [400, 0.06], [250, 0.12]], vol: 0.18, slide: 120 },

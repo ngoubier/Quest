@@ -14,6 +14,8 @@ import { Bomb } from './Bomb.js';
 //  - bouton Objet : utilise l'objet équipé (bâton de feu...)
 //  - glace (propriété de tuile `slippery`) : on glisse tout droit jusqu'au prochain obstacle
 //  - trou (propriété de tuile `pit`) : on tombe, on perd un demi-cœur et on revient au dernier endroit sûr
+//  - sables mouvants (propriété `quicksand`) : on avance lentement et on s'enfonce ; trop longtemps → comme un trou
+//  - pelle : creuse la case devant (propriété `diggable` : tuile après le trou) ; objets enterrés (onDig)
 //
 // Sprites attendus (planche 'chars') : player_{down|up|side}_{0|1}
 // et (planche 'objects') : sword_{down|up|side}
@@ -72,7 +74,7 @@ export class Hero extends Actor {
       return;
     }
 
-    if (this._checkPit()) return;
+    if (this._checkPit(dt)) return;
     this.toolCooldown -= dt;
     if (input.pressed('item')) {
       input.consume('item');
@@ -98,7 +100,8 @@ export class Hero extends Actor {
       const keep = (this.facing === 'left' && x < 0) || (this.facing === 'right' && x > 0) || (this.facing === 'up' && y < 0) || (this.facing === 'down' && y > 0);
       if (!keep) this.facing = x < 0 ? 'left' : x > 0 ? 'right' : y < 0 ? 'up' : 'down';
       const len = Math.hypot(x, y);
-      const res = this.move((x / len) * this.speed * dt, (y / len) * this.speed * dt, { cornerAssist: 6 });
+      const sp = this.speed * (this.sinking > 0 ? 0.35 : 1);
+      const res = this.move((x / len) * sp * dt, (y / len) * sp * dt, { cornerAssist: 6 });
       this.anim.play(`walk_${animDir(this.facing)}`);
       // Contre quelque chose : pousser un bloc ? ouvrir une porte verrouillée ?
       const straight = !x || !y;
@@ -126,25 +129,54 @@ export class Hero extends Actor {
   }
 
   /** Trous : mémorise le dernier endroit sûr ; tombe si le centre du héros est au-dessus d'un trou. */
-  _checkPit() {
+  _checkPit(dt = 0) {
     const tm = this.world.tilemap;
     const ts = tm.tileSize;
     const tx = Math.floor(this.cx / ts);
     const ty = Math.floor(this.cy / ts);
-    if (tm.propAt(tx, ty, 'pit')) {
+    // sables mouvants : on s'enfonce peu à peu
+    if (tm.propAt(tx, ty, 'quicksand')) this.sinking = (this.sinking ?? 0) + dt;
+    else this.sinking = 0;
+    const sunk = this.sinking > 1.6;
+    if (tm.propAt(tx, ty, 'pit') || sunk) {
+      this.sinking = 0;
       this.game.audio.play('fall');
       const back = this.safe ?? this.adv.entry; // dernier endroit sûr, sinon l'entrée de la carte
       if (back) (this.x = back.x), (this.y = back.y);
       this.slide = null;
       this.invuln = 0;
       this.hurt(1, null, { knockback: 0 });
-      this.adv.toast('Tu es tombé dans un trou !');
+      this.adv.toast(sunk ? 'Les sables mouvants t’ont avalé ! Ne reste pas dedans.' : 'Tu es tombé dans un trou !');
       return true;
     }
     let near = false;
-    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) if (tm.propAt(tx + dx, ty + dy, 'pit')) near = true;
+    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) if (tm.propAt(tx + dx, ty + dy, 'pit') || tm.propAt(tx + dx, ty + dy, 'quicksand')) near = true;
     if (!near) this.safe = { x: this.x, y: this.y };
     return false;
+  }
+
+  /** Pelle : creuse la case devant le héros. */
+  dig() {
+    if (this.toolCooldown > 0) return false;
+    this.toolCooldown = 0.35;
+    const tm = this.world.tilemap;
+    const ts = tm.tileSize;
+    const d = DIRS[this.facing];
+    const tx = Math.floor((this.cx + d.x * 12) / ts);
+    const ty = Math.floor((this.cy + d.y * 12) / ts);
+    const to = tm.propAt(tx, ty, 'diggable');
+    if (!to) {
+      this.game.audio.play('menu_no');
+      this.adv.toast('Le sol est trop dur ici. On creuse dans le sable !');
+      return true;
+    }
+    tm.set('ground', tx, ty, to);
+    this.game.audio.play('dig');
+    this.world.add(new Effect(tx * ts + 8, ty * ts + 8, { duration: 0.25 }));
+    const found = this.world.query({ x: tx * ts + 2, y: ty * ts + 2, w: ts - 4, h: ts - 4 }, (e) => typeof e.onDig === 'function');
+    if (found.length) found.forEach((e) => e.onDig(this));
+    else if (Math.random() < 0.12) this.adv.spawnPickup('coin', tx * ts, ty * ts);
+    return true;
   }
 
   /** Pose une bombe devant soi (une seule à la fois). Renvoie false s'il n'y en a plus. */
@@ -274,6 +306,14 @@ export class Hero extends Actor {
       if (dir === 'up') drawSword();
       th.chars.draw(r, `player_${dir}_1`, sx, sy, { flipX });
       if (dir !== 'up') drawSword();
+      return;
+    }
+    if (this.sinking > 0) {
+      // s'enfonce dans le sable : le bas du corps disparaît
+      const k = Math.min(7, Math.round(this.sinking * 3.5));
+      th.chars.draw(r, this.anim.frame, sx, sy + k, { flipX });
+      r.rect(sx + 1, this.y + 5, 14, 4, '#c8a050');
+      r.rect(sx + 3, this.y + 4, 10, 1, '#e0c070');
       return;
     }
     th.chars.draw(r, this.anim.frame, sx, sy, { flipX });

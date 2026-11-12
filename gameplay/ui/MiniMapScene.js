@@ -4,11 +4,12 @@ import { Scene } from '../../engine/index.js';
 // (point clignotant) et les coffres pas encore ouverts. N'importe quel bouton le referme.
 
 export class MiniMapScene extends Scene {
-  constructor(adv, { title = 'Plan' } = {}) {
+  constructor(adv, { title = 'Plan', legend = 'Vert : toi · Jaune : coffre · Gris clair : mur fissuré' } = {}) {
     super();
     this.transparent = true;
     this.adv = adv;
     this.title = title;
+    this.legend = legend;
     this.t = 0;
   }
 
@@ -37,19 +38,19 @@ export class MiniMapScene extends Scene {
     for (let ty = 0; ty < tm.height; ty++) {
       for (let tx = 0; tx < tm.width; tx++) {
         const pit = tm.propAt(tx, ty, 'pit');
-        const col = pit ? '#20140c' : tm.isSolidTile(tx, ty) ? (tm.propAt(tx, ty, 'bombable') ? '#7a6a5a' : '#3a3442') : '#d8ccb0';
+        const col = pit ? '#20140c' : tm.propAt(tx, ty, 'quicksand') ? '#b08040' : tm.isSolidTile(tx, ty) ? (tm.propAt(tx, ty, 'bombable') ? '#7a6a5a' : '#3a3442') : '#d8ccb0';
         r.rect(x0 + tx * cell, y0 + ty * cell, cell, cell, col);
       }
     }
     for (const e of adv.world.entities) {
       if (e.dead) continue;
-      const mark = e.has('chest') && e.present && !e.opened ? '#ffd35a' : e.has('locked') ? '#8a5a2a' : null;
+      const mark = e.mapMark?.() ?? (e.has('chest') && e.present && !e.opened ? '#ffd35a' : e.has('locked') ? '#8a5a2a' : null);
       if (mark) r.rect(x0 + Math.floor(e.cx / tm.tileSize) * cell, y0 + Math.floor(e.cy / tm.tileSize) * cell, cell, cell, mark);
     }
     if (Math.floor(this.t * 4) % 2 === 0) {
       const h0 = adv.hero;
       r.rect(x0 + Math.floor(h0.cx / tm.tileSize) * cell - 1, y0 + Math.floor(h0.cy / tm.tileSize) * cell - 1, cell + 2, cell + 2, '#3ac46a');
     }
-    r.fitText('Vert : toi · Jaune : coffre · Gris clair : mur fissuré', r.width / 2, y0 + h + 4, r.width - 8, { color: s.dim, size: 6, font: s.font, align: 'center' });
+    r.fitText(this.legend, r.width / 2, y0 + h + 4, r.width - 8, { color: s.dim, size: 6, font: s.font, align: 'center' });
   }
 }

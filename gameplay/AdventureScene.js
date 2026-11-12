@@ -737,8 +737,57 @@ export class AdventureScene extends Scene {
     shade(Math.max(vp.x, x0), y1, Math.min(x1, vp.x + vp.w) - Math.max(vp.x, x0), vp.y + vp.h - y1);
   }
 
+  /**
+   * Tempête de sable (carte avec storm: { area: [x0, y0, x1, y1] en tuiles, when?: condition }) :
+   * quand le héros est dans la zone, on ne voit presque rien, sauf autour de lui et des poteaux ('beacon').
+   */
+  _drawStorm(r) {
+    const st = this.mapDef.storm;
+    if (!st || !check(st.when, this.state)) return;
+    const ts = this.cfg.tileSize;
+    const [x0, y0, x1, y1] = st.area;
+    const h = this.hero;
+    if (h.cx < x0 * ts || h.cx > (x1 + 1) * ts || h.cy < y0 * ts || h.cy > (y1 + 1) * ts) return;
+    const vp = this.viewport;
+    const cam = this.world.camera;
+    const scale = r.scale ?? 1;
+    const W = Math.ceil(vp.w * scale);
+    const Hh = Math.ceil(vp.h * scale);
+    if (!this._fog || this._fog.width !== W || this._fog.height !== Hh) {
+      this._fog = document.createElement('canvas');
+      this._fog.width = W;
+      this._fog.height = Hh;
+    }
+    const f = this._fog.getContext('2d');
+    f.globalCompositeOperation = 'source-over';
+    f.clearRect(0, 0, W, Hh);
+    const t = this.game.time;
+    f.fillStyle = 'rgba(214,176,112,0.93)';
+    f.fillRect(0, 0, W, Hh);
+    // traînées de sable qui volent
+    f.fillStyle = 'rgba(250,226,170,0.5)';
+    for (let k = 0; k < 24; k++) f.fillRect(((k * 53 + t * 220) % (W + 40)) - 40, (k * 37) % Hh, 18 * scale, scale);
+    f.globalCompositeOperation = 'destination-out';
+    const hole = (wx, wy, rad) => {
+      const sx = (wx - cam.x) * scale;
+      const sy = (wy - cam.y) * scale;
+      const g = f.createRadialGradient(sx, sy, rad * 0.3 * scale, sx, sy, rad * scale);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      f.fillStyle = g;
+      f.fillRect(sx - rad * scale, sy - rad * scale, rad * 2 * scale, rad * 2 * scale);
+    };
+    hole(h.cx, h.cy, 34);
+    for (const b of this.world.byTag('beacon')) hole(b.cx, b.cy - 6, 20);
+    r.ctx.save();
+    r.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    r.ctx.drawImage(this._fog, vp.x * scale + (r.offsetX ?? 0), vp.y * scale + (r.offsetY ?? 0), W, Hh);
+    r.ctx.restore();
+  }
+
   draw(r) {
     this.world.draw(r);
+    this._drawStorm(r);
     this._drawColorLoss(r);
     this._dimOtherRooms(r);
     this._hudButtons = drawHud(r, this, this.cfg.hud);

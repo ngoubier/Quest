@@ -2,6 +2,7 @@ import { Animator, rectsOverlap } from '../../engine/index.js';
 import { Enemy } from './Enemy.js';
 import { Effect } from './Effect.js';
 import { Projectile } from './Projectile.js';
+import { check } from '../script/conditions.js';
 
 // BOSS de fin de donjon : combat + questions.
 // Il est protégé par un BOUCLIER. Le frapper déclenche une question :
@@ -17,11 +18,14 @@ import { Projectile } from './Projectile.js';
 //           defeatedText — message quand il est vaincu (« Ronce-Noire est vaincue ! ») ;
 //           invisible: true   — presque invisible tant que son bouclier tient (on le devine à son ombre) ;
 //           meltWith: 'wall'  — il fonce jusqu'au mur ; sonné, il devient vulnérable (Minotaure) ;
-//           dashSpeed : vitesse de ses ruées.
+//           dashSpeed : vitesse de ses ruées ;
+//           hiddenUntil : condition — absent tant qu'elle est fausse (le Ver sort quand les 3 tambours ont sonné) ;
+//           burrow: true      — il passe sous le sable (intouchable, une simple bosse qui suit le héros),
+//                               puis ressort quelques secondes.
 // Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, et {sprite}_shield ou boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95 }) {
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage: 1, behavior: 'wander', drops: [], seed });
     this.x = x - 4;
     this.y = y + 4;
@@ -38,6 +42,11 @@ export class Boss extends Enemy {
     this.invisible = invisible;
     this.dashSpeed = dashSpeed;
     this.dizzy = 0;
+    this.hiddenUntil = hiddenUntil;
+    this.burrow = burrow;
+    this.under = burrow ? 2 : 0; // secondes restantes sous le sable
+    this.surfaceTime = 0;
+    this.wasHidden = null;
     this.revealed = 0;
     this.shotTimer = 3;
     this.hintCooldown = 0;
@@ -59,9 +68,54 @@ export class Boss extends Enemy {
     return t.charAt(0).toUpperCase() + t.slice(1);
   }
 
+  /** Absent (pas encore réveillé) ? */
+  get hidden() {
+    return !!this.hiddenUntil && !check(this.hiddenUntil, this.adv.state);
+  }
+
+  /** Sous le sable : il ne peut pas être touché. */
+  get buried() {
+    return this.burrow && this.under > 0;
+  }
+
   update(dt) {
     if (!this.active) return;
+    const hidden = this.hidden;
+    if (this.wasHidden && !hidden) {
+      // il se réveille !
+      this.world.camera.shake(5, 0.8);
+      this.game.audio.play('boom');
+      this.adv.toast(`${this.displayName} sort du sable !`);
+    }
+    this.wasHidden = hidden;
+    this.visible = !hidden;
+    if (hidden) return;
     this.anim.update(dt);
+    if (this.burrow && !this.asking) {
+      if (this.under > 0) {
+        this.under -= dt;
+        const h = this.adv.hero;
+        if (h) {
+          const dx = h.cx - this.cx;
+          const dy = h.cy - this.cy;
+          const d = Math.hypot(dx, dy) || 1;
+          this.move((dx / d) * 34 * dt, (dy / d) * 34 * dt);
+        }
+        if (this.under <= 0) {
+          this.surfaceTime = 4.5;
+          this.game.audio.play('boom');
+          this.world.camera.shake(3, 0.3);
+          this.world.add(new Effect(this.cx, this.cy));
+        }
+        return;
+      }
+      // à la surface : il replonge quand le temps est écoulé (sauf si son bouclier est baissé)
+      if (this.shield && (this.surfaceTime -= dt) <= 0) {
+        this.under = 3;
+        this.world.add(new Effect(this.cx, this.cy));
+        return;
+      }
+    }
     this.revealed -= dt;
     if (this.updateStatus(dt)) return;
     // Fenêtre de vulnérabilité
@@ -118,6 +172,11 @@ export class Boss extends Enemy {
   }
 
   onSwordHit(hero) {
+    if (this.hidden) return;
+    if (this.buried) {
+      if (this.hintCooldown <= 0) (this.hintCooldown = 2.5), this.adv.toast('Il est sous le sable ! Attends qu’il sorte.');
+      return;
+    }
     if (!this.shield) {
       if (this.hurt(1, hero, { knockback: 60 })) {
         this.hitsThisWindow++;
@@ -138,6 +197,7 @@ export class Boss extends Enemy {
   /** Projectile du héros : blesse le boss sans bouclier ; fait fondre la carapace si c'est le bon. */
   onProjectile(p) {
     if (p.hostile) return false;
+    if (this.hidden || this.buried) return false;
     const hero = this.adv.hero;
     if (!this.shield) {
       if (this.hurt(1, p, { knockback: 60 })) (this.hitsThisWindow++, this.game.audio.play('hit'));
@@ -189,8 +249,9 @@ export class Boss extends Enemy {
   }
 
   draw(r) {
-    if (this.flashing) return;
+    if (this.flashing || this.hidden) return;
     const sheet = this.game.themes.current.sprites.boss;
+    if (this.buried) return sheet.draw(r, sheet.has(`${this.sprite}_under`) ? `${this.sprite}_under` : this.anim.frame, this.x - 4, this.y - 14);
     if (this.dizzy > 0) {
       const t = this.game.time * 6;
       for (let k = 0; k < 4; k++) r.rect(Math.round(this.cx - 1 + Math.cos(t + k * 1.6) * 10), Math.round(this.y - 18 + Math.sin(t + k * 1.6) * 3), 2, 2, '#ffe066');

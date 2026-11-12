@@ -3,6 +3,7 @@ import { NimScene } from './NimScene.js';
 import { MemoryScene } from './MemoryScene.js';
 import { Connect4Scene } from './Connect4Scene.js';
 import { MastermindScene } from './MastermindScene.js';
+import { CupsScene } from './CupsScene.js';
 
 // Mini-jeux contre les habitants. Chaque entrée crée la scène du jeu :
 //   opts : { opponent: 'Bastien', age: 8, onDone(result) }  — result : 'win' | 'lose' | 'draw' | 'quit'
@@ -13,6 +14,7 @@ export const MINIGAMES = {
   memory: (opts) => new MemoryScene(opts), // Memory des animaux
   puissance4: (opts) => new Connect4Scene(opts), // Puissance 4
   code: (opts) => new MastermindScene(opts), // Code secret
+  gobelets: (opts) => new CupsScene(opts), // Les 3 gobelets
 };
 
 export function createMinigame(name, opts) {

@@ -834,3 +834,132 @@ export class Crumble extends WorldObject {
     objSheet(this).draw(r, this.t === null ? 'crumble' : 'crumble_crack', this.x + shake, this.y);
   }
 }
+
+// ------------------------------------------------------------------ objet enterré (pelle)
+export class Buried extends WorldObject {
+  /** props : { item?, count?, flag?, onMap?: bool (marqué d'une croix sur la carte au trésor) }
+   *  Invisible ; un petit reflet brille de temps en temps. Creusé : l'objet sort du sable (une seule fois). */
+  constructor({ x, y, uid, props }) {
+    super({ x, y, w: 16, h: 16, uid, props, tags: ['buried'] });
+    this.z = -800;
+    this.t = Math.random() * 4;
+  }
+
+  added() {
+    if (this.state.flag(`dug:${this.uid}`)) this.kill();
+  }
+
+  update(dt) {
+    this.t += dt;
+  }
+
+  onDig() {
+    this.state.setFlag(`dug:${this.uid}`);
+    if (this.props.flag) this.state.setFlag(this.props.flag);
+    if (this.props.item) this.world.add(new Pickup({ x: this.x, y: this.y, uid: `${this.uid}:item`, props: { item: this.props.item, count: this.props.count ?? 1 } }));
+    this.world.game.audio.play('secret');
+    this.world.add(new Effect(this.cx, this.cy));
+    this.kill();
+  }
+
+  /** Couleur sur la carte au trésor (ou rien). */
+  mapMark() {
+    return this.props.onMap ? '#e83a3a' : null;
+  }
+
+  draw(r) {
+    // un reflet toutes les 4 secondes : l'enfant attentif devine le trésor
+    const k = this.t % 4;
+    if (k < 0.3) objSheet(this).draw(r, 'glint', this.x, this.y);
+  }
+}
+
+// ------------------------------------------------------------------ statue qu'on fait tourner
+export class Statue extends WorldObject {
+  /** props : { flag, facing: 'down', target: 'up' } — chaque coup d'épée la tourne d'un quart de tour.
+   *  Le drapeau est levé quand elle regarde dans la bonne direction (et baissé sinon). */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 1, y: y + 4, w: 14, h: 12, uid, props, solid: true, tags: ['statue'] });
+    this.cooldown = 0;
+  }
+
+  static ORDER = ['up', 'right', 'down', 'left'];
+
+  get facing() {
+    const n = this.state.counter(`statue:${this.uid}`);
+    const start = Statue.ORDER.indexOf(this.props.facing ?? 'down');
+    return Statue.ORDER[(start + n) % 4];
+  }
+
+  update(dt) {
+    this.cooldown -= dt;
+    this.state.setFlag(this.props.flag, this.facing === (this.props.target ?? 'up'));
+  }
+
+  onSwordHit() {
+    if (this.cooldown > 0) return;
+    this.cooldown = 0.4;
+    this.state.addCounter(`statue:${this.uid}`);
+    this.world.game.audio.play('push');
+    if (this.facing === (this.props.target ?? 'up')) this.world.game.audio.play('switch');
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, `statue_${this.facing}`, this.x - 1, this.y - 4);
+  }
+}
+
+// ------------------------------------------------------------------ tambour (enterré ou non)
+export class Drum extends WorldObject {
+  /** props : { flag, buried?: bool } — enterré, il faut d'abord le déterrer à la pelle ;
+   *  ensuite un coup d'épée le fait résonner (drapeau levé). */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 2, y: y + 4, w: 12, h: 11, uid, props, tags: ['drum'] });
+    this.bounce = 0;
+  }
+
+  get out() {
+    return !this.props.buried || this.state.flag(`dug:${this.uid}`);
+  }
+
+  get hit() {
+    return this.state.flag(this.props.flag);
+  }
+
+  update(dt) {
+    this.solid = this.out;
+    this.bounce = Math.max(0, this.bounce - dt);
+  }
+
+  onDig() {
+    if (this.out) return;
+    this.state.setFlag(`dug:${this.uid}`);
+    this.world.game.audio.play('secret');
+    this.world.add(new Effect(this.cx, this.cy));
+    this.adv.toast('Un tambour ! Frappe-le avec l’épée.');
+  }
+
+  onSwordHit() {
+    if (!this.out) return;
+    this.bounce = 0.3;
+    this.world.game.audio.play('drum');
+    if (!this.hit) this.state.setFlag(this.props.flag);
+  }
+
+  draw(r) {
+    if (!this.out) return void (Math.floor(this.world.game.time * 0.5) % 4 === 0 && objSheet(this).draw(r, 'glint', this.x - 2, this.y - 4));
+    objSheet(this).draw(r, this.hit ? 'drum_hit' : 'drum', this.x - 2, this.y - 4 - (this.bounce > 0 ? 1 : 0));
+  }
+}
+
+// ------------------------------------------------------------------ poteau (repère dans la tempête)
+export class Post extends WorldObject {
+  /** Un poteau avec une lanterne : on le voit même dans la tempête de sable (tag 'beacon'). */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 5, y: y + 10, w: 6, h: 5, uid, props, solid: true, tags: ['beacon'] });
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, 'post', this.x - 5, this.y - 10);
+  }
+}

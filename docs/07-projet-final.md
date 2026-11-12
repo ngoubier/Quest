@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, niveaux 1 à 5 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, niveaux 1 à 6 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -346,7 +346,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | 3 ✓ | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
 | 4 ✓ | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
 | 5 ✓ | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
-| 6 | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
+| 6 ✓ | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
 | 7 | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
 | 8 | Volcan, armure, château, Morgor, fin | L |
 
@@ -356,7 +356,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 |---|---|
 | Sous l'eau | **Bouteille d'oxygène à temps limité** ; temps écoulé = on recommence le niveau |
 | Ambiances | **Médiéval-fantastique seulement** (plus de station spatiale ni de ville) |
-| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures, Bourg-Lanterne et le Labyrinthe |
+| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures, Bourg-Lanterne, le Labyrinthe et le Désert |
 | Noms, ordre libre, pouvoir dès chaque pierre, armure à 300 pièces | retenus par défaut (pas d'objection) |
 
 ## 10. Lot 1 — ce qui est fait
@@ -495,4 +495,29 @@ habitants humains : aussi en haute définition sur PC).
 - **Quête secondaire** : « Les 3 sabliers de Lulu », chacun derrière un mur fissuré (10 pièces + 1 cœur).
 - **Raccourci** : un mur fissuré relie la salle de la clé de bronze à la salle des bombes (pour revenir après les
   dalles effondrées).
+
+## 16. Lot 6 — le Désert des Mirages (fait)
+
+Données : `game/data/soleil.js` · dessins : `game/theme-soleil.js` (sable, dunes, cactus, palmiers, habitants humains :
+aussi en haute définition sur PC).
+
+- **Statues** (`statue`) : chaque coup d'épée les tourne d'un quart de tour ; leur drapeau est levé quand elles
+  regardent le soleil (vers le haut). Les 4 ouvrent la grille du **temple enfoui**.
+- **Temple** (2 salles) : chasser les momies ouvre la seconde, où sont la **pelle** et un trésor enterré.
+- **Pelle** (`hero.dig()`) : creuse la case devant (propriété de tuile `diggable`) ; les objets enterrés réagissent
+  avec `onDig()` : trésors (`buried`, un petit reflet brille de temps en temps), **tambours** (`drum` avec `buried`).
+  Ailleurs, on trouve parfois une pièce.
+- **Sables mouvants** (propriété `quicksand`) : on avance lentement et on s'enfonce ; au bout de 1,6 s, on est
+  ramené au dernier endroit sûr avec un demi-cœur en moins.
+- **Tempête de sable** (`storm` sur la carte : zone et condition) : on ne voit presque rien, sauf autour du héros et
+  des **poteaux à lanterne** (`post`, tag `beacon`). La zone est fermée de dunes : une seule entrée, un chemin balisé
+  au milieu des sables mouvants. Elle se calme quand le Ver est vaincu.
+- **La grande dune** : 3 tambours enterrés ; déterrés et frappés, ils réveillent le **Ver des Dunes**
+  (`hiddenUntil` : absent jusque-là). Il replonge sous le sable (`burrow` : une bosse qui suit le héros, intouchable)
+  puis ressort : on le frappe → question → coups d'épée. Il crache des rochers.
+- **Monstres** : serpents, scorpions (rapides), vautours (volent au-dessus de tout), momies (dans le temple).
+- **Mini-jeu** : *Les 3 gobelets* avec Sabri (`gameplay/minigames/CupsScene.js`, logique dans `cups.js`) :
+  plus d'échanges et plus rapides avec l'âge.
+- **Quêtes secondaires** : « La caravane perdue » (Rachid, au bout d'un cul-de-sac dans la tempête ; récompense :
+  la **carte au trésor**, qui montre les trésors enterrés), « L'eau de Mémé Dune » (remplir la gourde au puits).
 

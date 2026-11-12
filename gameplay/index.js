@@ -46,4 +46,6 @@ export { Bomb } from './actors/Bomb.js';
 export { MastermindScene } from './minigames/MastermindScene.js';
 export * as mastermind from './minigames/mastermind.js';
 export { MiniMapScene } from './ui/MiniMapScene.js';
+export { CupsScene } from './minigames/CupsScene.js';
+export * as cups from './minigames/cups.js';
 export { Projectile } from './actors/Projectile.js';

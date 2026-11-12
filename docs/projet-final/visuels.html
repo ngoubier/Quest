@@ -107,7 +107,7 @@ tr:last-child td { border-bottom: 0; }
 
 <div class="wrap">
 <header class="hero">
-  <span class="eyebrow">Quest · projet final · niveaux 1 à 5 jouables</span>
+  <span class="eyebrow">Quest · projet final · niveaux 1 à 6 jouables</span>
   <h1>La Quête d'Alia</h1>
   <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
   <div class="story">
@@ -463,16 +463,16 @@ const LEVELS = [
     ['Boss', '<b>Le Minotaure de bronze</b> : il charge tout droit. L’esquiver pour qu’il percute un mur, répondre pendant qu’il est sonné, frapper.'],
    ]},
  { id:'desert', key:'desert', num:'Niveau 6', tag:'Pierre du Soleil', name:'Le Désert des Mirages', sub:'Serpents, huttes, oasis et la grande dune', color:'#ff8a1f',
-   caption:'Le campement de huttes à gauche, l’oasis au centre, le temple enfoui à droite. La grande dune, en haut à droite, cache le boss.',
+   caption:'Plan d’origine. Le campement de huttes à gauche, l’oasis, le temple enfoui. La grande dune, en haut à droite, cache le boss. Le niveau est jouable.',
    sheet:[
     ['Ambiance', 'Dunes, cactus, une oasis, un campement de huttes, un temple à moitié enfoui dans le sable.'],
-    ['Habitants', 'Sabri le marchand, Mémé Dune, une caravane de chameaux égarés.'],
-    ['Nouvel objet', '<b>Pelle</b> : creuser pour trouver trésors, interrupteurs enterrés et l’entrée du temple.'],
+    ['Habitants', 'Amira la gardienne du temple, Sabri le joueur de gobelets, Mémé Dune, Farah la marchande et Rachid le caravanier perdu, le puits de l’oasis.'],
+    ['Nouvel objet', '<b>Pelle</b>, au fond du temple enfoui : creuser pour trouver des trésors et les 3 tambours de la grande dune.'],
     ['Monstres', 'Serpents, scorpions (rapides), vautours, momies dans le temple.'],
     ['Astuces', ['<b>Sables mouvants</b> qui ralentissent.','<b>Tempête de sable</b> : on voit moins loin, il faut suivre les poteaux.','<b>Statues</b> à tourner face au soleil pour ouvrir le temple.','<b>Carte au trésor</b> : creuser là où est la croix.']],
     ['Mini-jeu', '<b>Les 3 gobelets</b> avec Sabri : suivre la bille des yeux.'],
-    ['Quêtes', '« La caravane perdue » (3 chameaux) · « De l’eau pour Mémé Dune ».'],
-    ['Boss', '<b>Le Ver des Dunes</b>, caché sous la grande dune : on voit le sable bouger. Le faire sortir en frappant les 3 tambours, répondre, frapper.'],
+    ['Quêtes', '« La Pierre du Soleil » (quête principale) · « La caravane perdue » (Rachid, perdu dans la tempête ; récompense : la carte au trésor) · « L’eau de Mémé Dune ».'],
+    ['Boss', '<b>Le Ver des Dunes</b>, caché sous la grande dune : on voit le sable bouger. Déterrer puis frapper les 3 tambours pour le réveiller ; il replonge sous le sable puis ressort : le frapper quand il est dehors, répondre, frapper.'],
    ]},
  { id:'ocean', key:'ocean', num:'Niveau 7', tag:'Pierre des Marées', name:'Les Abysses de Corail', sub:'Sous l’océan, avec une combinaison de plongée', color:'#2f7bff',
    caption:'On arrive par le bas en plongeant. Le palais des sirènes est au centre, les courants traversent la carte, la fosse du Kraken est en haut.',
@@ -545,7 +545,7 @@ const ROADMAP = [
  ['3 ✓', 'Forêt des Murmures (fait)', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
  ['4 ✓', 'Bourg-Lanterne (fait)', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
  ['5 ✓', 'Labyrinthe (fait)', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
- ['6', 'Désert des Mirages', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
+ ['6 ✓', 'Désert des Mirages (fait)', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
  ['7', 'Abysses de Corail', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
  ['8', 'Volcan Noir et fin', 'Thème volcan, lave et geysers, armure, château, Morgor en 3 phases, scène de fin.', 'L'],
 ];
@@ -553,7 +553,7 @@ const ROADMAP = [
 const QUESTIONS = [
  ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
  ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
- ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures, Bourg-Lanterne et Labyrinthe faits. Suite : le Désert des Mirages.'],
+ ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures, Bourg-Lanterne, Labyrinthe et Désert faits. Suite : les Abysses de Corail.'],
  ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
  ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
  ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],

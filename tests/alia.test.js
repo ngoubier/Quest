@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind } from '../gameplay/index.js';
+import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind, cups } from '../gameplay/index.js';
 import { MAPS, ITEMS, QUESTS } from '../game/data/index.js';
 import { WORLD_NODES, WORLD_MAP, STONES, colorLoss, stoneCount } from '../game/data/worldmap.js';
 
@@ -57,7 +57,7 @@ test('Action « minigame » : la suite dépend du résultat', () => {
   assert.deepEqual(run('quit'), [], 'abandon : rien ne se passe');
 });
 
-test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lanterne et le Labyrinthe ouverts, le reste fermé pour l’instant', () => {
+test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lanterne, le Labyrinthe et le Désert ouverts, le reste fermé pour l’instant', () => {
   assert.equal(WORLD_NODES.length, 8);
   const st = new GameState();
   for (const n of WORLD_NODES) {
@@ -66,7 +66,7 @@ test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lante
       const row = MAPS[n.mapId].rows[n.at[1]];
       assert.ok(row && row[n.at[0]] !== '#', `${n.id} : arrivée sur une case libre`);
     }
-    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore', 'temps'].includes(n.id), n.id);
+    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore', 'temps', 'soleil'].includes(n.id), n.id);
   }
   assert.equal(WORLD_NODES.filter((n) => n.kind === 'stone').length, 6);
   STONES.forEach((k) => assert.ok(ITEMS[`stone_${k}`], `objet stone_${k}`));
@@ -549,4 +549,73 @@ test('Labyrinthe : bombes, cristaux, dalles, clé de bronze, puis la porte du Mi
   assert.equal(a.A.appearWhen, a.B.flag);
   assert.ok(ITEMS.bomb.tool && ITEMS.maze_map.use);
   for (const id of ['temps', 'sabliers']) assert.ok(QUESTS.some((q) => q.id === id), id);
+});
+
+// ------------------------------------------------------------------ niveau 6 : le Désert des Mirages
+test('Les 3 gobelets : on suit la bille à travers les échanges', () => {
+  const { makeSwaps, ballSlot, settingsForAge } = cups;
+  assert.equal(ballSlot(0, [[0, 1]]), 1);
+  assert.equal(ballSlot(0, [[1, 2]]), 0);
+  assert.equal(ballSlot(2, [[0, 2], [0, 1], [1, 2]]), 2);
+  for (let k = 0; k < 50; k++) for (const [a, b] of makeSwaps(6)) assert.ok(a !== b && a >= 0 && b < 3);
+  assert.ok(settingsForAge(10).swaps > settingsForAge(6).swaps);
+  assert.ok(settingsForAge(10).duration < settingsForAge(6).duration);
+});
+
+test('Désert : statues, temple, tempête balisée, puis la grande dune', () => {
+  const m = MAPS.soleil;
+  const o = m.objects;
+  const start = findIn(m.rows, 'P');
+  const base = '#DtT~pckrhqG1234IKoASMwFRd'; // '#' : hors de la carte
+  const s1 = reach(m, start, { solid: base, ice: '' });
+  // statues accessibles par le bas (on les frappe), toutes au départ mal tournées
+  for (const ch of '1234') {
+    const [x, y] = findIn(m.rows, ch);
+    assert.ok(s1.has([x, y + 1].join()), `statue ${ch} accessible`);
+    assert.notEqual(o[ch].facing, 'up');
+    assert.equal(o[ch].type, 'statue');
+  }
+  assert.deepEqual(o.G.openWhen, ['1', '2', '3', '4'].map((k) => o[k].flag));
+  // la porte du temple est derrière la grille
+  const [dx, dy] = findIn(m.rows, 'd');
+  assert.equal(m.rows[dy + 1][dx], 'G');
+  // habitants accessibles
+  for (const ch of 'ASMwFIK') assert.ok(near(s1, findIn(m.rows, ch)), `on peut approcher ${ch}`);
+  // la tempête : sans marcher dans les sables mouvants, on arrive à la grande dune par le chemin balisé
+  assert.ok(s1.has(findIn(m.rows, 'Z').join()), 'la grande dune par le chemin');
+  assert.ok(near(s1, findIn(m.rows, 'R')), 'Rachid au bout d’un cul-de-sac');
+  // la tempête est fermée de dunes : une seule entrée
+  const [x0, y0, x1, y1] = m.storm.area;
+  let entries = 0;
+  for (let y = y0; y <= y1; y++) if (m.rows[y][x0 - 1] !== 'D') entries++;
+  assert.equal(entries, 1, 'une seule entrée dans la tempête');
+  for (let x = x0 - 1; x <= x1; x++) assert.ok('DZ'.includes(m.rows[y0][x]), 'pas de passage au-dessus de la tempête');
+  // sur le chemin, chaque case du chemin a un poteau pas trop loin (on se repère)
+  const posts = [];
+  m.rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'o' && posts.push([x, y])));
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++)
+      if (s1.has([x, y].join())) assert.ok(posts.some(([px, py]) => Math.abs(px - x) + Math.abs(py - y) <= 5), `poteau près de ${x},${y}`);
+  // trésors de la carte : accessibles et sur du sable
+  m.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch === 'b' || ch === 'B') {
+      assert.ok(s1.has([x, y].join()), `trésor ${x},${y}`);
+      assert.ok(o[ch].onMap);
+    }
+  }));
+  // le temple : la salle vidée ouvre la seconde, où sont la pelle
+  const t = MAPS.soleil_temple;
+  assert.equal(t.objects.G.openWhen, t.roomClear[0].flag);
+  assert.equal(t.objects.C.item, 'shovel');
+  assert.deepEqual(t.objects.D.at, [dx, dy + 1]);
+  // la grande dune : 3 tambours enterrés, le Ver attend qu'ils aient tous sonné
+  const a = MAPS.soleil_dune.objects;
+  const drums = ['1', '2', '3'].map((k) => a[k]);
+  assert.ok(drums.every((d) => d.buried && d.type === 'drum'));
+  assert.deepEqual(a.W.hiddenUntil, drums.map((d) => d.flag));
+  assert.equal(a.A.item, 'stone_soleil');
+  assert.equal(a.A.appearWhen, a.W.flag);
+  assert.deepEqual(a.X.at, [36, 2]);
+  assert.ok(ITEMS.shovel.tool && ITEMS.treasure_map.use);
+  for (const id of ['soleil', 'caravan', 'water']) assert.ok(QUESTS.some((q) => q.id === id), id);
 });
