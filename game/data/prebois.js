@@ -489,7 +489,7 @@ const SELLER = {
   dialogue: [
     {
       do: [
-        { say: 'Bienvenue au magasin, {player} ! Choisis un article, puis la quantité avec Gauche / Droite.' },
+        { say: 'Bienvenue au magasin, {player} ! Choisis les articles et leur quantité avec Gauche / Droite, puis Payer.' },
         {
           shop: {
             id: 'village',
