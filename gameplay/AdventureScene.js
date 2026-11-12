@@ -15,7 +15,7 @@ import { QuizScene } from './quiz/QuizScene.js';
 import { chooseSubject } from './quiz/adaptive.js';
 import { check } from './script/conditions.js';
 import { EndScene } from './ui/EndScene.js';
-import { openParentSpace } from './ui/parents.js';
+import { openParentSpace, CLASSES } from './ui/parents.js';
 import { ProfileStore, parentSettings } from './profiles.js';
 import { WorldMapScene } from './ui/WorldMapScene.js';
 import { createMinigame } from './minigames/index.js';
@@ -797,6 +797,7 @@ export class AdventureScene extends Scene {
       { label: 'Charger', enabled: () => this.hasSave(), onSelect: (m) => (m.close(), this.loadGame()) },
     ];
     items.push(...(this.cfg.menuItems?.(this) ?? [])); // options propres au jeu
+    if (this.cfg.questionBank) items.push({ label: () => `Classe : ${CLASSES[this.state.profile?.age ?? 8] ?? '?'}`, onSelect: () => this.openClassMenu() });
     items.push({ label: 'Espace parents', onSelect: (m) => (m.close(), this.openParentSpace()) });
     if (this.cfg.allowThemeSwitch) items.push({ label: () => `Ambiance : ${g.themes.current.def.name}`, onSelect: () => (g.themes.next(), g.audio.play('switch')) });
     items.push(
@@ -804,6 +805,32 @@ export class AdventureScene extends Scene {
       { label: () => `Son : ${g.audio.muted ? 'coupé' : 'activé'}`, onSelect: () => g.audio.setMuted(!g.audio.muted) },
     );
     g.scenes.push(new MenuScene({ title: 'PAUSE', width: 180, items }));
+  }
+
+  /** Choix de la classe (donc de la difficulté des questions) en cours de partie. */
+  openClassMenu() {
+    const st = this.state;
+    const cur = st.profile?.age ?? 8;
+    const items = Object.entries(CLASSES).map(([age, cls]) => ({
+      label: `${Number(age) === cur ? '● ' : ''}${cls} (${age} ans)`,
+      onSelect: (m) => {
+        m.close();
+        this.setClass(Number(age));
+      },
+    }));
+    const menu = new MenuScene({ title: 'Quelle classe ?', width: 160, items });
+    menu.index = Math.max(0, Object.keys(CLASSES).indexOf(String(cur)));
+    this.game.scenes.push(menu);
+  }
+
+  /** Change l'âge (la classe) du joueur : la difficulté automatique repart de ce niveau. */
+  setClass(age) {
+    const st = this.state;
+    st.profile = { ...(st.profile ?? {}), age };
+    st.quiz.level = {};
+    st.quiz.recent = {};
+    if (st.profile.id) this.profiles.update(st.profile.id, { age });
+    this.toast(`Questions de ${CLASSES[age]}`);
   }
 
   /** Le monde perd ses couleurs (0 = normal, 1 = tout gris) : mélange « saturation » vers le gris. */
