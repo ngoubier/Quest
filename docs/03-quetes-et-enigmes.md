@@ -217,7 +217,7 @@ ou de **payer** (3 à 5 pièces) pour réessayer tout de suite.
 | Profils | **Plusieurs enfants** | ✓ jusqu'à 4 profils (prénom + âge), une partie chacun |
 | Programme | Validé ; écrire les notions manquantes | ✓ heure, monnaie, mesures, géométrie, homophones, République… |
 | Monnaie | **Des pièces : les euros** | ✓ dans toutes les ambiances ; prix en € au magasin |
-| Magasin | **Plusieurs objets à acheter** | ✓ magasin dans une maison du village, 8 articles, choix de la quantité, total calculé |
+| Magasin | **Plusieurs objets à acheter** | ✓ magasin dans une maison du village, 8 articles, panier avec quantités, total du panier calculé |
 | Sac | **Bouton à l'écran, 10 places, grand sac payant** | ✓ bouton dans le bandeau (ou touche I / bouton Y), 10 cases, grand sac à 20 places pour 100 € |
 
 ### Le sac
@@ -231,6 +231,11 @@ ou de **payer** (3 à 5 pièces) pour réessayer tout de suite.
 ### Le magasin
 
 Pomme 2 € · Gâteau 6 € · Ruban 5 € · Clous 10 € · Indice 15 € · Potion 20 € · Cœur supplémentaire 60 € · Grand sac 100 €.
-Haut/Bas : article · Gauche/Droite : quantité · le total est affiché (« 3 × 2 € = 6 € ») : c'est aussi du calcul !
+Le magasin fonctionne avec un **panier** :
+- la **bourse** est affichée en grand en haut à droite ;
+- Haut/Bas : article · Gauche/Droite : quantité (de 0 à 9 ; 1 pour les articles uniques) ;
+- chaque ligne montre son sous-total, et le **total du panier** est posé sous la colonne « Total », comme une addition : c'est aussi du calcul !
+- si le panier coûte plus que la bourse, le total passe en rouge et « Payer » est grisé (« Il te manque 4 € » si on essaie quand même) ;
+- **Payer** achète tout d'un coup ; **Au revoir** (ou Retour) quitte le magasin.
 
 Prochaine étape : valider les améliorations proposées dans `05-ameliorations-proposees.md`, puis concevoir le jeu.
