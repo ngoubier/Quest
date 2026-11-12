@@ -204,7 +204,58 @@ function alia(c, dir, step, t = 0) {
   for (const [x, y] of [[2, 4], [14, 9]]) twinkle(c, x, y, 0.8, RAINBOW[(x + step) % 6], 0.8);
 }
 
-export const FOLK_ART = { pingo, owl, cat, gnome, well, mermaid, alia };
+function diver(c, dir, step) {
+  shadow(c, 4.6);
+  const side = dir === 'side';
+  const SUIT = ['#3a8a9a', '#2a6a7a', '#1a4a5a'];
+  const BRASS = ['#ffe08a', '#d8a040', '#9a6a20'];
+  // palmes
+  if (side) {
+    shape(c, '#e8b020', [[4.4, 14.2 - step * 0.4], [8, 13.6 - step * 0.4], [8, 15 - step * 0.4], [3.6, 15.4 - step * 0.4]]);
+    shape(c, '#ffd23a', [[7, 13.8], [12.6 + step, 14], [12.8 + step, 15.4], [7, 15.2]]);
+  } else {
+    shape(c, '#ffd23a', [[3, 15.4], [4, 13 + step * 0.6], [7, 13 + step * 0.6], [7.2, 15.4]]);
+    shape(c, '#ffd23a', [[8.8, 15.4], [9, 13.6 - step * 0.6], [12, 13.6 - step * 0.6], [13, 15.4]]);
+  }
+  // bouteille d'oxygène
+  if (dir === 'up') (ell(c, 8, 10, 3, 3.6, fillOf(c, ['#f0f2f8', '#b8bcc8'], 6, 14)), line(c, '#8a8a9a', 0.6, [[8, 6.6], [8, 5.6]]));
+  if (side) (ell(c, 3.6, 10, 1.8, 3.4, fillOf(c, ['#f0f2f8', '#b8bcc8'], 7, 13)), line(c, '#3a3a4a', 0.5, [[3.6, 6.8], [5.6, 5.4]]));
+  // combinaison
+  ell(c, 8, 10.6, 4, 3.6, fillOf(c, SUIT, 7, 14.4));
+  if (dir === 'up') ell(c, 8, 10, 2.6, 3, fillOf(c, ['#f0f2f8', '#b8bcc8'], 7, 13));
+  line(c, '#5a3a1c', 0.9, [[4.2, 11.8], [11.8, 11.8]]);
+  ell(c, 8, 11.8, 0.8, 0.5, '#c8c8d0');
+  // bras et gants
+  if (side) (line(c, '#2a6a7a', 1.6, [[8, 9], [11.4, 10 - step * 0.6]]), ell(c, 12, 10 - step * 0.6, 0.9, 0.8, '#e8b020'));
+  else
+    for (const [x, dy] of [[3.2, step], [12.8, -step]]) (line(c, '#2a6a7a', 1.6, [[x + (x < 8 ? 1 : -1), 8.6], [x, 11.6 + dy * 0.6]]), ell(c, x, 12.4 + dy * 0.6, 0.9, 0.8, '#e8b020'));
+  // casque de cuivre
+  ell(c, 8, 8.4, 4.4, 1.1, BRASS[2]);
+  ell(c, 8, 4.8, 4.2, 4, fillOf(c, BRASS, 1, 9));
+  ell(c, 6.4, 3, 1.4, 0.8, 'rgba(255,255,255,.55)', -0.5);
+  for (const [x, y] of [[4.2, 6.4], [11.8, 6.4], [8, 1]]) ell(c, x, y, 0.4, 0.4, BRASS[2]);
+  const glass = (x, y, rx, ry) => {
+    ell(c, x, y, rx + 0.6, ry + 0.6, BRASS[2]);
+    ell(c, x, y, rx, ry, '#a8e0f4');
+    ell(c, x, y + ry * 0.3, rx * 0.9, ry * 0.65, '#f2c49b');
+    ell(c, x - rx * 0.4, y - ry * 0.5, rx * 0.3, ry * 0.2, 'rgba(255,255,255,.9)');
+  };
+  if (dir === 'down') {
+    glass(8, 5, 2.4, 2.2);
+    dot(c, 7.2, 5.4, 0.35);
+    dot(c, 8.8, 5.4, 0.35);
+    line(c, '#c87a5a', 0.25, [[7.6, 6.4], [8.4, 6.4]]);
+  } else if (side) {
+    glass(10.4, 5, 1.6, 2);
+    dot(c, 11, 5.4, 0.35);
+    line(c, '#3a3a4a', 0.6, [[4, 5], [3, 6.2]]);
+  } else line(c, BRASS[2], 0.6, [[8, 2], [8, 7.4]]);
+  // bulles qui montent
+  ell(c, side ? 13.4 : 11.6, 1.4 - step * 0.6, 0.5, 0.5, 'rgba(220,245,255,.85)');
+  ell(c, side ? 14.4 : 12.6, -0.2 - step * 0.6, 0.35, 0.35, 'rgba(220,245,255,.7)');
+}
+
+export const FOLK_ART = { pingo, owl, cat, gnome, well, mermaid, alia, diver };
 
 /** Image détaillée d'un habitant (PC) dans un carré 32 × 32. False si ce n'en est pas un. */
 export function paintFolkHD(c, who, dir, step) {
