@@ -14,11 +14,12 @@ import { Projectile } from './Projectile.js';
 //           shots: 'snowball' — il lance ce projectile de temps en temps ;
 //           still: true       — il ne bouge pas (arbre enraciné) ;
 //           shieldText / resistText — ce qu'il dit quand le bouclier est touché / quand l'épée ne sert à rien ;
-//           defeatedText — message quand il est vaincu (« Ronce-Noire est vaincue ! »).
+//           defeatedText — message quand il est vaincu (« Ronce-Noire est vaincue ! ») ;
+//           invisible: true   — presque invisible tant que son bouclier tient (on le devine à son ombre).
 // Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, et {sprite}_shield ou boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null }) {
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage: 1, behavior: 'wander', drops: [], seed });
     this.x = x - 4;
     this.y = y + 4;
@@ -32,6 +33,8 @@ export class Boss extends Enemy {
     this.shieldText = shieldText;
     this.resistText = resistText;
     this.defeatedText = defeatedText;
+    this.invisible = invisible;
+    this.revealed = 0;
     this.shotTimer = 3;
     this.hintCooldown = 0;
     this.invulnTime = 0.6;
@@ -55,6 +58,7 @@ export class Boss extends Enemy {
   update(dt) {
     if (!this.active) return;
     this.anim.update(dt);
+    this.revealed -= dt;
     if (this.updateStatus(dt)) return;
     // Fenêtre de vulnérabilité
     if (!this.shield) {
@@ -125,6 +129,7 @@ export class Boss extends Enemy {
 
   /** Bouclier touché : une question. Juste → le bouclier tombe ; faux → le héros est blessé. */
   _challenge(hero) {
+    this.revealed = 2;
     if (this.asking) return;
     this.asking = true;
     this.game.audio.play('boss_shield');
@@ -167,6 +172,12 @@ export class Boss extends Enemy {
   draw(r) {
     if (this.flashing) return;
     const sheet = this.game.themes.current.sprites.boss;
+    if (this.invisible && this.shield && this.revealed <= 0 && !this.asking) {
+      // Invisible : seulement une ombre et un reflet qui tremble.
+      r.withAlpha(0.35, () => r.rect(this.x + 2, this.y + 14, this.w - 4, 3, '#000'));
+      r.withAlpha(0.12 + 0.08 * Math.sin(this.game.time * 9), () => sheet.draw(r, this.anim.frame, this.x - 4, this.y - 14));
+      return;
+    }
     sheet.draw(r, this.anim.frame, this.x - 4, this.y - 14);
     // Bouclier : image propre au boss ({sprite}_shield) si elle existe.
     const shield = sheet.has(`${this.sprite}_shield`) ? `${this.sprite}_shield` : 'boss_shield';

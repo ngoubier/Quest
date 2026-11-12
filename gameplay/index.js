@@ -38,4 +38,8 @@ export { NimScene } from './minigames/NimScene.js';
 export * as nim from './minigames/nim.js';
 export { MemoryScene } from './minigames/MemoryScene.js';
 export * as memory from './minigames/memory.js';
+export { Connect4Scene } from './minigames/Connect4Scene.js';
+export * as connect4 from './minigames/connect4.js';
+export { DigitLockScene } from './ui/DigitLockScene.js';
+export { Boomerang } from './actors/Boomerang.js';
 export { Projectile } from './actors/Projectile.js';

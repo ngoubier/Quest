@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, niveaux 1 à 3 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, niveaux 1 à 4 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -344,7 +344,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | 1 ✓ | Histoire en images, carte du monde, décoloration, intro réécrite, Morpion, ambiance médiévale seule | L |
 | 2 ✓ | Mont Givré : bouton Objet, glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
 | 3 ✓ | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
-| 4 | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
+| 4 ✓ | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
 | 5 | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
 | 6 | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
 | 7 | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
@@ -356,7 +356,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 |---|---|
 | Sous l'eau | **Bouteille d'oxygène à temps limité** ; temps écoulé = on recommence le niveau |
 | Ambiances | **Médiéval-fantastique seulement** (plus de station spatiale ni de ville) |
-| Démarrage | Lot 1, puis le Mont Givré, puis la Forêt des Murmures |
+| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures et Bourg-Lanterne |
 | Noms, ordre libre, pouvoir dès chaque pierre, armure à 300 pièces | retenus par défaut (pas d'objection) |
 
 ## 10. Lot 1 — ce qui est fait
@@ -432,3 +432,38 @@ Données : `game/data/seve.js` · dessins : `game/theme-seve.js` (arbres, champi
 - **Habitants** : Mère Sylve, Sylvain le bûcheron, Hulotte, Basile l'ermite (questions, 2 pièces par bonne
   réponse), Noisette (cabane-magasin, miel).
 - Pas encore fait (prévu au plan) : le renard chapardeur, les écureuils perchés à viser.
+
+## 14. Lot 4 — Bourg-Lanterne (fait)
+
+Données : `game/data/aurore.js` · dessins : `game/theme-aurore.js` (pavés, place, toits de 4 couleurs, façades,
+portes, beffroi et son horloge, lanternes, habitants humains : aussi en haute définition sur PC).
+
+- **Enquête** (quête principale « La Pierre d’Aurore volée », Madame Lumen la maire) : 3 témoins (Marius au marché,
+  Lucien sur le quai, Hector devant le beffroi) → le boomerang de Fernand → la clé rouge sur l’îlot → les égouts
+  → le Chef des Masques → la Pierre d’Aurore.
+- **Boomerang** (`gameplay/actors/Boomerang.js`, `hero.throwBoomerang()`) : il part, puis revient en passant
+  au-dessus des murs. Il **rapporte les objets** (la clé rouge sur l’îlot, une lettre derrière des caisses),
+  **étourdit** les monstres (`enemy.stun(t)`, petites étoiles) et **actionne les leviers** de loin
+  (`Lever.onProjectile`). Il passe au-dessus de l’eau, des caisses et des massifs de fleurs (propriété `low`).
+- **Clés de couleur** : une sortie peut être fermée à clé (`warp` avec `key: 'key_red'`, `lockedText`) ;
+  la clé l’ouvre pour toujours (drapeau `unlocked:carte:x,y`). La clé rouge ouvre le beffroi (seul toit rouge),
+  la clé bleue (trouvée dans les égouts) la maison au toit bleu.
+- **Coffres à code** (`chest` avec `code: '42'`) : un cadenas à roues (`gameplay/ui/DigitLockScene.js`, tactile).
+  Le code est écrit dans un livre d’une autre maison sous forme de **calcul adapté à l’âge**
+  (`sign` avec `byAge` : `20 + 20 + 2` à 6 ans, `50 − 8` à 8 ans, `6 × 7` dès 9 ans ; vérifié par un test).
+- **8 maisons à visiter** (mairie, bibliothèque, Fernand, maison bleue, auberge, boulangerie, Mme Pélagie, bazar)
+  et des **pots à casser** (tuile `pot`, coupable) qui cachent des lettres et des pièces.
+- **Monstres** : rats, chauves-souris, **voleurs masqués** (comportement `thief`, option `steals: 5` :
+  ils prennent des pièces et s’enfuient ; les vaincre les rend).
+- **Égouts** (`aurore_egouts`, 4 salles) : levier sur un îlot (boomerang) → grille, salle à vider → clé → porte,
+  second levier → grille du boss, coffre de la clé bleue.
+- **Le Chef des Masques** : boss **invisible** (`invisible: true` : on ne voit que son ombre et un reflet)
+  qui lance des couteaux. Un coup de boomerang (`meltWith: 'boomerang'`) le dévoile → question → coups d’épée.
+- **Mini-jeu** : *Puissance 4* contre Gaston à l’auberge (`gameplay/minigames/Connect4Scene.js`, logique dans
+  `connect4.js` : recherche sur 4 ou 5 coups, plus ou moins souvent selon l’âge).
+- **Quêtes secondaires** : « Les lettres du facteur » (5 lettres ; 30 pièces + 2 indices), « Le chat de
+  Mme Pélagie » (PNJ qui n’apparaît que sous condition : `showWhen`), « Les 4 pains de Rose » (livrer la maire,
+  Fernand, Mme Pélagie et Gaston ; 20 pièces + un gâteau).
+- **Ajustement général** : un monstre blesse le héros dès qu’il le touche, même si le héros ne bouge pas
+  (avant, il s’arrêtait juste contre lui).
+

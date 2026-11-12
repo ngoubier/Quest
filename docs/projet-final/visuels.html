@@ -107,7 +107,7 @@ tr:last-child td { border-bottom: 0; }
 
 <div class="wrap">
 <header class="hero">
-  <span class="eyebrow">Quest · projet final · niveaux 1 à 3 jouables</span>
+  <span class="eyebrow">Quest · projet final · niveaux 1 à 4 jouables</span>
   <h1>La Quête d'Alia</h1>
   <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
   <div class="story">
@@ -439,15 +439,15 @@ const LEVELS = [
     ['Boss', '<b>Ronce-Noire</b>, l’arbre corrompu par Morgor, au sommet du chêne. Viser ses yeux à l’arc, répondre, frapper son cœur. Vaincu, le Grand Chêne refleurit.'],
    ]},
  { id:'village', key:'village', num:'Niveau 4', tag:'Pierre d’Aurore', name:'Bourg-Lanterne', sub:'Une grande ville pleine de maisons, de clés et de coffres', color:'#ffd23f',
-   caption:'Trois quartiers séparés par deux grandes rues et un canal. La place du marché est au centre. Le donjon est dans les égouts, sous le beffroi.',
+   caption:'Plan d’origine. Trois quartiers séparés par deux grandes rues et un canal. La place du marché est au centre. Le donjon est dans les égouts, sous le beffroi. Le niveau est jouable.',
    sheet:[
     ['Ambiance', 'Grande ville : rues pavées, canal et ponts, place du marché avec fontaine, beffroi, une douzaine de maisons dont 8 à visiter.'],
-    ['Habitants', 'Le maire, la boulangère, le facteur, l’aubergiste, Mme Pélagie et son chat, des enfants qui jouent.'],
-    ['Nouvel objet', '<b>Boomerang</b>, offert par le chef de la garde : il rapporte les objets éloignés (une clé derrière une grille), étourdit les monstres et touche les interrupteurs de loin.'],
+    ['Habitants', 'Madame Lumen la maire, Marius le boulanger et Rose la boulangère, Lucien le pêcheur, Hector le garde, Paulin le facteur, Gaston l’aubergiste, Fernand l’ancien aventurier, Mlle Plume la bibliothécaire, Mme Pélagie et son chat Minou, Firmin le marchand.'],
+    ['Nouvel objet', '<b>Boomerang</b>, dans le coffre à code du vieux Fernand : il rapporte les objets éloignés (la clé rouge sur l’îlot du canal), étourdit les monstres et actionne les leviers de loin.'],
     ['Monstres', 'Rats (dans les égouts), chauves-souris, voleurs masqués (sbires de Morgor) qui chipent des pièces.'],
     ['Astuces', ['<b>Clés de couleur</b> : la clé rouge ouvre la maison au toit rouge.','<b>Coffres à code</b> : le code est caché dans une autre maison, sous forme de calcul.','<b>Objets cachés</b> dans les maisons : armoires, tonneaux, sous les lits.']],
     ['Mini-jeu', '<b>Puissance 4</b> contre l’aubergiste, à l’auberge.'],
-    ['Quêtes', '« La pierre volée » (enquête du maire : 3 indices dans 3 maisons) · « Le facteur débordé » (5 lettres : lire les noms sur les portes) · « Le chat de Mme Pélagie » · « 4 pains à livrer ».'],
+    ['Quêtes', '« La Pierre d’Aurore volée » (enquête : 3 témoins) · « Les lettres du facteur » (5 lettres) · « Le chat de Mme Pélagie » · « Les 4 pains de Rose ».'],
     ['Boss', '<b>Le Chef des Masques</b>, dans les égouts : il devient invisible. Le boomerang l’étourdit, on répond à sa question, puis on frappe.'],
    ]},
  { id:'labyrinthe', key:'labyrinthe', num:'Niveau 5', tag:'Pierre du Temps', name:'Le Labyrinthe des Mille Portes', sub:'Pièges, clés et portes qui changent le chemin', color:'#b36bff',
@@ -543,7 +543,7 @@ const ROADMAP = [
  ['1 ✓', 'Fondations de l’aventure (fait)', 'Histoire en images, carte du monde, royaume qui se décolore, introduction réécrite (la carte du royaume), Morpion, ambiance médiévale seule.', 'L'],
  ['2 ✓', 'Mont Givré (fait)', 'Thème neige, glace glissante, blocs qui glissent, braseros, bouton Objet et bâton de feu (projectile), Le dernier glaçon, Yéti.', 'L'],
  ['3 ✓', 'Forêt des Murmures (fait)', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
- ['4', 'Bourg-Lanterne', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
+ ['4 ✓', 'Bourg-Lanterne (fait)', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
  ['5', 'Labyrinthe', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
  ['6', 'Désert des Mirages', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
  ['7', 'Abysses de Corail', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
@@ -553,7 +553,7 @@ const ROADMAP = [
 const QUESTIONS = [
  ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
  ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
- ['Par où commencer — décidé', 'Lot 1, Mont Givré et Forêt des Murmures faits. Suite : Bourg-Lanterne.'],
+ ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures et Bourg-Lanterne faits. Suite : le Labyrinthe.'],
  ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
  ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
  ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],

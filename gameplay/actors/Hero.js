@@ -2,6 +2,7 @@ import { Animator, DIRS, rectsOverlap } from '../../engine/index.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
 import { Projectile } from './Projectile.js';
+import { Boomerang } from './Boomerang.js';
 
 // LE HÉROS, réutilisable d'un jeu à l'autre.
 //  - déplacement 8 directions, aide aux coins
@@ -134,6 +135,15 @@ export class Hero extends Actor {
     const d = DIRS[this.facing];
     this.world.add(new Projectile({ x: this.cx + d.x * 9, y: this.cy - 3 + d.y * 9, dir: d, kind, speed, range, owner: this }));
     this.game.audio.play(sound);
+    return true;
+  }
+
+  /** Lance le boomerang (un seul à la fois). */
+  throwBoomerang() {
+    if (this.world.entities.some((e) => e instanceof Boomerang && !e.dead)) return false;
+    const d = DIRS[this.facing];
+    this.world.add(new Boomerang({ x: this.cx + d.x * 8, y: this.cy - 3 + d.y * 8, dir: d, owner: this }));
+    this.game.audio.play('throw');
     return true;
   }
 

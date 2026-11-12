@@ -2,6 +2,7 @@ import { Entity, Animator, createRng, rectsOverlap } from '../../engine/index.js
 import { check } from '../script/conditions.js';
 import { runActions } from '../script/actions.js';
 import { Effect } from '../actors/Effect.js';
+import { DigitLockScene } from '../ui/DigitLockScene.js';
 
 // OBJETS DU MONDE — les briques des énigmes et de l'exploration.
 // Ils s'appuient sur GameState (drapeaux) : un coffre ouvert le reste après sauvegarde,
@@ -51,7 +52,11 @@ export class Pickup extends WorldObject {
 
   update(dt) {
     this.t += dt;
-    if (this.props.lifetime && this.t > this.props.lifetime) return this.kill();
+    if (this.carrier) {
+      // rapporté par le boomerang
+      if (this.carrier.dead) this.carrier = null;
+      else (this.x = this.carrier.cx - 5), (this.y = this.carrier.cy - 5);
+    } else if (this.props.lifetime && this.t > this.props.lifetime) return this.kill();
     if (this.hidden) return;
     const hero = this.adv.hero;
     if (hero && rectsOverlap(this, hero)) {
@@ -73,7 +78,7 @@ export class Pickup extends WorldObject {
 
 // ------------------------------------------------------------------ coffre
 export class Chest extends WorldObject {
-  /** props : { item, count?, appearWhen?: condition } */
+  /** props : { item, count?, appearWhen?: condition, code?: '42' (coffre à code), codeTitle? } */
   constructor({ x, y, uid, props }) {
     super({ x: x + 1, y: y + 4, w: 14, h: 11, uid, props, solid: true, tags: ['chest'] });
     this.wasVisible = null;
@@ -103,6 +108,25 @@ export class Chest extends WorldObject {
   }
 
   talk() {
+    // Coffre à code : il faut trouver les bons chiffres (props.code : '42').
+    const code = this.props.code;
+    if (code && !this.state.flag(`coded:${this.uid}`)) {
+      return this.world.game.scenes.push(
+        new DigitLockScene({
+          digits: String(code).length,
+          title: this.props.codeTitle ?? 'Coffre à code',
+          onOk: (v) => {
+            if (v !== String(code)) {
+              this.world.game.audio.play('menu_no');
+              return this.adv.toast('Ce n’est pas le bon code...');
+            }
+            this.state.setFlag(`coded:${this.uid}`);
+            this.world.game.audio.play('unlock');
+            this.talk();
+          },
+        }),
+      );
+    }
     if (!this.adv.canStore(this.props.item)) {
       return runActions([{ say: 'Ton sac est plein ! Libère une place avant d’ouvrir ce coffre.' }], this.adv.actionContext());
     }
@@ -146,7 +170,20 @@ export class Npc extends WorldObject {
     return this.facing === 'left' || this.facing === 'right' ? 'side' : this.facing;
   }
 
+  /** showWhen : le personnage n'est là que si la condition est vraie (chat retrouvé...). */
+  get present() {
+    return check(this.props.showWhen, this.state);
+  }
+
+  canTalk() {
+    return this.present;
+  }
+
   update(dt) {
+    const here = this.present;
+    this.visible = here;
+    this.solid = here;
+    if (!here) return;
     let moving = false;
     if (this.props.wander && !this.talking) {
       this.timer -= dt;
@@ -202,6 +239,7 @@ export class Npc extends WorldObject {
   }
 
   draw(r) {
+    if (!this.present) return;
     const s = this.world.game.themes.current.sprites.chars;
     s.draw(r, this.anim.frame, this.x - 3, this.y - 8, { flipX: this.facing === 'left' });
     const t = this.world.time;
@@ -260,16 +298,24 @@ export function drawMarker(r, cx, y, kind) {
 
 // ------------------------------------------------------------------ panneau
 export class Sign extends WorldObject {
-  /** props : { text } */
+  /** props : { text, title?, sprite? (image de la planche 'objects', ex. un livre),
+   *           byAge?: [[âge minimum, texte], ...] — texte adapté à l'âge (calcul plus ou moins dur) } */
   constructor({ x, y, uid, props }) {
     super({ x: x + 1, y: y + 6, w: 14, h: 10, uid, props, solid: true, tags: ['sign'] });
   }
 
+  get text() {
+    const age = this.state.profile?.age ?? 8;
+    const fit = (this.props.byAge ?? []).filter(([min]) => age >= min).at(-1);
+    return fit ? fit[1] : this.props.text;
+  }
+
   talk() {
-    runActions([{ say: this.props.text }], this.adv.actionContext({ speaker: this.props.title ?? 'Panneau' }));
+    runActions([{ say: this.text }], this.adv.actionContext({ speaker: this.props.title ?? 'Panneau' }));
   }
 
   draw(r) {
+    if (this.props.sprite) return objSheet(this).draw(r, this.props.sprite, this.x - 1, this.y - 6);
     this.world.game.themes.current.sprites.chars.draw(r, 'sign', this.x - 1, this.y - 6);
   }
 }
@@ -411,7 +457,7 @@ export class LockedDoor extends WorldObject {
       this.kill();
     } else if (this._hintCooldown <= 0) {
       this._hintCooldown = 2.5;
-      this.adv.toast(`Il faut une {w:${key}}.`);
+      this.adv.toast(key === 'key' ? `Il faut une {w:${key}}.` : `Il faut : ${this.adv.itemName(key)}.`);
     }
   }
 
@@ -441,6 +487,13 @@ export class Lever extends WorldObject {
 
   onSwordHit() {
     this.toggle();
+  }
+
+  /** Un boomerang (ou une flèche) l'actionne à distance. */
+  onProjectile(p) {
+    if (p.hostile) return false;
+    this.toggle();
+    return true;
   }
 
   talk() {

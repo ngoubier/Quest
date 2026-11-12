@@ -75,6 +75,21 @@ export const BEHAVIORS = {
     e.hop = { vx: dx * e.speed * 2.5, vy: dy * e.speed * 2.5, t: 0.3 };
   },
 
+  /** Voleur : s'approche du héros ; une fois les pièces volées, il s'enfuit. */
+  thief(e, dt) {
+    const h = e.adv.hero;
+    if (e.flee > 0) {
+      e.flee -= dt;
+      const dx = e.cx - h.cx;
+      const dy = e.cy - h.cy;
+      const d = Math.hypot(dx, dy) || 1;
+      const res = e.move((dx / d) * e.speed * 1.2 * dt, (dy / d) * e.speed * 1.2 * dt);
+      if (res.hitX && res.hitY) e.flee = 0;
+      return;
+    }
+    BEHAVIORS.chase(e, dt);
+  },
+
   /** Fonce tout droit quand le héros est dans sa ligne ou sa colonne, puis se repose. */
   charger(e, dt) {
     if (e.charge) {
@@ -102,7 +117,7 @@ export class Enemy extends Actor {
    * @param {string} o.sprite   préfixe d'images
    * @param {keyof BEHAVIORS | Function} o.behavior
    */
-  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, shot = 'snowball', drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
+  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, shot = 'snowball', steals = 0, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
     super({ x: x + 2, y: y + 6, w: 12, h: 10, tags: ['enemy'], solid: false, hp, invulnTime: 0.3 });
     this.uid = uid;
     this.kind = kind;
@@ -111,6 +126,9 @@ export class Enemy extends Actor {
     this.behavior = typeof behavior === 'function' ? behavior : BEHAVIORS[behavior];
     this.sight = sight;
     this.shot = shot; // projectile lancé (comportement 'shooter')
+    this.steals = steals; // voleur : pièces prises au héros au lieu de le blesser
+    this.loot = 0;
+    this.stunned = 0;
     this.drops = drops;
     this.rng = createRng(seed);
     this.timer = 0;
@@ -129,13 +147,29 @@ export class Enemy extends Actor {
     return rectsOverlap({ x: v.x - 8, y: v.y - 8, w: v.w + 16, h: v.h + 16 }, this);
   }
 
+  /** Étourdi (boomerang) : il ne bouge plus et ne blesse plus pendant `t` secondes. */
+  stun(t) {
+    this.stunned = Math.max(this.stunned, t);
+  }
+
   update(dt) {
     if (!this.active) return;
-    this.anim.update(dt);
     if (this.updateStatus(dt)) return;
+    if (this.stunned > 0) return void (this.stunned -= dt);
+    this.anim.update(dt);
     this.behavior(this, dt);
     const hero = this.adv.hero;
-    if (hero && !hero.dead && rectsOverlap(this, hero)) hero.hurt(this.damage, this);
+    // Contact à 1 pixel près : le héros est solide, un monstre s'arrête juste contre lui.
+    if (!hero || hero.dead || !rectsOverlap({ x: this.x - 1, y: this.y - 1, w: this.w + 2, h: this.h + 2 }, hero)) return;
+    if (this.steals && !this.loot && this.adv.state.count('coin') > 0) {
+      // Le voleur prend des pièces et s'enfuit ; le vaincre les rend.
+      const n = Math.min(this.steals, this.adv.state.count('coin'));
+      this.adv.state.take('coin', n);
+      this.loot = n;
+      this.flee = 3;
+      this.game.audio.play('hurt');
+      this.adv.toast(`Un voleur t’a pris ${n} pièce${n > 1 ? 's' : ''} ! Rattrape-le !`);
+    } else if (!(this.flee > 0)) hero.hurt(this.damage, this);
   }
 
   onSwordHit(hero) {
@@ -149,6 +183,7 @@ export class Enemy extends Actor {
     if (this.uid) this.adv.state.setFlag(`killed:${this.uid}`);
     this.adv.state.addCounter(`kills_${this.kind}`);
     this.game.events.emit('enemy:killed', { kind: this.kind, enemy: this });
+    if (this.loot) this.adv.spawnPickup('coin', this.cx - 8, this.cy - 8, 15, this.loot);
     // Butin aléatoire.
     let roll = this.rng();
     for (const [item, p] of this.drops) {
@@ -163,5 +198,10 @@ export class Enemy extends Actor {
   draw(r) {
     if (this.flashing) return;
     this.game.themes.current.sprites.objects.draw(r, this.anim.frame, this.x - 2, this.y - 6);
+    if (this.stunned > 0) {
+      // petites étoiles qui tournent au-dessus de la tête
+      const t = this.world.time * 6;
+      for (let k = 0; k < 3; k++) r.rect(Math.round(this.cx - 1 + Math.cos(t + k * 2.1) * 6), Math.round(this.y - 9 + Math.sin(t + k * 2.1) * 2), 2, 2, '#ffe066');
+    }
   }
 }

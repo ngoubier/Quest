@@ -152,7 +152,7 @@ export class AdventureScene extends Scene {
     let start = null;
     for (const m of markers) {
       if (m.name === 'start') start = m;
-      else if (m.name === 'warp') this.warps.push({ rect: { x: m.x, y: m.y, w: ts, h: ts }, ...m.props });
+      else if (m.name === 'warp') this.warps.push({ rect: { x: m.x, y: m.y, w: ts, h: ts }, uid: `${mapId}:${m.tx},${m.ty}`, ...m.props });
       else world.add(this.cfg.factory.create({ type: m.name, x: m.x, y: m.y, tx: m.tx, ty: m.ty, uid: `${mapId}:${m.tx},${m.ty}`, props: m.props }, this));
     }
 
@@ -183,6 +183,19 @@ export class AdventureScene extends Scene {
 
   warp(w) {
     if (w.worldMap) return this.openWorldMap({ from: w });
+    // Porte fermée à clé (key: 'key_red') : la clé l'ouvre pour toujours, sinon on recule.
+    if (w.key && !this.state.flag(`unlocked:${w.uid}`)) {
+      if (!this.state.take(w.key, 1)) {
+        if (this._prevHero) Object.assign(this.hero, this._prevHero);
+        const d = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] }[this.hero.facing];
+        this.hero.move(d[0] * 3, d[1] * 3);
+        this.game.audio.play('menu_no');
+        return this.toast(w.lockedText ?? `Fermé à clé. Il faut : ${this.itemName(w.key)}.`);
+      }
+      this.state.setFlag(`unlocked:${w.uid}`);
+      this.game.audio.play('unlock');
+      this.toast(`Tu ouvres la porte avec : ${this.itemName(w.key)}.`);
+    }
     this.warping = true;
     this.game.audio.play('door');
     this.game.scenes.fade(() => {
@@ -211,6 +224,7 @@ export class AdventureScene extends Scene {
     }
 
     this.state.playTime += dt;
+    this._prevHero = this.hero ? { x: this.hero.x, y: this.hero.y } : null;
     this.world.update(dt);
     this._checkRoomClear();
     if (this.cfg.endWhen && !this.state.flag('game_finished') && check(this.cfg.endWhen, this.state)) {
@@ -529,8 +543,8 @@ export class AdventureScene extends Scene {
     this.state.setFlag(`fill:${this.mapId}:${tx},${ty}`);
   }
 
-  spawnPickup(item, x, y, lifetime = 10) {
-    this.world.add(new Pickup({ x, y, uid: null, props: { item, persist: false, lifetime } }));
+  spawnPickup(item, x, y, lifetime = 10, count = 1) {
+    this.world.add(new Pickup({ x, y, uid: null, props: { item, count, persist: false, lifetime } }));
   }
 
   /** Appelé quand l'épée coupe une tuile (buisson...) : petite chance de butin. */

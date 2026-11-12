@@ -11,7 +11,7 @@ export const WORLD_NODES = [
   { id: 'prebois', label: 'Prébois', kind: 'start', x: 0.36, y: 0.83, color: '#ffd35a', open: null, mapId: 'overworld', at: [1, 6], facing: 'right', doneText: 'Ton village. Action : y aller' },
   { id: 'givre', label: '2 · Le Mont Givré (Pierre de Givre)', kind: 'stone', x: 0.5, y: 0.2, region: 'givre', open: null, mapId: 'givre', at: [19, 21], facing: 'up' },
   { id: 'seve', label: '3 · La Forêt des Murmures (Pierre de Sève)', kind: 'stone', x: 0.2, y: 0.32, region: 'seve', open: null, mapId: 'seve', at: [34, 22], facing: 'up' },
-  { id: 'aurore', label: '4 · Bourg-Lanterne (Pierre d’Aurore)', kind: 'stone', x: 0.64, y: 0.82, region: 'aurore', open: 'never', closedText: SOON },
+  { id: 'aurore', label: '4 · Bourg-Lanterne (Pierre d’Aurore)', kind: 'stone', x: 0.64, y: 0.82, region: 'aurore', open: null, mapId: 'aurore', at: [20, 22], facing: 'up' },
   { id: 'temps', label: '5 · Le Labyrinthe des Mille Portes (Pierre du Temps)', kind: 'stone', x: 0.79, y: 0.27, region: 'temps', open: 'never', closedText: SOON },
   { id: 'soleil', label: '6 · Le Désert des Mirages (Pierre du Soleil)', kind: 'stone', x: 0.84, y: 0.6, region: 'soleil', open: 'never', closedText: SOON },
   { id: 'marees', label: '7 · Les Abysses de Corail (Pierre des Marées)', kind: 'stone', x: 0.15, y: 0.67, region: 'marees', open: 'never', closedText: SOON },

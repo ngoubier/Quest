@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, runActions, check, tictactoe, nim, memory } from '../gameplay/index.js';
+import { GameState, runActions, check, tictactoe, nim, memory, connect4 } from '../gameplay/index.js';
 import { MAPS, ITEMS, QUESTS } from '../game/data/index.js';
 import { WORLD_NODES, WORLD_MAP, STONES, colorLoss, stoneCount } from '../game/data/worldmap.js';
 
@@ -57,7 +57,7 @@ test('Action « minigame » : la suite dépend du résultat', () => {
   assert.deepEqual(run('quit'), [], 'abandon : rien ne se passe');
 });
 
-test('Carte du monde : 8 lieux, Prébois, le Mont Givré et la Forêt ouverts, le reste fermé pour l’instant', () => {
+test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt et Bourg-Lanterne ouverts, le reste fermé pour l’instant', () => {
   assert.equal(WORLD_NODES.length, 8);
   const st = new GameState();
   for (const n of WORLD_NODES) {
@@ -66,7 +66,7 @@ test('Carte du monde : 8 lieux, Prébois, le Mont Givré et la Forêt ouverts, l
       const row = MAPS[n.mapId].rows[n.at[1]];
       assert.ok(row && row[n.at[0]] !== '#', `${n.id} : arrivée sur une case libre`);
     }
-    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve'].includes(n.id), n.id);
+    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore'].includes(n.id), n.id);
   }
   assert.equal(WORLD_NODES.filter((n) => n.kind === 'stone').length, 6);
   STONES.forEach((k) => assert.ok(ITEMS[`stone_${k}`], `objet stone_${k}`));
@@ -345,3 +345,131 @@ test('Grand Chêne : des racines à la cime, en passant par la cible et la nacel
 function SEVE_RIVER_FILL() {
   return MAPS.seve.legend['~'] === 'river' ? 'log_bridge' : null;
 }
+
+// ------------------------------------------------------------------ niveau 4 : Bourg-Lanterne
+test('Puissance 4 : alignements, coups gagnants et parades', () => {
+  const { empty, drop, winner, winningCells, bestCol, aiCol, validCols, landingRow } = connect4;
+  let b = empty();
+  for (const c of [0, 1, 2]) b = drop(b, c, 'X');
+  assert.equal(winner(b), null);
+  assert.equal(bestCol(b, 'O'), 3, 'bloque la ligne');
+  assert.equal(winner(drop(b, 3, 'X')), 'X');
+  assert.equal(winningCells(drop(b, 3, 'X')).length, 4);
+  // colonne
+  let v = empty();
+  for (let k = 0; k < 3; k++) v = drop(v, 5, 'O');
+  assert.equal(bestCol(v, 'O'), 5, 'gagne tout de suite');
+  // diagonale
+  let d = empty();
+  for (const [c, w] of [[0, 'X'], [1, 'O'], [1, 'X'], [2, 'O'], [2, 'O'], [2, 'X'], [3, 'O'], [3, 'O'], [3, 'O'], [3, 'X']]) d = drop(d, c, w);
+  assert.equal(winner(d), 'X');
+  // colonne pleine
+  let f = empty();
+  for (let k = 0; k < 6; k++) f = drop(f, 0, k % 2 ? 'X' : 'O');
+  assert.equal(drop(f, 0, 'X'), null);
+  assert.equal(landingRow(f, 0), -1);
+  assert.ok(!validCols(f).includes(0));
+  for (let k = 0; k < 20; k++) assert.ok(validCols(f).includes(aiCol(f, { skill: 0 })));
+});
+
+/** Évalue un calcul écrit pour les enfants (« 9 × 7 », « 70 − 7 »). */
+const calc = (s) => Function(`return (${s.replace(/×/g, '*').replace(/−/g, '-')})`)();
+
+test('Bourg-Lanterne : les codes des coffres se trouvent dans les livres, à tout âge', () => {
+  const books = [
+    [MAPS.aurore_biblio.objects.n, MAPS.aurore_fernand.objects.C],
+    [MAPS.aurore_mairie.objects.n, MAPS.aurore_bleue.objects.C],
+  ];
+  for (const [book, chest] of books) {
+    assert.equal(book.byAge[0][0], 6, 'un calcul dès 6 ans');
+    for (const [, [, expr]] of book.byAge) assert.equal(String(calc(expr)), chest.code, `${expr} = ${chest.code}`);
+  }
+  assert.equal(MAPS.aurore_fernand.objects.C.item, 'boomerang');
+  assert.ok(ITEMS.boomerang.tool);
+});
+
+test('Bourg-Lanterne : la ville, ses portes et ses habitants sont accessibles', () => {
+  const m = MAPS.aurore;
+  const solid = '#~RUGNwtxlmfc*KFBALMSQ123456789Y';
+  const start = findIn(m.rows, 'P');
+  const seen = reach(m, start, { solid, ice: '' });
+  // chaque porte se touche depuis la rue, et chaque maison ramène devant sa porte
+  for (const ch of '123456789') {
+    const [x, y] = findIn(m.rows, ch);
+    assert.ok(seen.has([x, y + 1].join()), `porte ${ch} accessible par le bas`);
+    const o = m.objects[ch];
+    const inside = MAPS[o.to];
+    assert.ok(inside, `carte ${o.to}`);
+    if (o.to !== 'aurore_egouts') {
+      assert.deepEqual(inside.objects.D.at, [x, y + 1], `${o.to} : retour devant la porte`);
+      const [ax, ay] = o.at;
+      assert.equal(inside.rows[ay][ax], '_', `${o.to} : arrivée sur le plancher`);
+    }
+  }
+  for (const ch of 'AKFBLMSQ') assert.ok(near(seen, findIn(m.rows, ch)), `on peut approcher ${ch}`);
+  // la clé rouge est sur un îlot : on ne peut pas y marcher, mais on peut lancer le boomerang en ligne droite
+  const [kx, ky] = findIn(m.rows, 'Y');
+  assert.ok(!near(seen, [kx, ky]), 'îlot inaccessible à pied');
+  const throwsTo = (tx, ty) =>
+    [[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => {
+      for (let k = 1; k <= 5; k++) {
+        const x = tx + dx * k;
+        const y = ty + dy * k;
+        if (seen.has([x, y].join())) return true;
+        if (!'~.c'.includes(m.rows[y]?.[x])) return false; // le boomerang passe au-dessus de l'eau et des caisses
+      }
+      return false;
+    });
+  assert.ok(throwsTo(kx, ky), 'clé rouge atteignable au boomerang');
+  // les deux lettres de la ville : une à pied, une derrière les caisses (boomerang)
+  const letters = [];
+  m.rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'z' && letters.push([x, y])));
+  assert.equal(letters.length, 2);
+  assert.ok(letters.some((l) => seen.has(l.join())));
+  const boxed = letters.find((l) => !seen.has(l.join()));
+  assert.ok(boxed && throwsTo(...boxed), 'lettre derrière les caisses : au boomerang');
+  // 5 lettres en tout (3 dans des pots)
+  const pots = ['aurore_auberge', 'aurore_pelagie', 'aurore_bleue'].filter((id) => MAPS[id].objects.q?.item === 'letter' && MAPS[id].objects.q.hidden);
+  assert.equal(pots.length + letters.length, 5);
+  // beffroi = seul toit rouge, fermé par la clé rouge
+  assert.equal(m.objects[3].key, 'key_red');
+  assert.equal(m.rows.join('').split('R').length - 1, 4, 'un seul toit rouge (4 tuiles)');
+  assert.equal(m.objects[5].key, 'key_blue');
+});
+
+test('Égouts : leviers au boomerang, salle à vider, clé, puis le Chef des Masques', () => {
+  const m = MAPS.aurore_egouts;
+  const o = m.objects;
+  const entry = findIn(m.rows, 'D');
+  const solid = '#~gkLlyCBMAIS';
+  const start = [entry[0], entry[1] - 1];
+  const s1 = reach(m, start, { solid, ice: '' });
+  // le levier 1 est sur un îlot, visible en ligne droite par-dessus l'eau
+  const lever = (ch, seen) => {
+    const [x, y] = findIn(m.rows, ch);
+    assert.ok(!near(seen, [x, y]), `levier ${ch} hors de portée de l'épée`);
+    return [[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => {
+      for (let k = 1; k <= 5; k++) {
+        const c = m.rows[y + dy * k]?.[x + dx * k];
+        if (seen.has([x + dx * k, y + dy * k].join())) return true;
+        if (c !== '~') return false;
+      }
+      return false;
+    });
+  };
+  assert.ok(lever('l', s1), 'levier 1 au boomerang');
+  assert.ok(near(s1, findIn(m.rows, 'g')), 'grille 1 devant le héros');
+  assert.equal(o.g.openWhen, o.l.flag);
+  const s2 = reach(m, start, { solid: solid.replace('g', ''), ice: '' });
+  assert.ok(near(s2, findIn(m.rows, 'C')) && near(s2, findIn(m.rows, 'L')), 'coffre à clé et porte');
+  assert.equal(o.C.appearWhen, m.roomClear[0].flag);
+  const s3 = reach(m, start, { solid: solid.replace('g', '').replace('L', ''), ice: '' });
+  assert.ok(lever('y', s3), 'levier 2 au boomerang');
+  assert.ok(near(s3, findIn(m.rows, 'B')), 'clé bleue');
+  const s4 = reach(m, start, { solid: solid.replace(/[gkL]/g, ''), ice: '' });
+  assert.ok(near(s4, findIn(m.rows, 'M')) && near(s4, findIn(m.rows, 'A')), 'boss et pierre');
+  assert.equal(o.M.meltWith, 'boomerang');
+  assert.equal(o.A.item, 'stone_aurore');
+  assert.equal(o.A.appearWhen, o.M.flag);
+  for (const id of ['aurore', 'letters', 'cat', 'bread']) assert.ok(QUESTS.some((q) => q.id === id), id);
+});
