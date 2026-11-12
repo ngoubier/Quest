@@ -5,7 +5,7 @@ import { AdventureScene, openParentSpace, PromptScene, MessageScene, StoryScene 
 import { THEME, ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './data/index.js';
 import { WORLD_MAP, colorLoss } from './data/worldmap.js';
-import { INTRO_STORY, drawUnicorn } from './data/story.js';
+import { INTRO_STORY, END_STORY, drawUnicorn } from './data/story.js';
 import { frenchSchoolBank } from '../content/quiz/index.js';
 
 const TS = 16;
@@ -136,7 +136,18 @@ const makeAdventure = () =>
     bagSize: 10, // places dans le sac (le grand sac du magasin passe à 20)
     quizCooldown: 600, // attente après un échec : 10 min (réglable dans l'Espace parents)
     endWhen: 'alia_free', // la fin du jeu : Alia délivrée (niveau 8)
-    end: { message: 'Bravo, tu as délivré Alia !' },
+    end: { message: 'Bravo, tu as délivré Alia !', story: END_STORY },
+    // Pouvoirs des pierres (dès qu'on les a) et de l'Armure d'Iris.
+    powers: {
+      freeze: { item: 'stone_givre' }, // marcher contre la lave la fige
+      regen: { item: 'stone_seve' }, // 1 cœur par minute
+      light: { item: 'stone_aurore' }, // éclaire les salles sombres
+      reveal: { item: 'stone_aurore' }, // révèle les passages secrets
+      slow: { item: 'stone_temps' }, // ralentit les monstres rapides
+      fireSword: { item: 'stone_soleil' }, // coups d'épée doubles
+      bubble: { item: 'stone_marees' }, // une bulle bloque un coup
+      armor: { item: 'iris_armor' }, // dégâts de Morgor divisés par 2
+    },
     reportWhen: 'always', // bilan parents disponible à tout moment
     saveNamespace: 'quete-alia',
     worldMap: WORLD_MAP,

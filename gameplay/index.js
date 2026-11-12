@@ -50,4 +50,6 @@ export { CupsScene } from './minigames/CupsScene.js';
 export * as cups from './minigames/cups.js';
 export { SimonScene } from './minigames/SimonScene.js';
 export * as simon from './minigames/simon.js';
+export * as plusmoins from './minigames/plusmoins.js';
+export { PlusMoinsScene } from './minigames/PlusMoinsScene.js';
 export { Projectile } from './actors/Projectile.js';

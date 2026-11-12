@@ -5,7 +5,7 @@ Un jeu d'aventure 2D dans l'esprit du *Zelda* original, construit en trois couch
 1. **Quest Engine** (`engine/`) — moteur 2D réutilisable (affichage, entrées, cartes, caméra, collisions, scènes, son, sauvegarde, thèmes, profils d'affichage mobile / PC).
 2. **Quest Gameplay** (`gameplay/`) — systèmes d'aventure réutilisables : combat, objets, quêtes, énigmes scolaires, boutique, sauvegarde.
    - **Contenu éducatif** (`content/quiz/`) — questions du CP au CM2, réutilisables par tous les jeux.
-3. **Le jeu** (`game/`) — *La Quête d'Alia* : délivrer la licorne du royaume d'Iris en réunissant 6 pierres magiques (niveaux 1 à 7 jouables).
+3. **Le jeu** (`game/`) — *La Quête d'Alia* : délivrer la licorne du royaume d'Iris en réunissant 6 pierres magiques (les 8 niveaux sont jouables, jusqu'à la fin).
 
 ## Lancer les essais
 

@@ -1,5 +1,6 @@
 import { Animator, rectsOverlap } from '../../engine/index.js';
 import { Enemy } from './Enemy.js';
+import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
 import { Projectile } from './Projectile.js';
 import { check } from '../script/conditions.js';
@@ -23,11 +24,21 @@ import { check } from '../script/conditions.js';
 //           guardedBy : condition — tant qu'elle est fausse, on ne peut pas l'atteindre (guardText) ;
 //           burrow: true      — il passe sous le sable (intouchable, une simple bosse qui suit le héros),
 //                               puis ressort quelques secondes.
+//           damage : dégâts au contact (1 par défaut) ;
+//           phases: [{ above: 8, meltWith, shots, rain, minions, shieldSprite, text }, ...] — le combat change
+//                               quand ses points de vie passent sous `above` (Morgor) :
+//                               rain: true = pluie de feu sur le héros ; minions: { count, enemy: {...} } =
+//                               il appelle des sbires, et reste protégé tant qu'ils sont là.
 // Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, et {sprite}_shield ou boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false, guardedBy = null, guardText = null }) {
-    super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage: 1, behavior: 'wander', drops: [], seed });
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false, guardedBy = null, guardText = null, damage = 1, phases = null }) {
+    super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage, behavior: 'wander', drops: [], seed });
+    this.phases = phases;
+    this.phase = -1;
+    this.minions = [];
+    this.rainTimer = 1.5;
+    this.shieldSprite = null;
     this.x = x - 4;
     this.y = y + 4;
     this.w = 24;
@@ -71,9 +82,55 @@ export class Boss extends Enemy {
     return t.charAt(0).toUpperCase() + t.slice(1);
   }
 
-  /** Protégé (par ses tentacules...) ? */
+  /** Protégé (par ses tentacules, par ses sbires...) ? */
   get guarded() {
+    if (this.minions.some((m) => !m.dead)) return true;
     return this.shield && !!this.guardedBy && !check(this.guardedBy, this.adv.state);
+  }
+
+  /** Combat en plusieurs phases : on passe à la suivante quand les points de vie baissent. */
+  _updatePhase() {
+    if (!this.phases) return;
+    const i = Math.max(0, this.phases.findIndex((p) => this.hp > (p.above ?? 0)));
+    if (i === this.phase) return;
+    const first = this.phase < 0;
+    this.phase = i;
+    const p = this.phases[i];
+    this.meltWith = p.meltWith ?? null;
+    this.shots = p.shots ?? null;
+    this.rain = !!p.rain;
+    this.shieldSprite = p.shieldSprite ?? null;
+    if (p.resistText) this.resistText = p.resistText;
+    if (p.shieldText) this.shieldText = p.shieldText;
+    if (p.guardText) this.guardText = p.guardText;
+    this._raiseShield();
+    if (p.minions) {
+      const n = p.minions.count ?? 3;
+      const ts = this.world.tilemap.tileSize;
+      for (let k = 0; k < n; k++) {
+        const a = (k / n) * Math.PI * 2 + 0.5;
+        const m = new Enemy({ x: this.cx + Math.cos(a) * 40 - 8, y: this.cy + Math.sin(a) * 30 - 8, seed: k + 7, ...p.minions.enemy });
+        if (this.world.tilemap.isSolidTile(Math.floor(m.cx / ts), Math.floor(m.cy / ts))) (m.x = this.cx - 6), (m.y = this.cy + 20);
+        this.minions.push(this.world.add(m));
+        this.world.add(new Effect(m.cx, m.cy, { duration: 0.4 }));
+      }
+    }
+    if (!first) {
+      this.world.camera.shake(4, 0.6);
+      this.game.audio.play('boom');
+      if (p.text) this.adv.say(p.text, { speaker: this.displayName });
+    }
+  }
+
+  /** Pluie de feu : des boules tombent du ciel près du héros (leur ombre prévient). */
+  _updateRain(dt) {
+    if (!this.rain || this.asking) return;
+    if ((this.rainTimer -= dt) > 0) return;
+    this.rainTimer = 1.1 + this.rng() * 0.5;
+    const h = this.adv.hero;
+    if (!h) return;
+    const slow = this.adv.power('slow');
+    this.world.add(new FireDrop(h.cx + (this.rng() - 0.5) * 28, h.cy + (this.rng() - 0.5) * 20, { delay: slow ? 1.7 : 1.05 }));
   }
 
   _guardHint() {
@@ -129,6 +186,8 @@ export class Boss extends Enemy {
         return;
       }
     }
+    this._updatePhase();
+    this._updateRain(dt);
     this.revealed -= dt;
     if (this.updateStatus(dt)) return;
     // Fenêtre de vulnérabilité
@@ -192,7 +251,7 @@ export class Boss extends Enemy {
     }
     if (this.guarded) return this._guardHint();
     if (!this.shield) {
-      if (this.hurt(1, hero, { knockback: 60 })) {
+      if (this.hurt(hero.swordDamage ?? 1, hero, { knockback: 60 })) {
         this.hitsThisWindow++;
         this.game.audio.play('hit');
         this.world.camera.shake(2, 0.2);
@@ -255,6 +314,8 @@ export class Boss extends Enemy {
 
   die() {
     this.kill();
+    this.rain = false;
+    for (const m of this.minions) if (!m.dead) m.kill();
     if (this.uid) this.adv.state.setFlag(`killed:${this.uid}`);
     if (this.flag) this.adv.state.setFlag(this.flag);
     this.game.audio.play('quest_done');
@@ -279,7 +340,7 @@ export class Boss extends Enemy {
     }
     sheet.draw(r, this.anim.frame, this.x - 4, this.y - 14);
     // Bouclier : image propre au boss ({sprite}_shield) si elle existe.
-    const shield = sheet.has(`${this.sprite}_shield`) ? `${this.sprite}_shield` : 'boss_shield';
+    const shield = this.shieldSprite && sheet.has(this.shieldSprite) ? this.shieldSprite : sheet.has(`${this.sprite}_shield`) ? `${this.sprite}_shield` : 'boss_shield';
     if (this.shield && Math.floor(this.game.time * 6) % 3 !== 0) sheet.draw(r, shield, this.x - 4, this.y - 14);
     if (!this.shield) {
       // Jauge de la fenêtre de vulnérabilité
@@ -288,5 +349,33 @@ export class Boss extends Enemy {
     }
     // Points de vie
     for (let i = 0; i < this.maxHp; i++) r.rect(this.x + i * 4, this.y - 22, 3, 2, i < this.hp ? '#ff4a4a' : '#444');
+  }
+}
+
+/** Boule de feu qui tombe du ciel : son ombre grandit, puis elle s'écrase (2 dégâts). */
+export class FireDrop extends Actor {
+  constructor(cx, cy, { delay = 1.05, damage = 2 } = {}) {
+    super({ x: cx - 8, y: cy - 6, w: 16, h: 12, tags: ['hazard'] });
+    this.delay = delay;
+    this.t = 0;
+    this.damage = damage;
+    this.z = -1;
+  }
+
+  update(dt) {
+    this.t += dt;
+    if (this.t < this.delay) return;
+    const h = this.world.adv.hero;
+    if (h && !h.dead && rectsOverlap({ x: this.x + 2, y: this.y + 1, w: this.w - 4, h: this.h - 2 }, h)) h.hurt(this.damage, this);
+    this.world.add(new Effect(this.cx, this.cy, { duration: 0.35 }));
+    this.world.game.audio.play('boom');
+    this.kill();
+  }
+
+  draw(r) {
+    const k = Math.min(1, this.t / this.delay);
+    r.withAlpha(0.25 + 0.35 * k, () => r.rect(Math.round(this.cx - 3 - 5 * k), Math.round(this.cy - 1 - 2 * k), Math.round(6 + 10 * k), Math.round(2 + 4 * k), '#000'));
+    const y = this.cy - 6 - (1 - k) * 90;
+    this.world.game.themes.current.sprites.objects.draw(r, `fireball_${Math.floor(this.t * 10) % 2}`, this.cx - 8, y - 8);
   }
 }

@@ -971,3 +971,44 @@ export class Post extends WorldObject {
     objSheet(this).draw(r, 'post', this.x - 5, this.y - 10);
   }
 }
+
+// ------------------------------------------------------------------ geyser (jaillit à intervalles réguliers)
+export class Geyser extends WorldObject {
+  /** props : { every?: 3.2 (secondes), phase?: 0..1 (décalage) } — il bouillonne, puis jaillit et brûle (1). */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 2, y: y + 2, w: 12, h: 12, uid, props, tags: ['geyser'] });
+    this.z = -3;
+  }
+
+  /** 'idle' | 'warn' | 'jet' */
+  get stage() {
+    const every = this.props.every ?? 3.2;
+    const t = (this.state.playTime + (this.props.phase ?? 0) * every) % every;
+    return t > every - 1 ? 'jet' : t > every - 1.7 ? 'warn' : 'idle';
+  }
+
+  update() {
+    const s = this.stage;
+    if (s === 'jet' && this.last !== 'jet' && this.active) this.world.game.audio.play('fire');
+    this.last = s;
+    const h = this.adv.hero;
+    if (s === 'jet' && h && !h.dead && rectsOverlap(this, h)) h.hurt(1, this);
+  }
+
+  /** À l'écran ? (pour ne pas faire de bruit de loin) */
+  get active() {
+    const v = this.world.camera.view;
+    return rectsOverlap(v, this);
+  }
+
+  draw(r) {
+    const s = this.stage;
+    const sheet = objSheet(this);
+    sheet.draw(r, s === 'warn' && Math.floor(this.world.game.time * 10) % 2 ? 'geyser_warn' : 'geyser', this.x - 2, this.y - 2);
+    if (s === 'jet') {
+      const f = Math.floor(this.world.game.time * 10) % 2;
+      sheet.draw(r, `geyser_jet_${f}`, this.x - 2, this.y - 10);
+      sheet.draw(r, `geyser_jet_${1 - f}`, this.x - 2, this.y - 24);
+    }
+  }
+}

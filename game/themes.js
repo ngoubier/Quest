@@ -8,6 +8,7 @@ import { SEVE_TILES, SEVE_OBJECT_FRAMES, paintSeveObject, SEVE_CHARS, paintSeveP
 import { MAREES_TILES, MAREES_OBJECT_FRAMES, paintMareesObject, MAREES_CHARS, paintMareesPerson, paintMareesPersonHD, paintKraken } from './theme-marees.js';
 import { SOLEIL_TILES, SOLEIL_OBJECT_FRAMES, paintSoleilObject, SOLEIL_CHARS, paintSoleilPerson, paintSoleilPersonHD, paintWorm } from './theme-soleil.js';
 import { TEMPS_TILES, TEMPS_OBJECT_FRAMES, paintTempsObject, TEMPS_CHARS, paintTempsPerson, paintTempsPersonHD, paintMinotaure } from './theme-temps.js';
+import { VOLCAN_TILES, VOLCAN_OBJECT_FRAMES, paintVolcanObject, VOLCAN_CHARS, paintVolcanPerson, paintVolcanPersonHD, paintMorgor } from './theme-volcan.js';
 import { AURORE_TILES, AURORE_OBJECT_FRAMES, paintAuroreObject, AURORE_CHARS, paintAurorePerson, paintAurorePersonHD, paintMasque } from './theme-aurore.js';
 
 // Dessins propres à chaque niveau : tuiles, objets et monstres, habitants, boss.
@@ -19,6 +20,7 @@ const LEVELS = [
   { tiles: TEMPS_TILES, objects: TEMPS_OBJECT_FRAMES, paintObject: paintTempsObject, chars: TEMPS_CHARS, paintChar: paintTempsPerson, paintCharHD: paintTempsPersonHD, boss: ['minotaure_0', 'minotaure_1', 'minotaure_shield'], paintBoss: paintMinotaure },
   { tiles: SOLEIL_TILES, objects: SOLEIL_OBJECT_FRAMES, paintObject: paintSoleilObject, chars: SOLEIL_CHARS, paintChar: paintSoleilPerson, paintCharHD: paintSoleilPersonHD, boss: ['worm_0', 'worm_1', 'worm_shield', 'worm_under'], paintBoss: paintWorm },
   { tiles: MAREES_TILES, objects: MAREES_OBJECT_FRAMES, paintObject: paintMareesObject, chars: MAREES_CHARS, paintChar: paintMareesPerson, paintCharHD: paintMareesPersonHD, boss: ['kraken_0', 'kraken_1', 'kraken_shield'], paintBoss: paintKraken },
+  { tiles: VOLCAN_TILES, objects: VOLCAN_OBJECT_FRAMES, paintObject: paintVolcanObject, chars: VOLCAN_CHARS, paintChar: paintVolcanPerson, paintCharHD: paintVolcanPersonHD, boss: ['morgor_0', 'morgor_1', 'morgor_shield', 'morgor_shield2'], paintBoss: paintMorgor },
 ];
 
 /** Couleurs des 6 pierres : [couleur, reflet, ombre]. */

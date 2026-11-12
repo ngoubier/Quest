@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind, cups, simon } from '../gameplay/index.js';
+import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind, cups, simon, plusmoins } from '../gameplay/index.js';
 import { MAPS, ITEMS, QUESTS } from '../game/data/index.js';
 import { WORLD_NODES, WORLD_MAP, STONES, colorLoss, stoneCount } from '../game/data/worldmap.js';
 
@@ -57,7 +57,7 @@ test('Action « minigame » : la suite dépend du résultat', () => {
   assert.deepEqual(run('quit'), [], 'abandon : rien ne se passe');
 });
 
-test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lanterne, le Labyrinthe, le Désert et les Abysses ouverts, le reste fermé pour l’instant', () => {
+test('Carte du monde : 8 lieux ; le Volcan Noir ne s’ouvre qu’avec les 6 pierres', () => {
   assert.equal(WORLD_NODES.length, 8);
   const st = new GameState();
   for (const n of WORLD_NODES) {
@@ -71,6 +71,12 @@ test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lante
   assert.equal(WORLD_NODES.filter((n) => n.kind === 'stone').length, 6);
   STONES.forEach((k) => assert.ok(ITEMS[`stone_${k}`], `objet stone_${k}`));
   assert.equal(check(WORLD_MAP.when, st), false, 'pas de carte avant la légende de l’Ancien');
+  const volcan = WORLD_NODES.find((n) => n.id === 'volcan');
+  STONES.slice(0, 5).forEach((k) => st.give(`stone_${k}`, 1));
+  assert.equal(check(volcan.open, st), false, '5 pierres ne suffisent pas');
+  st.give('stone_marees', 1);
+  assert.equal(check(volcan.open, st), true, 'les 6 pierres ouvrent le volcan');
+  assert.equal(volcan.mapId, 'volcan');
 });
 
 test('Prébois : la sortie du village mène à la carte du monde', () => {
@@ -697,3 +703,152 @@ test('Abysses : plongée, trident, coquillages, courants, puis le Kraken', () =>
 function ITEMS_TRIDENT_RANGE() {
   return 135; // portée du trident (game/data/marees.js)
 }
+
+// ------------------------------------------------------------------ niveau 8 : le Volcan Noir
+test('Plus ou moins : plus grand, plus petit, et la recherche par moitiés suffit toujours', () => {
+  assert.equal(plusmoins.judge(30, 12), 'plus');
+  assert.equal(plusmoins.judge(30, 45), 'moins');
+  assert.equal(plusmoins.judge(30, 30), 'gagne');
+  assert.deepEqual(plusmoins.range([{ guess: 25, answer: 'plus' }, { guess: 40, answer: 'moins' }], 50), [26, 39]);
+  for (const age of [6, 7, 8, 9, 10]) {
+    const { max, tries } = plusmoins.settingsForAge(age);
+    assert.ok(plusmoins.bestTries(max) <= tries, `${age} ans : ${max} en ${tries} essais`);
+    // on le vérifie en jouant toutes les parties possibles
+    for (let secret = 1; secret <= max; secret++) {
+      const hist = [];
+      for (;;) {
+        const [lo, hi] = plusmoins.range(hist, max);
+        const guess = Math.floor((lo + hi) / 2);
+        const answer = plusmoins.judge(secret, guess);
+        hist.push({ guess, answer });
+        if (answer === 'gagne') break;
+      }
+      assert.ok(hist.length <= tries, `${age} ans, nombre ${secret}`);
+    }
+  }
+  assert.ok(plusmoins.settingsForAge(10).max > plusmoins.settingsForAge(6).max);
+});
+
+const findAll = (rows, ch) => rows.flatMap((r, y) => [...r].map((c, x) => (c === ch ? [x, y] : null)).filter(Boolean));
+/** Le projectile part d'une case atteinte et vole en ligne droite au-dessus de `over` jusqu'à la cible. */
+const inLine = (rows, seen, [x, y], over, range) =>
+  [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+    for (let k = 1; k * 16 <= range; k++) {
+      const [cx, cy] = [x + dx * k, y + dy * k];
+      if (seen.has([cx, cy].join())) return true;
+      if (!over.includes(rows[cy]?.[cx])) return false;
+    }
+    return false;
+  });
+
+test('Volcan : le campement, les 300 pièces, les îlots de lave et la porte du château', () => {
+  const v = MAPS.volcan;
+  const o = v.objects;
+  const start = findIn(v.rows, 'P');
+  const base = '#^LQTktFaKNYG$CDEcWV';
+  const s0 = reach(v, start, { solid: base, ice: '' });
+  for (const ch of 'NYG$Kc') assert.ok(near(s0, findIn(v.rows, ch)), `campement : ${ch}`);
+  // les îlots de lave : seulement en figeant la lave (Pierre de Givre)
+  assert.equal(v.legend.L, 'lava');
+  for (const ch of 'CD') assert.ok(!near(s0, findIn(v.rows, ch)), `${ch} : sur un îlot`);
+  const frozen = reach(v, start, { solid: base.replace('L', ''), ice: '' });
+  for (const ch of 'CD') assert.ok(near(frozen, findIn(v.rows, ch)), `${ch} : la lave figée y mène`);
+  // le coffre derrière le rocher fissuré
+  assert.ok(!near(s0, findIn(v.rows, 'E')));
+  assert.ok(near(reach(v, start, { solid: base.replace('k', ''), ice: '' }), findIn(v.rows, 'E')));
+  // les pépites (10 pièces) et les trésors sous les cendres claires
+  for (const [x, y] of [...findAll(v.rows, 'n'), ...findAll(v.rows, 'u')]) assert.ok(frozen.has([x, y].join()), `pépite ${x},${y}`);
+  const fixed = Object.values(o).filter((x) => x.type === 'chest').reduce((n, c) => n + c.count * (v.rows.join('').split(Object.keys(o).find((k) => o[k] === c)).length - 1), 0);
+  const nuggets = (findAll(v.rows, 'n').length + findAll(v.rows, 'u').length) * 10;
+  assert.equal(o.u.item, 'nugget');
+  assert.ok(fixed + nuggets >= 250, `pièces à trouver : ${fixed + nuggets}`);
+  // les autres sources, à volonté : le sage (3 par bonne réponse) et « Plus ou moins »
+  const flat = (x) => JSON.stringify(x);
+  assert.ok(flat(o.Y.dialogue).includes('"perCorrect":{"give":"coin","count":3}'));
+  assert.ok(flat(o.G.dialogue).includes('"minigame":"plusoumoins"'));
+  // Brasier : le Cœur d'Iris, puis l'armure à 300 pièces
+  assert.ok(flat(o.N.dialogue).includes('"give":"iris_heart"'));
+  assert.ok(flat(o.N.dialogue).includes('{"item":"iris_armor","price":300,"once":true}'));
+  assert.ok(ITEMS.iris_heart.tool && ITEMS.iris_armor && ITEMS.nugget.instant);
+  // la porte du château : par le pont, avec l'armure
+  assert.ok(reach(v, start, { solid: base.replace('W', ''), ice: '' }).has(findIn(v.rows, 'W').join()));
+  assert.deepEqual(o.W.requires, { item: 'iris_armor' });
+  assert.equal(o.W.to, 'volcan_chateau');
+  const fast = Object.values(o).filter((x) => x.type === 'enemy' && x.fast).map((x) => x.kind);
+  assert.deepEqual([...new Set(fast)].sort(), ['firebat', 'imp', 'lavawolf']);
+});
+
+test('Château de Morgor : chaque salle demande un objet ou un pouvoir, puis Morgor et Alia', () => {
+  const c = MAPS.volcan_chateau;
+  const o = c.objects;
+  const R = c.rows;
+  assert.equal(R.length, 22);
+  R.forEach((r) => assert.equal(r.length, 48));
+  const entry = MAPS.volcan.objects.W.at;
+  assert.equal(R[entry[1] + 1][entry[0]], 'X', 'on arrive devant la sortie');
+  let solid = '#MLkzYytSTgeQcDIA';
+  const go = () => reach(c, entry, { solid, ice: '' });
+  // l'entrée : braseros (bâton de feu) et cible (arc, par-dessus la lave)
+  let s = go();
+  assert.ok(near(s, findIn(R, 'Y')) && near(s, findIn(R, 'y')), 'les braseros');
+  assert.deepEqual(o.g.openWhen, [o.Y.flag, o.y.flag]);
+  assert.ok(!near(s, findIn(R, 't')) && inLine(R, s, findIn(R, 't'), 'M', 190), 'la cible, à l’arc');
+  assert.equal(o.t.hitBy, 'arrow');
+  assert.equal(o.e.openWhen, o.t.flag);
+  // aile ouest : lave à figer, puis mur fissuré (bombe)
+  solid = solid.replace(/[ge]/g, '');
+  s = go();
+  assert.ok(!near(s, findIn(R, 'k')), 'la lave barre le chemin');
+  assert.equal(c.legend.L, 'lava');
+  solid = solid.replace('L', '');
+  s = go();
+  assert.ok(near(s, findIn(R, 'k')), 'lave figée : le mur fissuré');
+  solid = solid.replace('k', '');
+  s = go();
+  // la clé de l'îlot : au boomerang (portée 100), par-dessus la lave bouillonnante
+  const key = findIn(R, 'K');
+  assert.ok(!near(s, key) && inLine(R, s, key, 'M', 100), 'la clé, au boomerang');
+  assert.equal(c.legend.M, 'magma');
+  // aile est : la clé sous les cendres (pelle), dans le noir
+  assert.ok(s.has(findIn(R, 'u').join()), 'la clé enterrée');
+  assert.equal(o.u.tile, 'ash_pile');
+  assert.deepEqual(c.darkRooms, [[2, 1]]);
+  const doors = findAll(R, 'D');
+  assert.equal(doors.length, 2, 'deux portes, deux clés');
+  doors.forEach((d) => assert.ok(near(s, d)));
+  solid = solid.replace('D', '');
+  s = go();
+  assert.ok(near(s, findIn(R, 'S')), 'premier sceau, à l’épée');
+  assert.ok(o.S.sword);
+  // le faux mur (Pierre d'Aurore), puis le second sceau au trident par-dessus la lave
+  assert.ok(near(s, findIn(R, 'z')));
+  solid = solid.replace('z', '');
+  s = go();
+  assert.ok(!near(s, findIn(R, 'T')) && inLine(R, s, findIn(R, 'T'), 'M', 135), 'second sceau, au trident');
+  assert.equal(o.T.hitBy, 'trident');
+  // les 2 sceaux ouvrent la salle du trône
+  assert.deepEqual(o.Q.openWhen, [o.S.flag, o.T.flag]);
+  assert.ok(near(s, findIn(R, 'Q')));
+  solid = solid.replace('Q', '');
+  s = go();
+  assert.ok(s.has(findIn(R, 'Z').join()), 'Morgor');
+  // Morgor : 3 phases ; la cage d'Alia s'ouvre quand il est vaincu
+  const m = o.Z;
+  assert.equal(m.phases.length, 3);
+  assert.equal(m.phases[0].meltWith, 'iris', 'bouclier noir : le Cœur d’Iris');
+  assert.ok(m.phases[1].rain, 'pluie de feu');
+  assert.ok(m.phases[2].minions.count >= 2, 'sbires');
+  assert.ok(m.phases[0].above > m.phases[1].above && m.phases[1].above > m.phases[2].above && m.phases[2].above === 0 && m.hp > m.phases[0].above);
+  assert.equal(m.damage, 2, 'l’armure divise ses coups par 2');
+  assert.equal(o.c.openWhen, m.flag);
+  solid = solid.replace('c', '');
+  assert.ok(near(go(), findIn(R, 'A')), 'Alia');
+  assert.ok(JSON.stringify(o.A.dialogue).includes('"setFlag":"alia_free"'));
+  const q = QUESTS.find((x) => x.id === 'volcan');
+  assert.equal(q.steps.at(-1).done, 'alia_free');
+  assert.deepEqual(q.steps.at(-3).done, [o.S.flag, o.T.flag]);
+});
+
+test('Pierres : chacune donne un pouvoir', () => {
+  for (const k of STONES) assert.ok(ITEMS[`stone_${k}`].power, k);
+});

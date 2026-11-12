@@ -7,6 +7,8 @@ import { Projectile } from './Projectile.js';
 // Les monstres hors de l'écran sont figés (économie, et lisibilité comme dans Zelda).
 //
 // Sprites attendus (planche 'objects') : {sprite}_0, {sprite}_1
+// Options : fast: true — monstre rapide (le pouvoir « slow » le ralentit) ;
+//           drops: [['coin', 0.5, 3], ...] — butin : objet, probabilité, quantité (1 par défaut).
 
 export const BEHAVIORS = {
   /** Erre au hasard. */
@@ -141,8 +143,9 @@ export class Enemy extends Actor {
    * @param {string} o.sprite   préfixe d'images
    * @param {keyof BEHAVIORS | Function} o.behavior
    */
-  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, shot = 'snowball', steals = 0, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1 }) {
+  constructor({ x, y, uid = null, kind = 'blob', sprite = kind, hp = 2, speed = 24, damage = 1, behavior = 'wander', sight, shot = 'snowball', steals = 0, drops = [['heart', 0.25], ['coin', 0.35]], seed = 1, fast = false }) {
     super({ x: x + 2, y: y + 6, w: 12, h: 10, tags: ['enemy'], solid: false, hp, invulnTime: 0.3 });
+    this.fast = fast;
     this.uid = uid;
     this.kind = kind;
     this.speed = speed;
@@ -181,7 +184,8 @@ export class Enemy extends Actor {
     if (this.updateStatus(dt)) return;
     if (this.stunned > 0) return void (this.stunned -= dt);
     this.anim.update(dt);
-    this.behavior(this, dt);
+    // Pouvoir « slow » : les monstres rapides vont presque deux fois moins vite.
+    this.behavior(this, this.fast && this.adv.power('slow') ? dt * 0.55 : dt);
     const hero = this.adv.hero;
     // Contact à 1 pixel près : le héros est solide, un monstre s'arrête juste contre lui.
     if (!hero || hero.dead || !rectsOverlap({ x: this.x - 1, y: this.y - 1, w: this.w + 2, h: this.h + 2 }, hero)) return;
@@ -197,7 +201,7 @@ export class Enemy extends Actor {
   }
 
   onSwordHit(hero) {
-    if (this.hurt(1, hero, { knockback: 200 })) this.game.audio.play('hit');
+    if (this.hurt(hero.swordDamage ?? 1, hero, { knockback: 200 })) this.game.audio.play('hit');
   }
 
   die() {
@@ -210,9 +214,9 @@ export class Enemy extends Actor {
     if (this.loot) this.adv.spawnPickup('coin', this.cx - 8, this.cy - 8, 15, this.loot);
     // Butin aléatoire.
     let roll = this.rng();
-    for (const [item, p] of this.drops) {
+    for (const [item, p, count = 1] of this.drops) {
       if (roll < p) {
-        this.adv.spawnPickup(item, this.cx - 8, this.cy - 8);
+        this.adv.spawnPickup(item, this.cx - 8, this.cy - 8, 10, count);
         break;
       }
       roll -= p;

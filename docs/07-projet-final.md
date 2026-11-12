@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, niveaux 1 à 7 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, les 8 niveaux sont réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -348,7 +348,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | 5 ✓ | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
 | 6 ✓ | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
 | 7 ✓ | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
-| 8 | Volcan, armure, château, Morgor, fin | L |
+| 8 ✓ | Volcan, armure, château, Morgor, fin | L |
 
 ## 9. Décisions
 
@@ -548,3 +548,33 @@ humains : aussi en haute définition sur PC).
   4 coquillages = 4 flèches, une note de plus à chaque manche (4 à 6 selon l'âge).
 - **Quête secondaire** : « Les perles de Coralie » (3 perles derrière des algues ; 1 cœur + 10 pièces).
 
+
+## 18. Lot 8 — le Volcan Noir (fait)
+
+Données : `game/data/volcan.js` · dessins : `game/theme-volcan.js` (cendre, lave, château, habitants humains :
+aussi en haute définition sur PC) · histoire de fin : `END_STORY` dans `game/data/story.js`.
+
+- **Accès** : le nœud du volcan, sur la carte du royaume, s'ouvre avec les 6 pierres.
+- **Les pouvoirs des pierres** (`powers` dans `game/main.js`, actifs dès qu'on a la pierre ; un message les annonce) :
+  Givre — marcher contre la lave (`freezable`) la fige pour toujours ; Sève — 1 cœur par minute ; Aurore — éclaire
+  les salles sombres (`darkRooms`) et ouvre les faux murs (`secret`) ; Temps — les monstres rapides (`fast`) vont
+  presque 2 fois moins vite ; Soleil — épée de feu, coups doubles ; Marées — une bulle bloque un coup (rechargée en
+  20 s). Brasier les rappelle.
+- **Le campement** : Brasier sertit les pierres dans le **Cœur d'Iris** (outil : rayon arc-en-ciel) et forge
+  l'**Armure d'Iris** pour **300 pièces** (les coups de 2 et plus font moitié moins mal). Pour les réunir : monstres
+  généreux (butin `[objet, chance, nombre]`), 4 coffres (2 sur des îlots de lave, 1 derrière un rocher fissuré),
+  pépites (10 pièces), pépites enterrées sous les cendres claires (pelle), **Obsidien le sage** (3 pièces par bonne
+  réponse) et **Flammèche** (*Plus ou moins* : `gameplay/minigames/PlusMoinsScene.js`, logique dans `plusmoins.js` ;
+  nombre jusqu'à 20 à 100 selon l'âge, la recherche par moitiés gagne toujours).
+- **Pièges** : lave, lave bouillonnante (`magma`, qu'on ne fige pas), **geysers** (objet `geyser` : bouillonne puis
+  jaillit). Monstres : chauves-souris de feu, diablotins, loups de lave (rapides), golems.
+- **Le château** (6 salles) : entrée — braseros (bâton de feu) et cible au-dessus de la lave (arc) ; aile ouest —
+  lave à figer, mur fissuré (bombe), clé sur un îlot (boomerang), premier sceau ; aile est — salle sombre, clé sous
+  les cendres (pelle), faux mur (Aurore), second sceau au trident par-dessus la lave ; les 2 sceaux ouvrent la salle
+  du trône. Sans l'armure, la porte du château repousse le héros.
+- **Morgor** (`phases` du boss) : bouclier noir que seul le Cœur d'Iris perce → pluie de feu (des ombres annoncent
+  les boules ; armure, bulle et Pierre du Temps aident) → 3 diablotins à battre d'abord → question, coups. Chaque
+  phase : une question puis des coups.
+- **La fin** : la cage s'ouvre, Alia remercie le héros (`alia_free`), l'histoire de fin en 3 images (Alia libérée,
+  les couleurs qui reviennent, la fête à Prébois), puis les félicitations ; on peut continuer à jouer, et l'Ancien
+  parle de la fête.

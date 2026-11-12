@@ -14,7 +14,7 @@ export const WORLD_NODES = [
   { id: 'temps', label: '5 · Le Labyrinthe des Mille Portes (Pierre du Temps)', kind: 'stone', x: 0.79, y: 0.27, region: 'temps', open: null, mapId: 'temps', at: [20, 32], facing: 'up' },
   { id: 'soleil', label: '6 · Le Désert des Mirages (Pierre du Soleil)', kind: 'stone', x: 0.84, y: 0.6, region: 'soleil', open: null, mapId: 'soleil', at: [20, 22], facing: 'up' },
   { id: 'marees', label: '7 · Les Abysses de Corail (Pierre des Marées)', kind: 'stone', x: 0.15, y: 0.67, region: 'marees', open: null, mapId: 'marees', at: [20, 22], facing: 'up' },
-  { id: 'volcan', label: '8 · Le Volcan Noir (château de Morgor)', kind: 'final', x: 0.5, y: 0.47, color: '#ff5a1a', open: [ALL_STONES, 'never'], closedText: 'Fermé : il faut réunir les 6 pierres pour entrer.' },
+  { id: 'volcan', label: '8 · Le Volcan Noir (château de Morgor)', kind: 'final', x: 0.5, y: 0.47, color: '#ff5a1a', open: ALL_STONES, closedText: 'Fermé : il faut réunir les 6 pierres pour entrer.', mapId: 'volcan', at: [20, 22], facing: 'up', done: 'alia_free', doneText: 'Alia est libre ✓' },
 ].map((n) => (n.region ? { ...n, color: STONE_COLORS[n.region][0], done: { item: `stone_${n.region}` }, doneText: 'Pierre trouvée ✓' } : n));
 
 /** Nombre de pierres trouvées. */
@@ -28,7 +28,7 @@ export function colorLoss(adv) {
   const st = adv.state;
   if (st.flag('alia_free')) return 0;
   const region = adv.mapDef.region;
-  if (!region) return 0;
+  if (!region || region === 'volcan') return 0; // le volcan est sombre de lui-même
   if (region === 'prebois') return 0.6 * (1 - stoneCount(st) / 6);
   return st.count(`stone_${region}`) > 0 ? 0 : 0.6;
 }
@@ -218,5 +218,5 @@ export const WORLD_MAP = {
   lockedText: 'La route du royaume... Sans la carte, tu te perdrais. Va d’abord voir l’Ancien.',
   nodes: WORLD_NODES,
   paint: paintWorld,
-  currentNode: (adv) => WORLD_NODES.find((n) => n.mapId === adv.mapId || n.region === adv.mapDef.region)?.id ?? 'prebois',
+  currentNode: (adv) => WORLD_NODES.find((n) => n.mapId === adv.mapId || n.region === adv.mapDef.region || n.id === adv.mapDef.region)?.id ?? 'prebois',
 };
