@@ -860,3 +860,11 @@ test('Ambiances : chaque niveau du jeu a la sienne, et les tuiles qui éclairent
   for (const [id, def] of Object.entries(MAPS)) assert.ok(ambienceFor(id, def), `carte ${id} sans ambiance`);
   for (const name of Object.keys(TILE_LIGHTS)) assert.ok(THEME.tiles[name], `tuile ${name} inconnue`);
 });
+
+test('Transitions : chaque terrain qui déborde « comme » un autre désigne une tuile du jeu', async () => {
+  const { THEME, ROLES } = await import('../game/themes.js');
+  const blending = Object.entries(THEME.tiles).filter(([, t]) => t.props?.blend !== undefined);
+  assert.ok(blending.length > 10);
+  for (const [name, t] of blending) if (t.props.blendAs) assert.ok(ROLES.includes(t.props.blendAs), `${name} : ${t.props.blendAs} inconnue`);
+  assert.ok(THEME.tiles.floor.props.grass && THEME.tiles.river.props.glint, 'herbe au vent, reflets sur la rivière');
+});

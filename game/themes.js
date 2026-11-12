@@ -84,9 +84,35 @@ const LEVEL_TILES = Object.assign({ river, canal }, ...LEVELS.map((l) => l.tiles
 
 // Grands arbres sur 2 cases : la cime déborde sur la case du dessus et passe devant le héros
 // (game/art/trees.js). La case de l'arbre (et donc le passage bloqué) ne change pas.
-const ALL_TILES = { ...base.tiles, ...LEVEL_TILES };
 const TALL = { obstacle: ['floor', villageTree], forest_tree: ['floor', forestTree], pine: ['snow', snowPine], palm: ['sand', palmTree], dead_tree: ['ash', deadTree] };
-const TALL_TILES = Object.fromEntries(Object.entries(TALL).map(([name, [ground, draw]]) => [name, { ...ALL_TILES[name], variants: 2, tall: tallTree(ALL_TILES, ground, draw) }]));
+
+// Transitions entre terrains (engine/world/TerrainBlend.js) : priorité de chaque terrain ;
+// le plus haut déborde sur le plus bas avec un bord irrégulier (l'eau et la lave sont tout en bas : berges).
+const BLEND = {
+  water: 0, river: 0, canal: 0, sea: 0, ice_water: 0, sewer_water: 0, lava: 0, magma: 0,
+  path: 1, snow_path: 1, ice: 1, sand_dug: 1, ash_soft: 1, quicksand: 1,
+  sand: 2, ash: 2,
+  floor: 3, floor_alt: 3, snow: 3, snow_alt: 3,
+};
+// Décor vivant : brins d'herbe au vent (couleur de la base, de la pointe) et reflets sur l'eau.
+const GRASS = ['#2f6e24', '#8ad66a'];
+const LIFE = {
+  floor: { grass: GRASS },
+  floor_alt: { grass: GRASS },
+  water: { glint: '#ffffff' },
+  river: { glint: '#ffffff' },
+  canal: { glint: '#ffffff' },
+  sea: { glint: '#ffffff' },
+  ice_water: { glint: '#e8f8ff' },
+};
+const withProps = (t, props) => ({ ...t, props: { ...(t.props ?? {}), ...props } });
+const RAW_TILES = { ...base.tiles, ...LEVEL_TILES };
+const ALL_TILES = Object.fromEntries(Object.entries(RAW_TILES).map(([name, t]) => [name, withProps(t, { ...(name in BLEND ? { blend: BLEND[name] } : {}), ...LIFE[name] })]));
+// Le buisson et les grands arbres sont posés sur un terrain : ils débordent comme lui.
+ALL_TILES.bush = withProps(ALL_TILES.bush, { blend: BLEND.floor, blendAs: 'floor' });
+const TALL_TILES = Object.fromEntries(
+  Object.entries(TALL).map(([name, [ground, draw]]) => [name, { ...withProps(ALL_TILES[name], { blend: BLEND[ground], blendAs: ground }), variants: 2, tall: tallTree(ALL_TILES, ground, draw) }]),
+);
 
 export const ROLES = [...TILE_ROLES, ...Object.keys(LEVEL_TILES)];
 

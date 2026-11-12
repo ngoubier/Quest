@@ -62,7 +62,7 @@ export const AMBIENCES = {
 
   // Les Marées : plage lumineuse et fraîche ; les Abysses : bleu profond, rayons venus de la surface.
   marees: { tint: ['#80e0ff', 0.2], sky: ['#ffffff', '#eef6fa'], clouds: 0.2, rays: ['#ffffff', 0.1], vignette: 0.26, vignetteColor: '#0c2a40' },
-  marees_fond: { tint: ['#40a0ff', 0.3], ambient: '#98b6e4', heroLight: 52, heroLightColor: '#c8f0ff', rays: ['#c8f0ff', 0.2], vignette: 0.45, vignetteColor: '#041836', particles: ['mote', 20] },
+  marees_fond: { tint: ['#40a0ff', 0.3], ambient: '#98b6e4', heroLight: 52, heroLightColor: '#c8f0ff', rays: ['#c8f0ff', 0.2], vignette: 0.45, vignetteColor: '#041836', particles: ['bubble', 22] },
 
   // Volcan Noir : ciel de braise, cendres qui tombent, la lave éclaire.
   volcan: { tint: ['#ff7040', 0.14], sky: ['#fff4ee', '#f0d8d0'], ambient: '#f0dcd4', glow: 0.5, vignette: 0.42, vignetteColor: '#2a0604', particles: ['ash', 50] },
