@@ -12,6 +12,16 @@ const img = (rows) => {
 };
 const opaque = (im, x, y) => im.data[(y * im.width + x) * 4 + 3] === 255;
 
+test('Tablette : créatures en dessins détaillés ; téléphone : images pixel (sauf ?art=1)', () => {
+  const d = (search, tablet) => detectDisplay({ hash: '', search, touch: true, tablet });
+  assert.equal(d('', true).art, true, 'tablette');
+  assert.equal(d('', false).art, false, 'téléphone');
+  assert.equal(d('?art=1', false).art, true);
+  assert.equal(d('?art=0', true).art, false);
+  assert.equal(d('', true).hd, false, 'les tuiles et les humains restent agrandis');
+  assert.equal(d('?hd=1', false).hd, true);
+});
+
 test('Profil : écran tactile => mobile, sinon PC ; forçable dans l’adresse', () => {
   assert.equal(detectDisplay({ hash: '', search: '', touch: true }).id, 'mobile');
   assert.equal(detectDisplay({ hash: '', search: '', touch: false }).id, 'pc');

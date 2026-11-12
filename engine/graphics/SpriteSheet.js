@@ -41,7 +41,8 @@ export class SpriteSheet {
    *          paintHD?:(ctx, name:string, index:number, k:number)=>boolean|void, outline?:string}} spec
    *   paint   : dessin sur la grille du jeu (frameW×frameH)
    *   paintHD : dessin fin (frameW×k par frameH×k), utilisé sur PC ; renvoyer false = pas de version HD
-   *   outline : couleur d'un contour ajouté autour des formes (lisibilité "rétro")
+   *   outline : couleur d'un contour ajouté autour des formes (lisibilité "rétro"),
+   *             ou fonction (name, hd) => couleur | null (null : pas de contour pour cette image)
    * @param {object} [profile] profil d'affichage (voir display.js)
    */
   static paint({ frameW, frameH, frames, paint, paintHD = null, outline = null }, profile = DISPLAY_PROFILES.classic) {
@@ -56,7 +57,7 @@ export class SpriteSheet {
       cellH: frameH,
       paint: (ctx, i) => paint(ctx, frames[i], i),
       paintHD: paintHD && ((ctx, i) => paintHD(ctx, frames[i], i, profile.detail)),
-      outline,
+      outline: typeof outline === 'function' ? (i, hd) => outline(frames[i], hd) : outline,
       kind: 'sprite',
       profile,
     });

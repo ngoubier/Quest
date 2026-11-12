@@ -72,7 +72,12 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'], objec
   const qw = Math.ceil(r.measure(qLabel, bs, s.font)) + Math.round(16 * k);
   const used = adv.bagItems().length;
   const cap = adv.bagCapacity();
-  const bw = Math.round(40 * k);
+  // Sac : juste la place du texte ; s'il manque de place (écran étroit, barre agrandie), on n'écrit que le nombre
+  // d'objets, pour ne jamais cacher les compteurs.
+  const bWidth = (label) => Math.ceil(r.measure(label, bs, s.font)) + Math.round(16 * k);
+  let bLabel = `${used}/${cap}`;
+  if (heartsEnd + 2 + qw + 4 + bWidth(bLabel) > x - 2) bLabel = `${used}`;
+  const bw = bWidth(bLabel);
   const bh = height - Math.round(4 * k);
   const by = Math.round(2 * k);
   const total = qw + 4 + bw;
@@ -88,7 +93,7 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'], objec
   };
   button(start, qw, 'quest', qLabel, s.accent);
   const bx = start + qw + 4;
-  button(bx, bw, 'bag', `${used}/${cap}`, used >= cap ? '#ff7a6a' : s.text);
+  button(bx, bw, 'bag', bLabel, used >= cap ? '#ff7a6a' : s.text);
   if (showGoal) {
     const gx = bx + bw + 8;
     const gw = x - 6 - gx;

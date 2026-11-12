@@ -174,7 +174,8 @@ export function shadeImage(img, kind = 'tile', seed = 1) {
  * @param {number} o.cellH
  * @param {(ctx, i:number)=>void} o.paint
  * @param {((ctx, i:number)=>boolean)|null} [o.paintHD]  renvoie false si la case n'a pas de version HD
- * @param {string|null} [o.outline]  couleur du contour (sprites)
+ * @param {string|null|((i:number, hd:boolean)=>string|null)} [o.outline]  couleur du contour (sprites),
+ *   ou fonction : null = pas de contour pour cette image
  * @param {'tile'|'sprite'} [o.kind]
  * @param {object} [o.profile]
  * @returns {{canvas: any, detail: number}}
@@ -194,12 +195,13 @@ export function buildAtlas({ count, place, cols, rows, cellW, cellH, paint, pain
     for (let i = 0; i < count; i++) {
       const { col, row } = place(i);
       let img = null;
-      if (k > 1 && profile.hd && paintHD) {
+      let hd = false; // image dessinée en haute définition (paintHD)
+      if (k > 1 && (profile.hd || (profile.art && kind === 'sprite')) && paintHD) {
         bctx.clearRect(0, 0, big.width, big.height);
         bctx.save();
         const done = paintHD(bctx, i) !== false;
         bctx.restore();
-        if (done) img = bctx.getImageData(0, 0, big.width, big.height);
+        if (done) (img = bctx.getImageData(0, 0, big.width, big.height)), (hd = true);
       }
       if (!img) {
         sctx.clearRect(0, 0, cellW, cellH);
@@ -209,7 +211,10 @@ export function buildAtlas({ count, place, cols, rows, cellW, cellH, paint, pain
         img = sctx.getImageData(0, 0, cellW, cellH);
         if (k > 1) img = k === 2 && profile.smooth ? scale2x(img) : scaleNearest(img, k);
       }
-      if (outline) outlineImage(img, outline, k > 1 ? profile.outline : 1);
+      // contour : une couleur, ou une fonction (i, hd) => couleur | null (pas de contour pour cette image) ;
+      // les images dessinées en haute définition peuvent avoir un contour plus fin (profile.outlineHD).
+      const line = typeof outline === 'function' ? outline(i, hd) : outline;
+      if (line) outlineImage(img, line, k > 1 ? (hd ? profile.outlineHD ?? profile.outline : profile.outline) : 1);
       adjustColors(img, profile);
       if (profile.shading) shadeImage(img, kind, seed + i * 31);
       const out = img instanceof ImageDataCtor() ? img : toImageData(ctx, img);
