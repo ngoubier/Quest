@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Tileset, Tilemap, moveAndSlide, Camera, EventBus, Input, wrapText, SaveStore, Animator, createRng, buildTileset } from '../engine/index.js';
+import { Tileset, Tilemap, moveAndSlide, Camera, EventBus, Input, wrapText, SaveStore, Animator, createRng, buildTileset, windAt } from '../engine/index.js';
+import { _depth, _inPiece } from '../engine/world/TerrainBlend.js';
 import { MAPS, LEGEND } from '../demos/01-moteur/maps.js';
 import { TILE_ROLES, THEMES } from '../demos/01-moteur/themes.js';
 
@@ -181,4 +182,55 @@ test('Grands arbres : la cime est dessinée sur la case du dessus, transparente 
   calls.length = 0;
   m2.draw(r, view, 0, { above: true });
   assert.equal(calls[0].alpha, 0.45, 'case importante sous la cime : transparente');
+});
+
+test('Transitions : le terrain le plus haut déborde sur ses voisins plus bas (côtés, coins)', () => {
+  const theme = {
+    id: 't',
+    tiles: {
+      grass: { paint: () => {}, props: { blend: 3 } },
+      path: { paint: () => {}, props: { blend: 1 } },
+      water: { solid: true, paint: () => {}, props: { blend: 0, edge: '#ffffff' } },
+      tree: { solid: true, paint: () => {}, props: { blend: 3, blendAs: 'grass' } },
+      wall: { solid: true, paint: () => {} },
+    },
+  };
+  const ts = buildTileset(theme, ['grass', 'path', 'water', 'tree', 'wall']);
+  const id = (n) => ts.id(n);
+  const pieces = (rows, tx, ty) => {
+    const { tilemap } = Tilemap.fromAscii({ rows, legend: { G: 'grass', P: 'path', W: 'water', T: 'tree', '#': 'wall' }, tileset: ts });
+    const log = [];
+    tilemap._blender = { tileset: ts, piece: (tex, piece, v, edge) => (log.push([tex, piece, edge]), null) };
+    const covered = tilemap._blend({ image() {} }, ts.def(tilemap.get(0, tx, ty)), tx, ty);
+    return { log, covered };
+  };
+  // chemin entouré d'herbe : 4 côtés et 4 coins intérieurs arrondis
+  const a = pieces(['GGG', 'GPG', 'GGG'], 1, 1);
+  assert.deepEqual(a.log.map((p) => p[1]).sort(), ['e', 'n', 'nei', 'nwi', 's', 'sei', 'swi', 'w'].sort());
+  assert.equal(a.covered, 15);
+  assert.ok(a.log.every(([tex]) => tex === id('grass')));
+  // coin extérieur : seule la diagonale est plus haute
+  assert.deepEqual(pieces(['GPP', 'PPP'], 1, 1).log.map((p) => p[1]), ['nw']);
+  // l'herbe ne reçoit rien du chemin ; un mur ne participe pas
+  assert.equal(pieces(['PGP'], 1, 0).log.length, 0);
+  assert.equal(pieces(['#P#'], 1, 0).log.length, 0);
+  // l'arbre déborde avec la texture de l'herbe ; sur l'eau, le liseré est l'écume
+  const w = pieces(['TW'], 1, 0);
+  assert.deepEqual(w.log, [[id('grass'), 'w', '#ffffff']]);
+  // l'arbre lui-même ne reçoit pas de transition
+  assert.equal(pieces(['WT'], 1, 0).log.length, 0);
+  // plusieurs terrains : le plus haut est dessiné en dernier
+  assert.deepEqual(pieces(['G', 'W', 'P'], 0, 1).log.map((p) => p[0]), [id('path'), id('grass')]);
+});
+
+test('Transitions : les bords se raccordent d’une case à l’autre ; le vent reste doux', () => {
+  for (const seed of [0, 1.3, 2.7, 5]) {
+    assert.ok(Math.abs(_depth(0, seed) - 3) < 1e-9 && Math.abs(_depth(1, seed) - 3) < 1e-9, 'bord de 3 pixels aux extrémités');
+    for (let t = 0; t <= 1; t += 0.05) assert.ok(_depth(t, seed) >= 1.2 && _depth(t, seed) <= 6);
+  }
+  // un coin extérieur a le même rayon que les bandes à leurs extrémités
+  assert.ok(_inPiece('nw', 2.9, 0.1, 16, 0) && !_inPiece('nw', 3.1, 0.1, 16, 0));
+  // coin intérieur arrondi : le coin est couvert, le centre de la case ne l'est pas
+  assert.ok(_inPiece('nwi', 0.5, 0.5, 16, 0) && _inPiece('nwi', 4, 1, 16, 0) && !_inPiece('nwi', 5.5, 5.5, 16, 0) && !_inPiece('nwi', 8, 8, 16, 0));
+  for (let t = 0; t < 60; t += 0.37) for (const x of [0, 100, 700]) assert.ok(Math.abs(windAt(x, 50, t)) <= 1.7);
 });

@@ -152,7 +152,7 @@ export class AdventureScene extends Scene {
     const world = new World({ game: this.game, tilemap, camera, viewport: vp });
     world.adv = this;
     this.world = world;
-    world.softShadows = !!this.fx;
+    world.softShadows = world.blend = world.life = !!this.fx;
     this.ambience.set(this.cfg.ambience?.(mapId, def, this) ?? null);
     this.mapId = mapId;
     this.mapDef = def;

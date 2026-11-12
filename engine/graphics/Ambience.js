@@ -13,7 +13,7 @@
 //                                    //   les sources de lumière y percent des trous colorés
 //   heroLight: 60,                   // le héros porte une lanterne de ce rayon (pixels de jeu)
 //   glow: 0.35,                      // halo des sources de lumière en plein jour (0 = rien)
-//   particles: ['firefly', 24],      // firefly, snow, ash, ember, leaf, mote, sand, sparkle
+//   particles: ['firefly', 24],      // firefly, snow, ash, ember, leaf, mote, sand, sparkle, bubble
 // }
 //
 // Sources de lumière :
@@ -59,6 +59,7 @@ const PARTICLES = {
   leaf: { color: ['#d89a3a', '#8ac04a', '#c0602a'], size: 1.5, fall: 9, spin: true, move: (s, t) => [Math.sin(t * 1.1 + s * 25) * 12 + t * 5, 0], alpha: () => 0.95 },
   mote: { glow: true, color: '#fff2c0', size: 0.8, fall: -2, move: (s, t) => [Math.sin(t * 0.4 + s * 30) * 8, Math.cos(t * 0.3 + s * 17) * 5], alpha: (s, t) => 0.25 + 0.35 * Math.sin(t * 1.5 + s * 40) },
   sand: { color: '#f0d8a0', size: 0.8, fall: 2, move: (s, t) => [t * 26 + Math.sin(t * 3 + s * 9) * 3, 0], alpha: () => 0.55 },
+  bubble: { color: 'rgba(220,245,255,0.9)', ring: true, size: 2.2, fall: -18, move: (s, t) => [Math.sin(t * 2.4 + s * 30) * 3, 0], alpha: (s, t) => 0.55 + 0.25 * Math.sin(t * 1.3 + s * 20) },
   sparkle: { glow: true, color: '#d8f4ff', size: 1, move: (s, t) => [Math.sin(t * 0.3 + s * 12) * 4, Math.cos(t * 0.25 + s * 15) * 4], alpha: (s, t) => Math.max(0, Math.sin(t * 2.5 + s * 90)) ** 3 },
 };
 
@@ -323,7 +324,15 @@ export class Ambience {
         c.fillRect(x - size / 2 + 0.4, y - size / 2 + 0.5, size, size);
       }
       c.fillStyle = col;
-      if (spec.spin) {
+      if (spec.ring) {
+        // bulle : un petit cercle clair avec un reflet
+        c.strokeStyle = col;
+        c.lineWidth = 0.6;
+        c.beginPath();
+        c.arc(x, y, size / 2, 0, Math.PI * 2);
+        c.stroke();
+        c.fillRect(x - size / 4, y - size / 4, 0.7, 0.7);
+      } else if (spec.spin) {
         const w = size * (1.2 + Math.sin(t * 4 + s * 60));
         c.fillRect(x - Math.abs(w) / 2, y - size / 2, Math.max(0.4, Math.abs(w)), size * 0.8);
       } else c.fillRect(x - size / 2, y - size / 2, size, size);

@@ -20,6 +20,8 @@ export class World {
     this.entities = [];
     this.time = 0;
     this.softShadows = false; // ombres douces : sous les entités (getter `shadow`) et au pied des murs
+    this.blend = false; // transitions arrondies entre terrains (herbe, chemin, sable, eau...)
+    this.life = false; // décor vivant : herbe et arbres au vent, reflets sur l'eau
   }
 
   add(entity) {
@@ -78,7 +80,7 @@ export class World {
     const cam = this.camera;
     const view = cam.view;
     r.pushWorld(cam, this.viewport);
-    this.tilemap.draw(r, view, this.time, { soft: this.softShadows });
+    this.tilemap.draw(r, view, this.time, { soft: this.softShadows, blend: this.blend, life: this.life });
     const visible = this.entities
       .filter((e) => e.visible && !e.dead)
       .sort((a, b) => a.sortY - b.sortY);
@@ -86,7 +88,7 @@ export class World {
     for (const e of visible) e.draw(r);
     // Cimes des arbres : transparentes devant les personnages et objets (ceux qui ont une ombre).
     const reveal = visible.filter((e) => e.shadow).map((e) => ({ x: e.x, y: e.y - 12, w: e.w, h: e.h + 12 }));
-    this.tilemap.draw(r, view, this.time, { above: true, reveal });
+    this.tilemap.draw(r, view, this.time, { above: true, reveal, life: this.life });
     if (this.game?.debug?.enabled) this._drawDebug(r, view);
     r.popWorld();
   }

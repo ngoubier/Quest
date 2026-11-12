@@ -84,6 +84,13 @@ En plus :
 - **Grands arbres sur 2 cases** (arbres du village et de la forêt, sapins, palmiers, arbres morts) :
   la cime déborde sur la case du dessus et passe **devant** le héros ; elle devient transparente quand
   quelqu'un passe derrière. Le passage bloqué ne change pas (seule la case du tronc bloque).
+- **Transitions entre terrains** : plus de damier. L'herbe mord sur les chemins avec un bord irrégulier,
+  la neige sur les sentiers, le sable et les cendres sur leurs chemins ; l'eau et la lave ont une **berge**
+  qui suit la découpe, avec l'écume (ou la lueur de la lave) tout le long. Les arbres et buissons font
+  déborder l'herbe (ou la neige, le sable...) sur laquelle ils sont posés.
+- **Décor vivant** : des touffes d'herbe ondulent au vent, avec de temps en temps une rafale qui traverse
+  la carte ; les cimes des arbres se balancent ; des reflets scintillent sur l'eau ; des bulles montent
+  dans les Abysses.
 - Les **sources de lumière** brillent : torches, lanternes, cheminées, forges, lave, braseros allumés,
   flammèches du bâton de feu.
 - Le jeu reste **très lisible** : la pénombre ne descend jamais trop bas, et les salles sombres
@@ -103,6 +110,13 @@ En plus :
   Une entité éclaire avec un getter `light` (`{ r, color, flicker }`).
 - Grands éléments sur 2 cases : une tuile déclare `tall: { ground, paint, paintHD? }` (dessin 16 × 32,
   sol en bas) ; la cime est dessinée par la carte après les personnages. Arbres du jeu : `game/art/trees.js`.
+- Transitions : `engine/world/TerrainBlend.js`. Chaque terrain a une priorité (`props.blend`) ; le plus
+  haut déborde sur le plus bas. Les morceaux de bord (côtés, coins extérieurs, coins intérieurs arrondis)
+  sont découpés dans l'atlas une seule fois, puis gardés en cache. `props.blendAs` : un arbre déborde avec
+  la texture de son sol. Les priorités du jeu sont dans `game/themes.js` (`BLEND`).
+- Décor vivant : `props.grass` (touffes au vent) et `props.glint` (reflets) dans `game/themes.js` (`LIFE`) ;
+  le vent est la fonction `windAt` de `engine/world/Tilemap.js` (partagée par l'herbe et les cimes).
+  Activés avec `world.blend` et `world.life`.
 - Ombres douces : `world.softShadows` ; une entité choisit la taille de son ombre avec `shadow`
   (et `shadowY` pour ce qui vole). Les tuiles avec `props.shadow` font de l'ombre sur le sol.
 

@@ -14,6 +14,8 @@ import { SpriteSheet } from '../graphics/SpriteSheet.js';
 //   tiles:   { [rôle]: { solid?, frames?, fps?, variants?, props?, paint(ctx, {size, frame, variant, rng}),
 //                        paintHD?(ctx, {size, k, frame, variant, rng}) } },
 //            props.shadow : projette une ombre sur la tuile du dessous ; props.edge : liseré (écume...)
+//            props.blend : priorité du terrain pour les transitions (le plus haut déborde sur le plus bas),
+//            props.blendAs : déborde avec la texture d'une autre tuile ; props.grass / props.glint : décor vivant
 //            paintHD : version haute définition dessinée à la main (size = 16×k pixels), utilisée sur PC
 //            tall : { ground(ctx, o), groundHD?, paint(ctx, o), paintHD? } — GRAND ÉLÉMENT SUR 2 CASES (arbre) :
 //                   paint dessine dans un repère de 16 × 32 (sol en bas). La moitié basse va sur la case

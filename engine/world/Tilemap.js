@@ -1,6 +1,24 @@
 // Carte en grille de tuiles, sur une ou plusieurs couches.
 // Les couches marquées `above: true` sont dessinées PAR-DESSUS les personnages
 // (feuillages, toits, arches de portes...).
+import { TerrainBlend } from './TerrainBlend.js';
+
+/**
+ * Le vent, en un point du monde (pixels) à l'instant t : un léger balancement, et de temps en temps
+ * une rafale qui traverse la carte de gauche à droite. Renvoie environ -0,6 (gauche) à 1,7 (droite).
+ */
+export function windAt(x, y, t) {
+  const gust = Math.max(0, Math.sin(t * 0.45 - x * 0.012 - y * 0.004)) ** 6;
+  return 0.55 * Math.sin(t * 1.7 + x * 0.045 + y * 0.02) + 1.1 * gust;
+}
+
+/** Terrain d'une tuile pour les transitions : priorité et tuile dont on prend la texture. */
+function blendOf(tileset, def) {
+  const b = def.props.blend;
+  if (b === undefined) return null;
+  const as = def.props.blendAs;
+  return { prio: b, tex: as === undefined ? def.id : tileset.ids.get(as) ?? def.id, own: as === undefined };
+}
 
 /** Variante d'une tuile selon sa position (stable, sans motif visible). */
 function variantAt(tx, ty) {
@@ -157,11 +175,15 @@ export class Tilemap {
    *  - `props.shadow` : ombre portée sur la tuile du dessous ;
    *  - `props.edge`   : liseré de couleur là où la tuile touche une autre tuile (berges...).
    * `soft` : ombres en dégradé (occlusion au pied des murs) au lieu d'un trait net.
+   * `blend` : transitions entre terrains (`props.blend` : priorité ; le plus haut déborde sur le plus bas ;
+   *           `props.blendAs` : tuile dont on prend la texture, pour un arbre posé sur l'herbe).
+   * `life` : décor vivant — brins d'herbe qui ondulent au vent (`props.grass` : [base, pointe]),
+   *          reflets qui scintillent sur l'eau (`props.glint`), cimes des arbres qui se balancent.
    * Passe du dessus (`above`) : les cimes des grands éléments (arbres sur 2 cases) ; elles deviennent
    * transparentes là où passe quelqu'un (`reveal` : rectangles en pixels monde) et au-dessus d'une
    * tuile importante (`props.seeThrough`).
    */
-  draw(r, view, time = 0, { above = false, soft = false, reveal = [] } = {}) {
+  draw(r, view, time = 0, { above = false, soft = false, reveal = [], blend = false, life = false } = {}) {
     const ts = this.tileSize;
     const x0 = Math.max(0, Math.floor(view.x / ts));
     const y0 = Math.max(0, Math.floor(view.y / ts));
@@ -177,14 +199,16 @@ export class Tilemap {
           this.tileset.draw(r, id, tx * ts, ty * ts, time, variantAt(tx, ty));
           if (layer !== ground) continue;
           const def = this.tileset.def(id);
-          // Liseré
+          // Transitions : les terrains voisins plus hauts débordent sur cette case
+          const covered = blend ? this._blend(r, def, tx, ty) : 0;
+          // Liseré (sauf sur les côtés recouverts par une transition, qui a son propre liseré)
           if (def.props.edge) {
             const other = (nx, ny) => this.inBounds(nx, ny) && this.tileset.def(ground.data[ny * this.width + nx]).name !== def.name;
             const c = def.props.edge;
-            if (other(tx, ty - 1)) r.rect(tx * ts, ty * ts, ts, 1, c);
-            if (other(tx, ty + 1)) r.rect(tx * ts, ty * ts + ts - 1, ts, 1, c);
-            if (other(tx - 1, ty)) r.rect(tx * ts, ty * ts, 1, ts, c);
-            if (other(tx + 1, ty)) r.rect(tx * ts + ts - 1, ty * ts, 1, ts, c);
+            if (!(covered & 1) && other(tx, ty - 1)) r.rect(tx * ts, ty * ts, ts, 1, c);
+            if (!(covered & 4) && other(tx, ty + 1)) r.rect(tx * ts, ty * ts + ts - 1, ts, 1, c);
+            if (!(covered & 8) && other(tx - 1, ty)) r.rect(tx * ts, ty * ts, 1, ts, c);
+            if (!(covered & 2) && other(tx + 1, ty)) r.rect(tx * ts + ts - 1, ty * ts, 1, ts, c);
           }
           // Ombre portée par la tuile du dessus (et, en ombres douces, par celle de gauche :
           // le soleil vient d'en haut à gauche)
@@ -205,11 +229,101 @@ export class Tilemap {
         }
       }
     }
-    if (above && this.tileset.crowns?.size) this._drawCrowns(r, x0, x1, y0, Math.min(this.height - 1, y1 + 1), time, reveal);
+    if (!above && life) this._drawLife(r, x0, x1, y0, y1, time);
+    if (above && this.tileset.crowns?.size) this._drawCrowns(r, x0, x1, y0, Math.min(this.height - 1, y1 + 1), time, reveal, life);
+  }
+
+  /**
+   * Transitions sur la case (tx, ty) : bandes le long des côtés, coins extérieurs et intérieurs.
+   * Renvoie les côtés recouverts (bits : 1 haut, 2 droite, 4 bas, 8 gauche).
+   */
+  _blend(r, def, tx, ty) {
+    const me = blendOf(this.tileset, def);
+    if (!me?.own) return 0;
+    if (this._blender?.tileset !== this.tileset) this._blender = new TerrainBlend(this.tileset);
+    const ground = this.layers[0].data;
+    const higher = (nx, ny) => {
+      if (!this.inBounds(nx, ny)) return null;
+      const b = blendOf(this.tileset, this.tileset.def(ground[ny * this.width + nx]));
+      return b && b.prio > me.prio ? b : null;
+    };
+    const n = higher(tx, ty - 1);
+    const e = higher(tx + 1, ty);
+    const so = higher(tx, ty + 1);
+    const w = higher(tx - 1, ty);
+    const pieces = [];
+    const v = variantAt(tx, ty) & 1;
+    if (n) pieces.push([n, 'n', v]);
+    if (e) pieces.push([e, 'e', v]);
+    if (so) pieces.push([so, 's', v]);
+    if (w) pieces.push([w, 'w', v]);
+    const top = (a, b) => (a.prio >= b.prio ? a : b);
+    for (const [a, b, dx, dy, name] of [[n, w, -1, -1, 'nw'], [n, e, 1, -1, 'ne'], [so, w, -1, 1, 'sw'], [so, e, 1, 1, 'se']]) {
+      if (a && b) pieces.push([top(a, b), name + 'i', 0]);
+      else if (!a && !b) {
+        const d = higher(tx + dx, ty + dy);
+        if (d) pieces.push([d, name, 0]);
+      }
+    }
+    if (!pieces.length) return 0;
+    // du plus bas au plus haut : le terrain le plus haut passe par-dessus
+    pieces.sort((p, q) => p[0].prio - q[0].prio);
+    const ts = this.tileSize;
+    for (const [b, piece, variant] of pieces) {
+      const img = this._blender.piece(b.tex, piece, variant, def.props.edge ?? null);
+      if (img) r.image(img, 0, 0, img.width, img.height, tx * ts, ty * ts, ts, ts);
+    }
+    return (n ? 1 : 0) | (e ? 2 : 0) | (so ? 4 : 0) | (w ? 8 : 0);
+  }
+
+  /** Décor vivant : brins d'herbe au vent, reflets sur l'eau. Dessiné après le sol, sous les personnages. */
+  _drawLife(r, x0, x1, y0, y1, t) {
+    const c = r.ctx;
+    const ts = this.tileSize;
+    const ground = this.layers[0].data;
+    const k = this.tileset.detail || 1;
+    const px = 1 / k; // plus petit trait net
+    const snap = (x) => Math.round(x * k) / k;
+    for (let ty = y0; ty <= y1; ty++) {
+      for (let tx = x0; tx <= x1; tx++) {
+        const props = this.tileset.def(ground[ty * this.width + tx]).props;
+        const h = variantAt(tx * 3 + 1, ty * 5 + 2);
+        if (props.grass && h % 3 === 0) {
+          // une touffe sur trois cases environ : 3 brins en éventail qui penchent avec le vent
+          // (la pointe bouge plus que la base)
+          const [base, tip] = props.grass;
+          const bx = tx * ts + 3 + ((h * 7) % 10);
+          const by = ty * ts + 7 + ((h * 13) % 8);
+          const wind = windAt(bx, by, t);
+          const bw = k > 1 ? 0.75 : 1;
+          for (const [dx, len, spread] of [[-1, 4, -0.8], [0, 6, 0], [1, 5, 0.8]]) {
+            for (let i = 0; i < len; i++) {
+              const f = i / (len - 1);
+              c.fillStyle = i >= len - 2 ? tip : base;
+              c.fillRect(snap(bx + dx + spread * f + wind * 1.6 * f * f), by - i - 1, bw, 1);
+            }
+          }
+        }
+        if (props.glint) {
+          // un reflet qui s'allume brièvement, à un moment différent sur chaque case
+          const a = Math.max(0, Math.sin(t * 1.9 + h * 0.83)) ** 14;
+          if (a < 0.05) continue;
+          const gx = tx * ts + 3 + (h % 10);
+          const gy = ty * ts + 3 + ((h * 7) % 10);
+          c.globalAlpha = a;
+          c.fillStyle = props.glint;
+          c.fillRect(gx, gy, 1, 1);
+          c.globalAlpha = a * 0.55;
+          c.fillRect(gx - 1, gy, 3, 1);
+          c.fillRect(gx, gy - 1, 1, 3);
+          c.globalAlpha = 1;
+        }
+      }
+    }
   }
 
   /** Cimes des arbres : sur la case au-dessus de l'arbre, semi-transparentes si quelqu'un est derrière. */
-  _drawCrowns(r, x0, x1, y0, y1, time, reveal) {
+  _drawCrowns(r, x0, x1, y0, y1, time, reveal, wind = false) {
     const ts = this.tileSize;
     const ground = this.layers[0];
     for (let ty = Math.max(1, y0); ty <= y1; ty++) {
@@ -220,7 +334,19 @@ export class Tilemap {
         const y = (ty - 1) * ts;
         // transparente si quelqu'un est derrière, ou si la case cachée est importante (props.seeThrough)
         const behind = this.tileset.def(ground.data[(ty - 1) * this.width + tx]).props.seeThrough || reveal.some((q) => q.x < x + ts && q.x + q.w > x && q.y < y + ts && q.y + q.h > y);
-        const draw = () => this.tileset.drawCrown(r, id, x, y, time, variantAt(tx, ty));
+        let draw = () => this.tileset.drawCrown(r, id, x, y, time, variantAt(tx, ty));
+        if (wind) {
+          // la cime penche avec le vent, le pied (raccord avec le tronc) ne bouge pas
+          const lean = 0.07 * windAt(x + ts / 2, y, time);
+          const plain = draw;
+          draw = () => {
+            const c = r.ctx;
+            c.save();
+            c.transform(1, 0, -lean, 1, lean * (y + ts), 0);
+            plain();
+            c.restore();
+          };
+        }
         if (behind) r.withAlpha(0.45, draw);
         else draw();
       }
