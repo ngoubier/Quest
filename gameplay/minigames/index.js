@@ -4,6 +4,7 @@ import { MemoryScene } from './MemoryScene.js';
 import { Connect4Scene } from './Connect4Scene.js';
 import { MastermindScene } from './MastermindScene.js';
 import { CupsScene } from './CupsScene.js';
+import { SimonScene } from './SimonScene.js';
 
 // Mini-jeux contre les habitants. Chaque entrée crée la scène du jeu :
 //   opts : { opponent: 'Bastien', age: 8, onDone(result) }  — result : 'win' | 'lose' | 'draw' | 'quit'
@@ -15,6 +16,7 @@ export const MINIGAMES = {
   puissance4: (opts) => new Connect4Scene(opts), // Puissance 4
   code: (opts) => new MastermindScene(opts), // Code secret
   gobelets: (opts) => new CupsScene(opts), // Les 3 gobelets
+  coquillages: (opts) => new SimonScene(opts), // Le chant des coquillages (Simon)
 };
 
 export function createMinigame(name, opts) {

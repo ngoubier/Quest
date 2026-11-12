@@ -11,7 +11,7 @@ import { Effect } from './Effect.js';
 // {kind}_side (vers la droite), {kind}_up, {kind}_down
 
 export class Projectile extends Entity {
-  constructor({ x, y, dir, kind = 'fire', speed = 150, hostile = false, damage = 1, range = 150, owner = null }) {
+  constructor({ x, y, dir, kind = 'fire', speed = 150, hostile = false, damage = 1, range = 150, owner = null, cuts = false }) {
     super({ x: x - 3, y: y - 3, w: 6, h: 6, tags: ['projectile'] });
     const len = Math.hypot(dir.x, dir.y) || 1;
     this.vx = (dir.x / len) * speed;
@@ -21,6 +21,7 @@ export class Projectile extends Entity {
     this.damage = damage;
     this.left = range;
     this.owner = owner;
+    this.cuts = cuts; // coupe les tuiles « coupables » qu'il traverse (trident dans les algues)
     this.t = 0;
     this.z = 50;
   }
@@ -51,6 +52,16 @@ export class Projectile extends Entity {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.left -= step;
+    if (this.cuts) {
+      const tm = this.world.tilemap;
+      const tx = Math.floor(this.cx / tm.tileSize);
+      const ty = Math.floor(this.cy / tm.tileSize);
+      if (tm.propAt(tx, ty, 'cuttable')) {
+        tm.set('ground', tx, ty, tm.propAt(tx, ty, 'cutTo') || 'floor');
+        this.world.add(new Effect(tx * tm.tileSize + 8, ty * tm.tileSize + 8));
+        this.world.game.audio.play('cut');
+      }
+    }
     if (this.left <= 0 || this._hitsWall()) return this.stop();
     for (const e of this.world.query(this, (o) => o !== this && o !== this.owner && !o.has('projectile'))) {
       if (typeof e.onProjectile === 'function') {

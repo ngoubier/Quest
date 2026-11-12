@@ -4,7 +4,6 @@ import { STONE_COLORS } from '../themes.js';
 
 export const STONES = ['givre', 'seve', 'aurore', 'temps', 'soleil', 'marees'];
 const ALL_STONES = { all: STONES.map((k) => ({ item: `stone_${k}` })) };
-const SOON = 'Ce lieu arrive bientôt : il est encore en construction !';
 
 // Positions (0..1) sur l'image de la carte.
 export const WORLD_NODES = [
@@ -14,7 +13,7 @@ export const WORLD_NODES = [
   { id: 'aurore', label: '4 · Bourg-Lanterne (Pierre d’Aurore)', kind: 'stone', x: 0.64, y: 0.82, region: 'aurore', open: null, mapId: 'aurore', at: [20, 22], facing: 'up' },
   { id: 'temps', label: '5 · Le Labyrinthe des Mille Portes (Pierre du Temps)', kind: 'stone', x: 0.79, y: 0.27, region: 'temps', open: null, mapId: 'temps', at: [20, 32], facing: 'up' },
   { id: 'soleil', label: '6 · Le Désert des Mirages (Pierre du Soleil)', kind: 'stone', x: 0.84, y: 0.6, region: 'soleil', open: null, mapId: 'soleil', at: [20, 22], facing: 'up' },
-  { id: 'marees', label: '7 · Les Abysses de Corail (Pierre des Marées)', kind: 'stone', x: 0.15, y: 0.67, region: 'marees', open: 'never', closedText: SOON },
+  { id: 'marees', label: '7 · Les Abysses de Corail (Pierre des Marées)', kind: 'stone', x: 0.15, y: 0.67, region: 'marees', open: null, mapId: 'marees', at: [20, 22], facing: 'up' },
   { id: 'volcan', label: '8 · Le Volcan Noir (château de Morgor)', kind: 'final', x: 0.5, y: 0.47, color: '#ff5a1a', open: [ALL_STONES, 'never'], closedText: 'Fermé : il faut réunir les 6 pierres pour entrer.' },
 ].map((n) => (n.region ? { ...n, color: STONE_COLORS[n.region][0], done: { item: `stone_${n.region}` }, doneText: 'Pierre trouvée ✓' } : n));
 

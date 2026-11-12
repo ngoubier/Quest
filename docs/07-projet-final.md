@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, niveaux 1 à 6 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, niveaux 1 à 7 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -347,7 +347,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | 4 ✓ | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
 | 5 ✓ | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
 | 6 ✓ | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
-| 7 | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
+| 7 ✓ | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
 | 8 | Volcan, armure, château, Morgor, fin | L |
 
 ## 9. Décisions
@@ -356,7 +356,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 |---|---|
 | Sous l'eau | **Bouteille d'oxygène à temps limité** ; temps écoulé = on recommence le niveau |
 | Ambiances | **Médiéval-fantastique seulement** (plus de station spatiale ni de ville) |
-| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures, Bourg-Lanterne, le Labyrinthe et le Désert |
+| Démarrage | Lot 1, puis le Mont Givré, la Forêt des Murmures, Bourg-Lanterne, le Labyrinthe, le Désert et les Abysses |
 | Noms, ordre libre, pouvoir dès chaque pierre, armure à 300 pièces | retenus par défaut (pas d'objection) |
 
 ## 10. Lot 1 — ce qui est fait
@@ -520,4 +520,31 @@ aussi en haute définition sur PC).
   plus d'échanges et plus rapides avec l'âge.
 - **Quêtes secondaires** : « La caravane perdue » (Rachid, au bout d'un cul-de-sac dans la tempête ; récompense :
   la **carte au trésor**, qui montre les trésors enterrés), « L'eau de Mémé Dune » (remplir la gourde au puits).
+
+## 17. Lot 7 — les Abysses de Corail (fait)
+
+Données : `game/data/marees.js` · dessins : `game/theme-marees.js` (mer, ponton, fonds, récifs, coraux, habitants
+humains : aussi en haute définition sur PC).
+
+- **La plage** : le capitaine Barnabé prête sa **combinaison de plongée** contre sa **longue-vue**, tombée dans la
+  crique aux rochers (gardée par des crabes). On plonge au bout du ponton : sortie avec `requires: { item }` (sans
+  prendre l'objet) et `lockedText`.
+- **Sous l'eau** (`underwater: { air: 180 }` sur la carte) : teinte bleue, bulles, on nage un peu moins vite.
+  La **bouteille d'oxygène** se vide (jauge en bas de l'écran, alerte à 20 s) ; les **bulles d'air** (+45 s) la
+  remplissent ; la **corde** ramène à la surface (et la remplit). **Plus d'air : on recommence la plongée**
+  (le niveau revient comme à l'entrée de la plongée).
+- **Algues** (tuile coupable) : l'épée ou le trident les coupe ; elles cachent la grotte du trident et des perles.
+- **Trident** (`hero.shoot('trident', { cuts: true })`) : lancé loin, il coupe les algues qu'il traverse et passe
+  au-dessus du corail (propriété `low`).
+- **Courants** (propriété de tuile `current: [dx, dy]`) : plus forts que la nage. Celui du milieu remonte (retour
+  rapide vers la corde), celui de l'est descend vers la salle du bas.
+- **Coquillages magiques** (cibles avec `hitBy: 'any'`, `sword: true`, `sprite: 'shell'`) : le premier au milieu du
+  corail, le deuxième derrière des algues, le troisième au bout d'un courant trop fort (à viser de loin). Ils
+  ouvrent les **portes de corail**.
+- **Le Kraken** : 4 **tentacules** (comportement `sway`) le protègent (`guardedBy: { counter: 'kills_tentacle', gte: 4 }`,
+  `guardText`) ; ensuite sa tête : question → coups. Il crache de l'encre.
+- **Monstres** : crabes, méduses (traversent tout), anguilles (foncent), poissons-lanternes.
+- **Mini-jeu** : *Le chant des coquillages* avec Coralie (`gameplay/minigames/SimonScene.js`, logique dans `simon.js`) :
+  4 coquillages = 4 flèches, une note de plus à chaque manche (4 à 6 selon l'âge).
+- **Quête secondaire** : « Les perles de Coralie » (3 perles derrière des algues ; 1 cœur + 10 pièces).
 

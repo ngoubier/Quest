@@ -20,12 +20,13 @@ import { check } from '../script/conditions.js';
 //           meltWith: 'wall'  — il fonce jusqu'au mur ; sonné, il devient vulnérable (Minotaure) ;
 //           dashSpeed : vitesse de ses ruées ;
 //           hiddenUntil : condition — absent tant qu'elle est fausse (le Ver sort quand les 3 tambours ont sonné) ;
+//           guardedBy : condition — tant qu'elle est fausse, on ne peut pas l'atteindre (guardText) ;
 //           burrow: true      — il passe sous le sable (intouchable, une simple bosse qui suit le héros),
 //                               puis ressort quelques secondes.
 // Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, et {sprite}_shield ou boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false }) {
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false, guardedBy = null, guardText = null }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage: 1, behavior: 'wander', drops: [], seed });
     this.x = x - 4;
     this.y = y + 4;
@@ -44,6 +45,8 @@ export class Boss extends Enemy {
     this.dizzy = 0;
     this.hiddenUntil = hiddenUntil;
     this.burrow = burrow;
+    this.guardedBy = guardedBy;
+    this.guardText = guardText;
     this.under = burrow ? 2 : 0; // secondes restantes sous le sable
     this.surfaceTime = 0;
     this.wasHidden = null;
@@ -66,6 +69,16 @@ export class Boss extends Enemy {
   get displayName() {
     const t = this.adv.format(this._name);
     return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  /** Protégé (par ses tentacules...) ? */
+  get guarded() {
+    return this.shield && !!this.guardedBy && !check(this.guardedBy, this.adv.state);
+  }
+
+  _guardHint() {
+    this.game.audio.play('boss_shield');
+    if (this.hintCooldown <= 0) (this.hintCooldown = 2.5), this.adv.toast(this.guardText ?? 'Il est protégé !');
   }
 
   /** Absent (pas encore réveillé) ? */
@@ -177,6 +190,7 @@ export class Boss extends Enemy {
       if (this.hintCooldown <= 0) (this.hintCooldown = 2.5), this.adv.toast('Il est sous le sable ! Attends qu’il sorte.');
       return;
     }
+    if (this.guarded) return this._guardHint();
     if (!this.shield) {
       if (this.hurt(1, hero, { knockback: 60 })) {
         this.hitsThisWindow++;
@@ -198,6 +212,7 @@ export class Boss extends Enemy {
   onProjectile(p) {
     if (p.hostile) return false;
     if (this.hidden || this.buried) return false;
+    if (this.guarded) return (this._guardHint(), true);
     const hero = this.adv.hero;
     if (!this.shield) {
       if (this.hurt(1, p, { knockback: 60 })) (this.hitsThisWindow++, this.game.audio.play('hit'));

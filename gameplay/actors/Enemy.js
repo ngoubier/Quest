@@ -75,6 +75,14 @@ export const BEHAVIORS = {
     e.hop = { vx: dx * e.speed * 2.5, vy: dy * e.speed * 2.5, t: 0.3 };
   },
 
+  /** Ondule sur place (tentacule du Kraken, algue vivante...). */
+  sway(e, dt) {
+    e.home ??= { x: e.x, y: e.y };
+    e.jitter = (e.jitter ?? e.rng() * 6) + dt;
+    e.x = e.home.x + Math.sin(e.jitter * 2.2) * 5;
+    e.y = e.home.y + Math.cos(e.jitter * 1.4) * 2;
+  },
+
   /** Fantôme : flotte vers le héros en traversant les murs. */
   ghost(e, dt) {
     const h = e.adv.hero;

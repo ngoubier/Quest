@@ -107,7 +107,7 @@ tr:last-child td { border-bottom: 0; }
 
 <div class="wrap">
 <header class="hero">
-  <span class="eyebrow">Quest · projet final · niveaux 1 à 6 jouables</span>
+  <span class="eyebrow">Quest · projet final · niveaux 1 à 7 jouables</span>
   <h1>La Quête d'Alia</h1>
   <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
   <div class="story">
@@ -475,12 +475,12 @@ const LEVELS = [
     ['Boss', '<b>Le Ver des Dunes</b>, caché sous la grande dune : on voit le sable bouger. Déterrer puis frapper les 3 tambours pour le réveiller ; il replonge sous le sable puis ressort : le frapper quand il est dehors, répondre, frapper.'],
    ]},
  { id:'ocean', key:'ocean', num:'Niveau 7', tag:'Pierre des Marées', name:'Les Abysses de Corail', sub:'Sous l’océan, avec une combinaison de plongée', color:'#2f7bff',
-   caption:'On arrive par le bas en plongeant. Le palais des sirènes est au centre, les courants traversent la carte, la fosse du Kraken est en haut.',
+   caption:'Plan d’origine. Dans le jeu, on plonge au bout du ponton (en haut), et la fosse du Kraken est tout en bas. Le niveau est jouable.',
    sheet:[
     ['Accès', 'Sur la plage, le capitaine Barnabé prête sa <b>combinaison de plongée</b> si on lui rapporte sa longue-vue.'],
     ['Ambiance', 'Coraux, algues, bancs de poissons, une épave, le palais des sirènes, une fosse sombre.'],
-    ['Habitants', 'Coralie la sirène, la reine Marine, une tortue qui connaît tous les chemins.'],
-    ['Nouvel objet', '<b>Trident</b>, offert par la reine Marine : il frappe loin, même à travers les algues.'],
+    ['Habitants', 'Le capitaine Barnabé, Coralie la sirène (sur un rocher, au bord de l’eau), Maëlle la poissonnière.'],
+    ['Nouvel objet', '<b>Trident</b>, dans une grotte cachée par des algues : on le lance loin, il coupe les algues et passe au-dessus du corail.'],
     ['Monstres', 'Crabes, méduses (rapides), anguilles qui sortent des trous, poissons-lanternes dans le noir.'],
     ['Astuces', ['<b>Nage</b> : on avance plus doucement, en glissant.','<b>Courants</b> qui entraînent le héros.','<b>Bouteille d’oxygène</b> : un compte à rebours s’affiche. Si le niveau n’est pas fini à temps, on le recommence.','<b>Algues</b> qui cachent des passages, <b>coquillages-interrupteurs</b>, portes de corail.']],
     ['Mini-jeu', '<b>Le chant des coquillages</b> avec Coralie : répéter la suite de notes, de plus en plus longue.'],
@@ -546,14 +546,14 @@ const ROADMAP = [
  ['4 ✓', 'Bourg-Lanterne (fait)', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
  ['5 ✓', 'Labyrinthe (fait)', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
  ['6 ✓', 'Désert des Mirages (fait)', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
- ['7', 'Abysses de Corail', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
+ ['7 ✓', 'Abysses de Corail (fait)', 'Nage, courants, bouteille d’oxygène (temps limité), trident, algues, Chant des coquillages, Kraken.', 'L'],
  ['8', 'Volcan Noir et fin', 'Thème volcan, lave et geysers, armure, château, Morgor en 3 phases, scène de fin.', 'L'],
 ];
 
 const QUESTIONS = [
  ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
  ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
- ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures, Bourg-Lanterne, Labyrinthe et Désert faits. Suite : les Abysses de Corail.'],
+ ['Par où commencer — décidé', 'Lot 1, Mont Givré, Forêt des Murmures, Bourg-Lanterne, Labyrinthe, Désert et Abysses faits. Suite : le Volcan Noir, la fin du jeu.'],
  ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
  ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
  ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],

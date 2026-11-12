@@ -180,12 +180,25 @@ export class AdventureScene extends Scene {
     }
     this.warping = false;
     this.toasts = [];
+    // Sous l'eau (underwater: { air: secondes }) : la bouteille d'oxygène se vide. On la remplit en plongeant.
+    if (def.underwater) {
+      if (this.air == null) this.air = def.underwater.air ?? 180;
+      this.airMax = def.underwater.air ?? 180;
+    } else this.air = null;
     this.toast(def.name);
     this.game.events.emit('map:enter', { mapId });
   }
 
   warp(w) {
     if (w.worldMap) return this.openWorldMap({ from: w });
+    // Sortie qui demande quelque chose (requires: condition, ex. la combinaison de plongée) : sinon on recule.
+    if (w.requires && !check(w.requires, this.state)) {
+      if (this._prevHero) Object.assign(this.hero, this._prevHero);
+      const d = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] }[this.hero.facing];
+      this.hero.move(d[0] * 3, d[1] * 3);
+      this.game.audio.play('menu_no');
+      return this.toast(w.lockedText ?? 'Tu ne peux pas passer par ici pour l’instant.');
+    }
     // Porte fermée à clé (key: 'key_red') : la clé l'ouvre pour toujours, sinon on recule.
     if (w.key && !this.state.flag(`unlocked:${w.uid}`)) {
       if (!this.state.take(w.key, 1)) {
@@ -227,6 +240,7 @@ export class AdventureScene extends Scene {
     }
 
     this.state.playTime += dt;
+    if (this._updateAir(dt)) return;
     this._prevHero = this.hero ? { x: this.hero.x, y: this.hero.y } : null;
     this.world.update(dt);
     this._checkRoomClear();
@@ -243,6 +257,30 @@ export class AdventureScene extends Scene {
       }
     }
     if (this.toasts.length && (this.toasts[0].t -= dt) <= 0) this.toasts.shift();
+  }
+
+  /** Oxygène : renvoie true si le héros vient de manquer d'air (le niveau recommence). */
+  _updateAir(dt) {
+    if (!this.mapDef.underwater || this.air == null || this.warping) return false;
+    const before = this.air;
+    this.air = Math.max(0, this.air - dt);
+    if (before > 20 && this.air <= 20) (this.toast('Attention : bientôt plus d’air ! Remonte ou trouve des bulles.'), this.game.audio.play('quiz_ko'));
+    if (this.air > 0) return false;
+    this.warping = true;
+    this.game.audio.play('gameover');
+    this.say(['Tu n’as plus d’air !', 'Tu remontes vite à la surface... On recommence la plongée.'], {
+      onClose: () => {
+        this.air = null;
+        this.restartLevel();
+      },
+    });
+    return true;
+  }
+
+  /** Bulles d'air (objet instantané) : remplissent la bouteille. */
+  addAir(seconds) {
+    if (this.air == null) return;
+    this.air = Math.min(this.airMax, this.air + seconds);
   }
 
   /** Salles "à vider" : quand tous leurs monstres sont vaincus, un drapeau est levé. */
@@ -785,8 +823,32 @@ export class AdventureScene extends Scene {
     r.ctx.restore();
   }
 
+  /** Sous l'eau : teinte bleue, bulles qui montent, jauge d'oxygène. */
+  _drawUnderwater(r) {
+    if (!this.mapDef.underwater) return;
+    const vp = this.viewport;
+    const t = this.game.time;
+    r.withAlpha(0.2, () => r.rect(vp.x, vp.y, vp.w, vp.h, '#1a5ab8'));
+    for (let k = 0; k < 12; k++) {
+      const x = vp.x + ((k * 97) % vp.w) + Math.sin(t * 2 + k) * 3;
+      const y = vp.y + vp.h - (((t * 18 + k * 41) % (vp.h + 10)));
+      r.withAlpha(0.5, () => r.rect(Math.round(x), Math.round(y), 2, 2, '#d8f0ff'));
+    }
+    if (this.air == null) return;
+    const s = this.game.style;
+    const w = 70;
+    const x = Math.round(vp.x + vp.w - w - 6);
+    const y = vp.y + vp.h - 12; // en bas : les messages s'affichent en haut
+    const k = this.air / this.airMax;
+    const low = this.air <= 20;
+    r.rect(x - 1, y - 1, w + 2, 9, '#000');
+    r.rect(x, y, Math.round(w * k), 7, low && Math.floor(t * 4) % 2 ? '#ff4a4a' : '#5ac8ff');
+    r.text(`Air ${Math.ceil(this.air)} s`, x + w / 2, y, { color: '#fff', size: 6, font: s.font, align: 'center' });
+  }
+
   draw(r) {
     this.world.draw(r);
+    this._drawUnderwater(r);
     this._drawStorm(r);
     this._drawColorLoss(r);
     this._dimOtherRooms(r);

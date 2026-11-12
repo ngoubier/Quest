@@ -15,6 +15,7 @@ import { Bomb } from './Bomb.js';
 //  - glace (propriété de tuile `slippery`) : on glisse tout droit jusqu'au prochain obstacle
 //  - trou (propriété de tuile `pit`) : on tombe, on perd un demi-cœur et on revient au dernier endroit sûr
 //  - sables mouvants (propriété `quicksand`) : on avance lentement et on s'enfonce ; trop longtemps → comme un trou
+//  - courant (propriété `current: [dx, dy]`) : il entraîne le héros ; sous l'eau, on nage un peu moins vite
 //  - pelle : creuse la case devant (propriété `diggable` : tuile après le trou) ; objets enterrés (onDig)
 //
 // Sprites attendus (planche 'chars') : player_{down|up|side}_{0|1}
@@ -75,6 +76,7 @@ export class Hero extends Actor {
     }
 
     if (this._checkPit(dt)) return;
+    this._current(dt);
     this.toolCooldown -= dt;
     if (input.pressed('item')) {
       input.consume('item');
@@ -100,7 +102,7 @@ export class Hero extends Actor {
       const keep = (this.facing === 'left' && x < 0) || (this.facing === 'right' && x > 0) || (this.facing === 'up' && y < 0) || (this.facing === 'down' && y > 0);
       if (!keep) this.facing = x < 0 ? 'left' : x > 0 ? 'right' : y < 0 ? 'up' : 'down';
       const len = Math.hypot(x, y);
-      const sp = this.speed * (this.sinking > 0 ? 0.35 : 1);
+      const sp = this.speed * (this.sinking > 0 ? 0.35 : 1) * (this.adv.mapDef.underwater ? 0.85 : 1);
       const res = this.move((x / len) * sp * dt, (y / len) * sp * dt, { cornerAssist: 6 });
       this.anim.play(`walk_${animDir(this.facing)}`);
       // Contre quelque chose : pousser un bloc ? ouvrir une porte verrouillée ?
@@ -155,6 +157,13 @@ export class Hero extends Actor {
     return false;
   }
 
+  /** Courants marins : la tuile pousse le héros dans sa direction. */
+  _current(dt) {
+    const tm = this.world.tilemap;
+    const cur = tm.propAt(Math.floor(this.cx / tm.tileSize), Math.floor(this.cy / tm.tileSize), 'current');
+    if (cur) this.move(cur[0] * 70 * dt, cur[1] * 70 * dt); // plus fort que la nage : on ne remonte pas un courant
+  }
+
   /** Pelle : creuse la case devant le héros. */
   dig() {
     if (this.toolCooldown > 0) return false;
@@ -196,11 +205,11 @@ export class Hero extends Actor {
   }
 
   /** Lance un projectile devant soi (bâton de feu, arc...). Renvoie false si l'objet recharge. */
-  shoot(kind = 'fire', { cooldown = 0.45, speed = 150, range = 150, sound = 'fire' } = {}) {
+  shoot(kind = 'fire', { cooldown = 0.45, speed = 150, range = 150, sound = 'fire', cuts = false, damage = 1 } = {}) {
     if (this.toolCooldown > 0) return false;
     this.toolCooldown = cooldown;
     const d = DIRS[this.facing];
-    this.world.add(new Projectile({ x: this.cx + d.x * 9, y: this.cy - 3 + d.y * 9, dir: d, kind, speed, range, owner: this }));
+    this.world.add(new Projectile({ x: this.cx + d.x * 9, y: this.cy - 3 + d.y * 9, dir: d, kind, speed, range, owner: this, cuts, damage }));
     this.game.audio.play(sound);
     return true;
   }

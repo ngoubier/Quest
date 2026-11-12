@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind, cups } from '../gameplay/index.js';
+import { GameState, runActions, check, tictactoe, nim, memory, connect4, mastermind, cups, simon } from '../gameplay/index.js';
 import { MAPS, ITEMS, QUESTS } from '../game/data/index.js';
 import { WORLD_NODES, WORLD_MAP, STONES, colorLoss, stoneCount } from '../game/data/worldmap.js';
 
@@ -57,7 +57,7 @@ test('Action « minigame » : la suite dépend du résultat', () => {
   assert.deepEqual(run('quit'), [], 'abandon : rien ne se passe');
 });
 
-test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lanterne, le Labyrinthe et le Désert ouverts, le reste fermé pour l’instant', () => {
+test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lanterne, le Labyrinthe, le Désert et les Abysses ouverts, le reste fermé pour l’instant', () => {
   assert.equal(WORLD_NODES.length, 8);
   const st = new GameState();
   for (const n of WORLD_NODES) {
@@ -66,7 +66,7 @@ test('Carte du monde : 8 lieux, Prébois, le Mont Givré, la Forêt, Bourg-Lante
       const row = MAPS[n.mapId].rows[n.at[1]];
       assert.ok(row && row[n.at[0]] !== '#', `${n.id} : arrivée sur une case libre`);
     }
-    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore', 'temps', 'soleil'].includes(n.id), n.id);
+    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve', 'aurore', 'temps', 'soleil', 'marees'].includes(n.id), n.id);
   }
   assert.equal(WORLD_NODES.filter((n) => n.kind === 'stone').length, 6);
   STONES.forEach((k) => assert.ok(ITEMS[`stone_${k}`], `objet stone_${k}`));
@@ -619,3 +619,81 @@ test('Désert : statues, temple, tempête balisée, puis la grande dune', () => 
   assert.ok(ITEMS.shovel.tool && ITEMS.treasure_map.use);
   for (const id of ['soleil', 'caravan', 'water']) assert.ok(QUESTS.some((q) => q.id === id), id);
 });
+
+// ------------------------------------------------------------------ niveau 7 : les Abysses de Corail
+test('Chant des coquillages : répéter la suite, une de plus à chaque manche', () => {
+  const seq = simon.extend(simon.extend([], () => 0.1), () => 0.9);
+  assert.deepEqual(seq, [0, 3]);
+  assert.equal(simon.check(seq, [0]), 'more');
+  assert.equal(simon.check(seq, [0, 3]), 'round');
+  assert.equal(simon.check(seq, [1]), 'wrong');
+  assert.ok(simon.targetForAge(10) > simon.targetForAge(6));
+  for (let k = 0; k < 20; k++) assert.ok([0, 1, 2, 3].includes(simon.extend([])[0]));
+});
+
+test('Abysses : plongée, trident, coquillages, courants, puis le Kraken', () => {
+  const sea = MAPS.marees;
+  const start = findIn(sea.rows, 'P');
+  const s0 = reach(sea, start, { solid: '#Skbp=BMFICZ', ice: '' });
+  for (const ch of 'BFI') assert.ok(near(s0, findIn(sea.rows, ch)), `plage : ${ch}`);
+  assert.ok(near(s0, findIn(sea.rows, 'M')), 'Coralie, au bord de l’eau');
+  assert.ok(near(s0, findIn(sea.rows, 'C')), 'la longue-vue dans la crique');
+  // le ponton mène au point de plongée, qui demande la combinaison
+  const s1 = reach(sea, start, { solid: '#SkbpBMFIC', ice: '' });
+  assert.ok(s1.has(findIn(sea.rows, 'Z').join()));
+  assert.deepEqual(sea.objects.Z.requires, { item: 'diving_suit' });
+  // au fond : oxygène, corde de retour
+  const f = MAPS.marees_fond;
+  const o = f.objects;
+  assert.ok(f.underwater.air >= 120);
+  assert.equal(o.U.to, 'marees');
+  assert.deepEqual(o.U.at, [findIn(sea.rows, 'Z')[0], findIn(sea.rows, 'Z')[1] + 1]);
+  const entry = sea.objects.Z.at;
+  // solides : récifs, coraux, algues, portes, courants (on les traite à part), objets
+  const base = '#R*agh^v<123TIUKCJEL';
+  const r0 = reach(f, entry, { solid: base, ice: '' });
+  assert.ok(near(r0, findIn(f.rows, 'a')), 'les algues de la grotte se coupent depuis la salle du haut');
+  // la grotte du trident, une fois les algues coupées
+  const cut = f.rows.map((r) => r.replace(/a/g, '.'));
+  const r1 = reach({ rows: cut }, entry, { solid: base.replace('a', ''), ice: '' });
+  assert.ok(near(r1, findIn(f.rows, 'T')), 'trident');
+  assert.equal(o.T.item, 'trident');
+  // coquillage 1 : au milieu du corail, visible en ligne droite depuis la salle du haut (le trident passe au-dessus)
+  const [sx, sy] = findIn(f.rows, '1');
+  assert.ok(!near(r1, [sx, sy]), 'hors de portée de l’épée');
+  const line = (seen, [x, y], over) =>
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+      for (let k = 1; k <= 8; k++) {
+        const ch = f.rows[y + dy * k]?.[x + dx * k];
+        if (seen.has([x + dx * k, y + dy * k].join())) return k * 16 <= ITEMS_TRIDENT_RANGE();
+        if (!over.includes(ch)) return false;
+      }
+      return false;
+    });
+  assert.ok(line(r1, [sx, sy], '*'), 'coquillage 1 au trident');
+  // le courant du milieu remonte, celui de l'est descend : l'est mène à la salle du bas
+  assert.equal(f.legend['^'], 'current_up');
+  assert.equal(f.legend.v, 'current_down');
+  const r2 = reach({ rows: cut }, entry, { solid: base.replace(/[agv]/g, ''), ice: '' });
+  assert.ok(near(r2, findIn(f.rows, '2')), 'coquillage 2, derrière les algues');
+  const [tx, ty] = findIn(f.rows, '3');
+  assert.ok(!near(r2, [tx, ty]), 'coquillage 3 hors de portée');
+  assert.ok(line(r2, [tx, ty], '<'), 'coquillage 3 au trident, par-dessus le courant');
+  assert.deepEqual(o.h.openWhen, [o[2].flag, o[3].flag]);
+  const r3 = reach({ rows: cut }, entry, { solid: base.replace(/[agvh]/g, ''), ice: '' });
+  assert.ok(near(r3, findIn(f.rows, 'K')), 'porte du Kraken');
+  // les perles et les bulles sont accessibles
+  f.rows.forEach((row, y) => [...row].forEach((ch, x) => 'po'.includes(ch) && assert.ok(r3.has([x, y].join()) || near(r3, [x, y]), `${ch} ${x},${y}`)));
+  // le Kraken : protégé par 4 tentacules
+  const k = MAPS.marees_kraken;
+  assert.equal(k.level, f.level, 'même plongée (même bouteille d’air)');
+  const tentacles = k.rows.join('').split('T').length - 1;
+  assert.deepEqual(k.objects.K.guardedBy, { counter: 'kills_tentacle', gte: tentacles });
+  assert.equal(k.objects.A.item, 'stone_marees');
+  assert.equal(k.objects.A.appearWhen, k.objects.K.flag);
+  for (const id of ['marees', 'pearls']) assert.ok(QUESTS.some((q) => q.id === id), id);
+});
+
+function ITEMS_TRIDENT_RANGE() {
+  return 135; // portée du trident (game/data/marees.js)
+}

@@ -5,6 +5,7 @@ import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
 import { GIVRE_TILES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti } from './theme-givre.js';
 import { SEVE_TILES, SEVE_OBJECT_FRAMES, paintSeveObject, SEVE_CHARS, paintSevePerson, paintSevePersonHD, paintRonce } from './theme-seve.js';
+import { MAREES_TILES, MAREES_OBJECT_FRAMES, paintMareesObject, MAREES_CHARS, paintMareesPerson, paintMareesPersonHD, paintKraken } from './theme-marees.js';
 import { SOLEIL_TILES, SOLEIL_OBJECT_FRAMES, paintSoleilObject, SOLEIL_CHARS, paintSoleilPerson, paintSoleilPersonHD, paintWorm } from './theme-soleil.js';
 import { TEMPS_TILES, TEMPS_OBJECT_FRAMES, paintTempsObject, TEMPS_CHARS, paintTempsPerson, paintTempsPersonHD, paintMinotaure } from './theme-temps.js';
 import { AURORE_TILES, AURORE_OBJECT_FRAMES, paintAuroreObject, AURORE_CHARS, paintAurorePerson, paintAurorePersonHD, paintMasque } from './theme-aurore.js';
@@ -17,6 +18,7 @@ const LEVELS = [
   { tiles: AURORE_TILES, objects: AURORE_OBJECT_FRAMES, paintObject: paintAuroreObject, chars: AURORE_CHARS, paintChar: paintAurorePerson, paintCharHD: paintAurorePersonHD, boss: ['masque_0', 'masque_1', 'masque_shield'], paintBoss: paintMasque },
   { tiles: TEMPS_TILES, objects: TEMPS_OBJECT_FRAMES, paintObject: paintTempsObject, chars: TEMPS_CHARS, paintChar: paintTempsPerson, paintCharHD: paintTempsPersonHD, boss: ['minotaure_0', 'minotaure_1', 'minotaure_shield'], paintBoss: paintMinotaure },
   { tiles: SOLEIL_TILES, objects: SOLEIL_OBJECT_FRAMES, paintObject: paintSoleilObject, chars: SOLEIL_CHARS, paintChar: paintSoleilPerson, paintCharHD: paintSoleilPersonHD, boss: ['worm_0', 'worm_1', 'worm_shield', 'worm_under'], paintBoss: paintWorm },
+  { tiles: MAREES_TILES, objects: MAREES_OBJECT_FRAMES, paintObject: paintMareesObject, chars: MAREES_CHARS, paintChar: paintMareesPerson, paintCharHD: paintMareesPersonHD, boss: ['kraken_0', 'kraken_1', 'kraken_shield'], paintBoss: paintKraken },
 ];
 
 /** Couleurs des 6 pierres : [couleur, reflet, ombre]. */

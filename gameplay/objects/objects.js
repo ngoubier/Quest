@@ -657,7 +657,8 @@ export class IceWall extends WorldObject {
 
 // ------------------------------------------------------------------ cible (à toucher avec l'arc)
 export class Target extends WorldObject {
-  /** props : { flag?, hitBy?: 'arrow' } — touchée par le bon projectile, elle lève son drapeau (par défaut hit:<uid>) */
+  /** props : { flag?, hitBy?: 'arrow' | 'any', sword?: bool, sprite?: 'target', hint? }
+   *  Touchée par le bon projectile (ou l'épée si sword), elle lève son drapeau (par défaut hit:<uid>). */
   constructor({ x, y, uid, props }) {
     super({ x: x + 2, y: y + 3, w: 12, h: 12, uid, props, solid: true, tags: ['target'] });
     this.hint = 0;
@@ -677,26 +678,32 @@ export class Target extends WorldObject {
 
   onProjectile(p) {
     if (p.hostile) return false;
-    if (p.kind === (this.props.hitBy ?? 'arrow') && !this.hit) {
-      this.state.setFlag(this.flag);
-      this.world.game.audio.play('secret');
-      this.world.add(new Effect(this.cx, this.cy));
-    } else if (!this.hit) this._hint();
+    const by = this.props.hitBy ?? 'arrow';
+    if ((by === 'any' || p.kind === by) && !this.hit) this._trigger();
+    else if (!this.hit) this._hint();
     return true;
+  }
+
+  _trigger() {
+    this.state.setFlag(this.flag);
+    this.world.game.audio.play('secret');
+    this.world.add(new Effect(this.cx, this.cy));
   }
 
   _hint() {
     if (this.hint > 0) return;
     this.hint = 2.5;
-    this.adv.toast('Une cible ! Il faut la toucher avec une flèche.');
+    this.adv.toast(this.props.hint ?? 'Une cible ! Il faut la toucher avec une flèche.');
   }
 
   onSwordHit() {
-    if (!this.hit) this._hint();
+    if (this.hit) return;
+    if (this.props.sword) this._trigger();
+    else this._hint();
   }
 
   canTalk() {
-    return !this.hit;
+    return !this.hit && !this.props.sword; // touchable à l'épée : Action frappe
   }
 
   talk() {
@@ -704,7 +711,8 @@ export class Target extends WorldObject {
   }
 
   draw(r) {
-    objSheet(this).draw(r, this.hit ? 'target_hit' : 'target', this.x - 2, this.y - 3);
+    const s = this.props.sprite ?? 'target';
+    objSheet(this).draw(r, this.hit ? `${s}_hit` : s, this.x - 2, this.y - 3);
   }
 }
 
