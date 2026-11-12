@@ -5,7 +5,7 @@ import { AdventureScene, openParentSpace, PromptScene, MessageScene, StoryScene 
 import { THEME, ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './data/index.js';
 import { WORLD_MAP, colorLoss } from './data/worldmap.js';
-import { INTRO_STORY, drawUnicorn } from './data/story.js';
+import { INTRO_STORY, END_STORY, drawUnicorn } from './data/story.js';
 import { frenchSchoolBank } from '../content/quiz/index.js';
 
 const TS = 16;
@@ -102,6 +102,18 @@ const sfx = {
   boss_open: { type: 'square', notes: [[523, 0.06], [659, 0.06], [784, 0.12]], vol: 0.2 },
   fire: { type: 'sawtooth', notes: [[520, 0.04], [320, 0.08]], vol: 0.12 },
   throw: { type: 'triangle', notes: [[300, 0.05], [200, 0.06]], vol: 0.12 },
+  shell_0: { type: 'triangle', notes: [[523, 0.28]], vol: 0.25 },
+  shell_1: { type: 'triangle', notes: [[659, 0.28]], vol: 0.25 },
+  shell_2: { type: 'triangle', notes: [[784, 0.28]], vol: 0.25 },
+  shell_3: { type: 'triangle', notes: [[392, 0.28]], vol: 0.25 },
+  bubble: { type: 'sine', notes: [[600, 0.05], [900, 0.08]], vol: 0.15 },
+  dig: { type: 'noise', notes: [[1, 0.12]], vol: 0.12 },
+  drum: { type: 'triangle', notes: [[110, 0.12], [82, 0.2]], vol: 0.35 },
+  boom: { type: 'noise', notes: [[1, 0.35]], vol: 0.3 },
+  chime: { type: 'triangle', notes: [[1047, 0.08], [784, 0.12]], vol: 0.15 },
+  fall: { type: 'square', notes: [[600, 0.06], [400, 0.06], [250, 0.12]], vol: 0.18, slide: 120 },
+  crack: { type: 'noise', notes: [[1, 0.1]], vol: 0.1 },
+  arrow: { type: 'triangle', notes: [[900, 0.03], [500, 0.06]], vol: 0.14, slide: 300 },
   gameover: { type: 'triangle', notes: [[392, 0.2], [330, 0.2], [262, 0.4]], vol: 0.25 },
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);
@@ -124,7 +136,18 @@ const makeAdventure = () =>
     bagSize: 10, // places dans le sac (le grand sac du magasin passe à 20)
     quizCooldown: 600, // attente après un échec : 10 min (réglable dans l'Espace parents)
     endWhen: 'alia_free', // la fin du jeu : Alia délivrée (niveau 8)
-    end: { message: 'Bravo, tu as délivré Alia !' },
+    end: { message: 'Bravo, tu as délivré Alia !', story: END_STORY },
+    // Pouvoirs des pierres (dès qu'on les a) et de l'Armure d'Iris.
+    powers: {
+      freeze: { item: 'stone_givre' }, // marcher contre la lave la fige
+      regen: { item: 'stone_seve' }, // 1 cœur par minute
+      light: { item: 'stone_aurore' }, // éclaire les salles sombres
+      reveal: { item: 'stone_aurore' }, // révèle les passages secrets
+      slow: { item: 'stone_temps' }, // ralentit les monstres rapides
+      fireSword: { item: 'stone_soleil' }, // coups d'épée doubles
+      bubble: { item: 'stone_marees' }, // une bulle bloque un coup
+      armor: { item: 'iris_armor' }, // dégâts de Morgor divisés par 2
+    },
     reportWhen: 'always', // bilan parents disponible à tout moment
     saveNamespace: 'quete-alia',
     worldMap: WORLD_MAP,

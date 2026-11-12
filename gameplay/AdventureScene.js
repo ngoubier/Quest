@@ -19,6 +19,7 @@ import { openParentSpace } from './ui/parents.js';
 import { ProfileStore, parentSettings } from './profiles.js';
 import { WorldMapScene } from './ui/WorldMapScene.js';
 import { createMinigame } from './minigames/index.js';
+import { StoryScene } from './ui/StoryScene.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -45,13 +46,23 @@ import { createMinigame } from './minigames/index.js';
 //   colorLoss: (adv) => 0.5,                   // 0..1 : le monde perd ses couleurs (0 = normal)
 //   menuItems: (adv) => [{ label, onSelect }],  // lignes ajoutées au menu pause
 //   worldMap: { when: 'flag', lockedText, nodes: [...], paint(r, box, state) },  // voir ui/WorldMapScene.js
+//   powers: { regen: condition, ... },         // pouvoirs du héros, actifs quand leur condition est vraie :
+//            regen (1 cœur par minute), light (éclaire les salles sombres), reveal (passages secrets),
+//            slow (monstres rapides ralentis), fireSword (coups d'épée doubles), bubble (bloque un coup),
+//            armor (dégâts de 2 et plus divisés par 2), freeze (marcher contre la lave la fige)
+//   end: { message, story: [pages] },          // fin : histoire en images (facultative), puis félicitations
 // })
+//
+// Cartes : `darkRooms: [[x, y]]` (salles sombres, on n'y voit qu'autour du héros) ;
+// tuile avec `secret: 'tuile'` (faux mur, ouvert avec le pouvoir reveal) ;
+// tuile avec `freezable: 'tuile'` (lave ou eau que le pouvoir freeze fige pour toujours).
 //
 // Une carte avec un objet { type: 'warp', worldMap: true, back: [tx, ty] } ouvre la carte du monde
 // (back : où replacer le héros s'il la referme sans voyager).
 //
 // Types d'objets reconnus par défaut : warp, pickup, chest, npc, sign, block, plate,
-// gate, locked, lever, enemy (voir objects/ObjectFactory.js).
+// gate, locked, lever, tileswitch, pet, brazier, icewall, target, boss, enemy (voir objects/ObjectFactory.js).
+// Tuile avec la propriété `fillable: 'autre_tuile'` : un bloc `sink` poussé dessus la comble (rondin dans l'eau).
 
 export class AdventureScene extends Scene {
   constructor(config) {
@@ -138,11 +149,31 @@ export class AdventureScene extends Scene {
     this.mapDef = def;
     this.warps = [];
 
+    // Cases changées pour toujours : eau comblée (« fill:carte:x,y », rondin coulé) et mur fissuré
+    // ouvert par une bombe (« blast:carte:x,y »).
+    for (const [kind, prop] of [['fill', 'fillable'], ['blast', 'bombable'], ['frost', 'freezable']]) {
+      const prefix = `${kind}:${mapId}:`;
+      for (const f of Object.keys(this.state.flags)) {
+        if (!f.startsWith(prefix)) continue;
+        const [fx, fy] = f.slice(prefix.length).split(',').map(Number);
+        const to = tilemap.propAt(fx, fy, prop);
+        if (to) tilemap.set('ground', fx, fy, to);
+      }
+    }
+
+    // Pouvoir « reveal » : les faux murs (propriété `secret`) s'ouvrent.
+    if (this.power('reveal')) {
+      for (let ty = 0; ty < tilemap.height; ty++) for (let tx = 0; tx < tilemap.width; tx++) {
+        const to = tilemap.propAt(tx, ty, 'secret');
+        if (to) tilemap.set('ground', tx, ty, to);
+      }
+    }
+
     const ts = this.cfg.tileSize;
     let start = null;
     for (const m of markers) {
       if (m.name === 'start') start = m;
-      else if (m.name === 'warp') this.warps.push({ rect: { x: m.x, y: m.y, w: ts, h: ts }, ...m.props });
+      else if (m.name === 'warp') this.warps.push({ rect: { x: m.x, y: m.y, w: ts, h: ts }, uid: `${mapId}:${m.tx},${m.ty}`, ...m.props });
       else world.add(this.cfg.factory.create({ type: m.name, x: m.x, y: m.y, tx: m.tx, ty: m.ty, uid: `${mapId}:${m.tx},${m.ty}`, props: m.props }, this));
     }
 
@@ -167,15 +198,44 @@ export class AdventureScene extends Scene {
     }
     this.warping = false;
     this.toasts = [];
+    // Sous l'eau (underwater: { air: secondes }) : la bouteille d'oxygène se vide. On la remplit en plongeant.
+    if (def.underwater) {
+      if (this.air == null) this.air = def.underwater.air ?? 180;
+      this.airMax = def.underwater.air ?? 180;
+    } else this.air = null;
     this.toast(def.name);
     this.game.events.emit('map:enter', { mapId });
   }
 
   warp(w) {
     if (w.worldMap) return this.openWorldMap({ from: w });
+    // Sortie qui demande quelque chose (requires: condition, ex. la combinaison de plongée) : sinon on recule.
+    if (w.requires && !check(w.requires, this.state)) {
+      if (this._prevHero) Object.assign(this.hero, this._prevHero);
+      const d = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] }[this.hero.facing];
+      this.hero.move(d[0] * 3, d[1] * 3);
+      this.game.audio.play('menu_no');
+      return this.toast(w.lockedText ?? 'Tu ne peux pas passer par ici pour l’instant.');
+    }
+    // Porte fermée à clé (key: 'key_red') : la clé l'ouvre pour toujours, sinon on recule.
+    if (w.key && !this.state.flag(`unlocked:${w.uid}`)) {
+      if (!this.state.take(w.key, 1)) {
+        if (this._prevHero) Object.assign(this.hero, this._prevHero);
+        const d = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] }[this.hero.facing];
+        this.hero.move(d[0] * 3, d[1] * 3);
+        this.game.audio.play('menu_no');
+        return this.toast(w.lockedText ?? `Fermé à clé. Il faut : ${this.itemName(w.key)}.`);
+      }
+      this.state.setFlag(`unlocked:${w.uid}`);
+      this.game.audio.play('unlock');
+      this.toast(`Tu ouvres la porte avec : ${this.itemName(w.key)}.`);
+    }
     this.warping = true;
     this.game.audio.play('door');
-    this.game.scenes.fade(() => this.loadMap(w.to, { tx: w.at[0], ty: w.at[1], facing: w.facing ?? 'down' }));
+    this.game.scenes.fade(() => {
+      this.loadMap(w.to, { tx: w.at[0], ty: w.at[1], facing: w.facing ?? 'down' });
+      if (w.message) this.toast(w.message); // ex. « Tu tournes en rond... »
+    });
   }
 
   // ------------------------------------------------------------------ boucle
@@ -198,12 +258,18 @@ export class AdventureScene extends Scene {
     }
 
     this.state.playTime += dt;
+    this._updateRegen(dt);
+    if (this._updateAir(dt)) return;
+    this._prevHero = this.hero ? { x: this.hero.x, y: this.hero.y } : null;
     this.world.update(dt);
     this._checkRoomClear();
     if (this.cfg.endWhen && !this.state.flag('game_finished') && check(this.cfg.endWhen, this.state)) {
       this.state.setFlag('game_finished');
       this.game.audio.play('quest_done');
-      return this.game.scenes.push(new EndScene(this, this.cfg.end));
+      const end = () => this.game.scenes.push(new EndScene(this, this.cfg.end));
+      // Histoire de fin en images, puis les félicitations.
+      if (this.cfg.end?.story) return this.game.scenes.push(new StoryScene({ pages: this.cfg.end.story, onDone: () => (this.game.scenes.pop(), end()) }));
+      return end();
     }
     if (!this.warping && !this.world.camera.isTransitioning) {
       const h = this.hero;
@@ -213,6 +279,51 @@ export class AdventureScene extends Scene {
       }
     }
     if (this.toasts.length && (this.toasts[0].t -= dt) <= 0) this.toasts.shift();
+  }
+
+  /** Oxygène : renvoie true si le héros vient de manquer d'air (le niveau recommence). */
+  _updateAir(dt) {
+    if (!this.mapDef.underwater || this.air == null || this.warping) return false;
+    const before = this.air;
+    this.air = Math.max(0, this.air - dt);
+    if (before > 20 && this.air <= 20) (this.toast('Attention : bientôt plus d’air ! Remonte ou trouve des bulles.'), this.game.audio.play('quiz_ko'));
+    if (this.air > 0) return false;
+    this.warping = true;
+    this.game.audio.play('gameover');
+    this.say(['Tu n’as plus d’air !', 'Tu remontes vite à la surface... On recommence la plongée.'], {
+      onClose: () => {
+        this.air = null;
+        this.restartLevel();
+      },
+    });
+    return true;
+  }
+
+  /** Un pouvoir du héros est-il actif ? (cfg.powers[name] : condition) */
+  power(name) {
+    const c = this.cfg.powers?.[name];
+    return c != null && check(c, this.state);
+  }
+
+  /** Pouvoir « regen » : 1 cœur rendu chaque minute. */
+  _updateRegen(dt) {
+    if (!this.power('regen')) return;
+    this._regen = (this._regen ?? 0) + dt;
+    if (this._regen < 60) return;
+    this._regen = 0;
+    if (this.state.hp < this.state.maxHp && this.state.hp > 0) (this.state.heal(2), this.game.audio.play('heal'));
+  }
+
+  /** Gèle une case (lave, eau) : elle reste figée. */
+  freezeTile(tx, ty, tile) {
+    this.world.tilemap.set('ground', tx, ty, tile);
+    this.state.setFlag(`frost:${this.mapId}:${tx},${ty}`);
+  }
+
+  /** Bulles d'air (objet instantané) : remplissent la bouteille. */
+  addAir(seconds) {
+    if (this.air == null) return;
+    this.air = Math.min(this.airMax, this.air + seconds);
   }
 
   /** Salles "à vider" : quand tous leurs monstres sont vaincus, un drapeau est levé. */
@@ -401,10 +512,13 @@ export class AdventureScene extends Scene {
       this.game.audio.play('menu_no');
       return false;
     }
+    const had = this.state.count(item) > 0;
     if (def.instant) def.instant(this, n);
     else this.state.give(item, n, def.max ?? Infinity);
-    // Premier objet à utiliser : il s'équipe tout seul.
-    if (def.tool && !this.state.equipped) this.state.equipped = item;
+    // Nouvel objet à utiliser (bâton de feu, arc...) : il s'équipe tout seul.
+    if (def.tool && (!this.state.equipped || !had)) this.state.equipped = item;
+    // Objet qui donne un pouvoir (pierre magique) : on le dit.
+    if (def.power && !had) this.toast(`Nouveau pouvoir : ${def.power}`);
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
     return true;
   }
@@ -509,8 +623,20 @@ export class AdventureScene extends Scene {
     this.say(text, { onClose: next });
   }
 
-  spawnPickup(item, x, y, lifetime = 10) {
-    this.world.add(new Pickup({ x, y, uid: null, props: { item, persist: false, lifetime } }));
+  /** Comble une case (rondin coulé dans l'eau...) et s'en souvient : la case reste comblée. */
+  fillTile(tx, ty, tile) {
+    this.world.tilemap.set('ground', tx, ty, tile);
+    this.state.setFlag(`fill:${this.mapId}:${tx},${ty}`);
+  }
+
+  /** Mur fissuré ouvert par une bombe : il reste ouvert. */
+  blastTile(tx, ty, tile) {
+    this.world.tilemap.set('ground', tx, ty, tile);
+    this.state.setFlag(`blast:${this.mapId}:${tx},${ty}`);
+  }
+
+  spawnPickup(item, x, y, lifetime = 10, count = 1) {
+    this.world.add(new Pickup({ x, y, uid: null, props: { item, count, persist: false, lifetime } }));
   }
 
   /** Appelé quand l'épée coupe une tuile (buisson...) : petite chance de butin. */
@@ -694,8 +820,103 @@ export class AdventureScene extends Scene {
     shade(Math.max(vp.x, x0), y1, Math.min(x1, vp.x + vp.w) - Math.max(vp.x, x0), vp.y + vp.h - y1);
   }
 
+  /**
+   * Tempête de sable (carte avec storm: { area: [x0, y0, x1, y1] en tuiles, when?: condition }) :
+   * quand le héros est dans la zone, on ne voit presque rien, sauf autour de lui et des poteaux ('beacon').
+   */
+  _drawStorm(r) {
+    const st = this.mapDef.storm;
+    if (!st || !check(st.when, this.state)) return;
+    const ts = this.cfg.tileSize;
+    const [x0, y0, x1, y1] = st.area;
+    const h = this.hero;
+    if (h.cx < x0 * ts || h.cx > (x1 + 1) * ts || h.cy < y0 * ts || h.cy > (y1 + 1) * ts) return;
+    const vp = this.viewport;
+    const cam = this.world.camera;
+    const scale = r.scale ?? 1;
+    const W = Math.ceil(vp.w * scale);
+    const Hh = Math.ceil(vp.h * scale);
+    if (!this._fog || this._fog.width !== W || this._fog.height !== Hh) {
+      this._fog = document.createElement('canvas');
+      this._fog.width = W;
+      this._fog.height = Hh;
+    }
+    const f = this._fog.getContext('2d');
+    f.globalCompositeOperation = 'source-over';
+    f.clearRect(0, 0, W, Hh);
+    const t = this.game.time;
+    f.fillStyle = 'rgba(214,176,112,0.93)';
+    f.fillRect(0, 0, W, Hh);
+    // traînées de sable qui volent
+    f.fillStyle = 'rgba(250,226,170,0.5)';
+    for (let k = 0; k < 24; k++) f.fillRect(((k * 53 + t * 220) % (W + 40)) - 40, (k * 37) % Hh, 18 * scale, scale);
+    f.globalCompositeOperation = 'destination-out';
+    const hole = (wx, wy, rad) => {
+      const sx = (wx - cam.x) * scale;
+      const sy = (wy - cam.y) * scale;
+      const g = f.createRadialGradient(sx, sy, rad * 0.3 * scale, sx, sy, rad * scale);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      f.fillStyle = g;
+      f.fillRect(sx - rad * scale, sy - rad * scale, rad * 2 * scale, rad * 2 * scale);
+    };
+    hole(h.cx, h.cy, 34);
+    for (const b of this.world.byTag('beacon')) hole(b.cx, b.cy - 6, 20);
+    r.ctx.save();
+    r.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    r.ctx.drawImage(this._fog, vp.x * scale + (r.offsetX ?? 0), vp.y * scale + (r.offsetY ?? 0), W, Hh);
+    r.ctx.restore();
+  }
+
+  /** Sous l'eau : teinte bleue, bulles qui montent, jauge d'oxygène. */
+  _drawUnderwater(r) {
+    if (!this.mapDef.underwater) return;
+    const vp = this.viewport;
+    const t = this.game.time;
+    r.withAlpha(0.2, () => r.rect(vp.x, vp.y, vp.w, vp.h, '#1a5ab8'));
+    for (let k = 0; k < 12; k++) {
+      const x = vp.x + ((k * 97) % vp.w) + Math.sin(t * 2 + k) * 3;
+      const y = vp.y + vp.h - (((t * 18 + k * 41) % (vp.h + 10)));
+      r.withAlpha(0.5, () => r.rect(Math.round(x), Math.round(y), 2, 2, '#d8f0ff'));
+    }
+    if (this.air == null) return;
+    const s = this.game.style;
+    const w = 70;
+    const x = Math.round(vp.x + vp.w - w - 6);
+    const y = vp.y + vp.h - 12; // en bas : les messages s'affichent en haut
+    const k = this.air / this.airMax;
+    const low = this.air <= 20;
+    r.rect(x - 1, y - 1, w + 2, 9, '#000');
+    r.rect(x, y, Math.round(w * k), 7, low && Math.floor(t * 4) % 2 ? '#ff4a4a' : '#5ac8ff');
+    r.text(`Air ${Math.ceil(this.air)} s`, x + w / 2, y, { color: '#fff', size: 6, font: s.font, align: 'center' });
+  }
+
+  /** Salle sombre (darkRooms) : on ne voit qu'autour du héros (beaucoup plus loin avec le pouvoir light). */
+  _drawDark(r) {
+    const rooms = this.mapDef.darkRooms;
+    const cam = this.world.camera;
+    if (!rooms || cam.mode !== 'rooms') return;
+    if (!rooms.some(([x, y]) => cam.room.x === x && cam.room.y === y)) return;
+    const vp = this.viewport;
+    const h = this.hero;
+    const rad = this.power('light') ? 120 : 30;
+    const c = r.ctx;
+    const sx = vp.x + h.cx - cam.x;
+    const sy = vp.y + h.cy - 4 - cam.y;
+    const g = c.createRadialGradient(sx, sy, rad * 0.35, sx, sy, rad);
+    g.addColorStop(0, 'rgba(4,2,8,0)');
+    g.addColorStop(1, 'rgba(4,2,8,0.96)');
+    c.save();
+    c.fillStyle = g;
+    c.fillRect(vp.x, vp.y, vp.w, vp.h);
+    c.restore();
+  }
+
   draw(r) {
     this.world.draw(r);
+    this._drawDark(r);
+    this._drawUnderwater(r);
+    this._drawStorm(r);
     this._drawColorLoss(r);
     this._dimOtherRooms(r);
     this._hudButtons = drawHud(r, this, this.cfg.hud);

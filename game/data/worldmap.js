@@ -4,18 +4,17 @@ import { STONE_COLORS } from '../themes.js';
 
 export const STONES = ['givre', 'seve', 'aurore', 'temps', 'soleil', 'marees'];
 const ALL_STONES = { all: STONES.map((k) => ({ item: `stone_${k}` })) };
-const SOON = 'Ce lieu arrive bientôt : il est encore en construction !';
 
 // Positions (0..1) sur l'image de la carte.
 export const WORLD_NODES = [
   { id: 'prebois', label: 'Prébois', kind: 'start', x: 0.36, y: 0.83, color: '#ffd35a', open: null, mapId: 'overworld', at: [1, 6], facing: 'right', doneText: 'Ton village. Action : y aller' },
   { id: 'givre', label: '2 · Le Mont Givré (Pierre de Givre)', kind: 'stone', x: 0.5, y: 0.2, region: 'givre', open: null, mapId: 'givre', at: [19, 21], facing: 'up' },
-  { id: 'seve', label: '3 · La Forêt des Murmures (Pierre de Sève)', kind: 'stone', x: 0.2, y: 0.32, region: 'seve', open: 'never', closedText: SOON },
-  { id: 'aurore', label: '4 · Bourg-Lanterne (Pierre d’Aurore)', kind: 'stone', x: 0.64, y: 0.82, region: 'aurore', open: 'never', closedText: SOON },
-  { id: 'temps', label: '5 · Le Labyrinthe des Mille Portes (Pierre du Temps)', kind: 'stone', x: 0.79, y: 0.27, region: 'temps', open: 'never', closedText: SOON },
-  { id: 'soleil', label: '6 · Le Désert des Mirages (Pierre du Soleil)', kind: 'stone', x: 0.84, y: 0.6, region: 'soleil', open: 'never', closedText: SOON },
-  { id: 'marees', label: '7 · Les Abysses de Corail (Pierre des Marées)', kind: 'stone', x: 0.15, y: 0.67, region: 'marees', open: 'never', closedText: SOON },
-  { id: 'volcan', label: '8 · Le Volcan Noir (château de Morgor)', kind: 'final', x: 0.5, y: 0.47, color: '#ff5a1a', open: [ALL_STONES, 'never'], closedText: 'Fermé : il faut réunir les 6 pierres pour entrer.' },
+  { id: 'seve', label: '3 · La Forêt des Murmures (Pierre de Sève)', kind: 'stone', x: 0.2, y: 0.32, region: 'seve', open: null, mapId: 'seve', at: [34, 22], facing: 'up' },
+  { id: 'aurore', label: '4 · Bourg-Lanterne (Pierre d’Aurore)', kind: 'stone', x: 0.64, y: 0.82, region: 'aurore', open: null, mapId: 'aurore', at: [20, 22], facing: 'up' },
+  { id: 'temps', label: '5 · Le Labyrinthe des Mille Portes (Pierre du Temps)', kind: 'stone', x: 0.79, y: 0.27, region: 'temps', open: null, mapId: 'temps', at: [20, 32], facing: 'up' },
+  { id: 'soleil', label: '6 · Le Désert des Mirages (Pierre du Soleil)', kind: 'stone', x: 0.84, y: 0.6, region: 'soleil', open: null, mapId: 'soleil', at: [20, 22], facing: 'up' },
+  { id: 'marees', label: '7 · Les Abysses de Corail (Pierre des Marées)', kind: 'stone', x: 0.15, y: 0.67, region: 'marees', open: null, mapId: 'marees', at: [20, 22], facing: 'up' },
+  { id: 'volcan', label: '8 · Le Volcan Noir (château de Morgor)', kind: 'final', x: 0.5, y: 0.47, color: '#ff5a1a', open: ALL_STONES, closedText: 'Fermé : il faut réunir les 6 pierres pour entrer.', mapId: 'volcan', at: [20, 22], facing: 'up', done: 'alia_free', doneText: 'Alia est libre ✓' },
 ].map((n) => (n.region ? { ...n, color: STONE_COLORS[n.region][0], done: { item: `stone_${n.region}` }, doneText: 'Pierre trouvée ✓' } : n));
 
 /** Nombre de pierres trouvées. */
@@ -29,7 +28,7 @@ export function colorLoss(adv) {
   const st = adv.state;
   if (st.flag('alia_free')) return 0;
   const region = adv.mapDef.region;
-  if (!region) return 0;
+  if (!region || region === 'volcan') return 0; // le volcan est sombre de lui-même
   if (region === 'prebois') return 0.6 * (1 - stoneCount(st) / 6);
   return st.count(`stone_${region}`) > 0 ? 0 : 0.6;
 }
@@ -219,5 +218,5 @@ export const WORLD_MAP = {
   lockedText: 'La route du royaume... Sans la carte, tu te perdrais. Va d’abord voir l’Ancien.',
   nodes: WORLD_NODES,
   paint: paintWorld,
-  currentNode: (adv) => WORLD_NODES.find((n) => n.mapId === adv.mapId || n.region === adv.mapDef.region)?.id ?? 'prebois',
+  currentNode: (adv) => WORLD_NODES.find((n) => n.mapId === adv.mapId || n.region === adv.mapDef.region || n.id === adv.mapDef.region)?.id ?? 'prebois',
 };

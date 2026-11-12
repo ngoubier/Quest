@@ -1,4 +1,4 @@
-import { Pickup, Chest, Npc, Sign, PushBlock, PressurePlate, Gate, LockedDoor, Lever, TileSwitch, StrayPet, Brazier, IceWall } from './objects.js';
+import { Pickup, Chest, Npc, Sign, PushBlock, PressurePlate, Gate, LockedDoor, Lever, TileSwitch, StrayPet, Brazier, IceWall, Target, CrystalSwitch, Spikes, ArrowTrap, Crumble, Buried, Statue, Drum, Post, Geyser } from './objects.js';
 import { Boss } from '../actors/Boss.js';
 import { Enemy } from '../actors/Enemy.js';
 
@@ -44,6 +44,16 @@ export function standardFactory() {
   f.register('pet', (s) => new StrayPet(s));
   f.register('brazier', (s) => new Brazier(s));
   f.register('icewall', (s) => new IceWall(s));
+  f.register('target', (s) => new Target(s));
+  f.register('crystal', (s) => new CrystalSwitch(s));
+  f.register('spikes', (s) => new Spikes(s));
+  f.register('arrowtrap', (s) => new ArrowTrap(s));
+  f.register('crumble', (s) => new Crumble(s));
+  f.register('buried', (s) => new Buried(s));
+  f.register('statue', (s) => new Statue(s));
+  f.register('drum', (s) => new Drum(s));
+  f.register('post', (s) => new Post(s));
+  f.register('geyser', (s) => new Geyser(s));
   f.register('boss', (s) => new Boss({ x: s.x, y: s.y, uid: s.uid, seed: s.tx * 31 + s.ty, ...s.props }));
   f.register('enemy', (s) => new Enemy({ x: s.x, y: s.y, uid: s.uid, seed: s.tx * 31 + s.ty, ...s.props }));
   return f;

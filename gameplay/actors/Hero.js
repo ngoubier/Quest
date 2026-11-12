@@ -2,6 +2,8 @@ import { Animator, DIRS, rectsOverlap } from '../../engine/index.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
 import { Projectile } from './Projectile.js';
+import { Boomerang } from './Boomerang.js';
+import { Bomb } from './Bomb.js';
 
 // LE HÉROS, réutilisable d'un jeu à l'autre.
 //  - déplacement 8 directions, aide aux coins
@@ -11,6 +13,13 @@ import { Projectile } from './Projectile.js';
 //  - la vie est stockée dans GameState (sauvegardée), pas dans l'entité
 //  - bouton Objet : utilise l'objet équipé (bâton de feu...)
 //  - glace (propriété de tuile `slippery`) : on glisse tout droit jusqu'au prochain obstacle
+//  - trou (propriété de tuile `pit`) : on tombe, on perd un demi-cœur et on revient au dernier endroit sûr
+//  - sables mouvants (propriété `quicksand`) : on avance lentement et on s'enfonce ; trop longtemps → comme un trou
+//  - courant (propriété `current: [dx, dy]`) : il entraîne le héros ; sous l'eau, on nage un peu moins vite
+//  - pelle : creuse la case devant (propriété `diggable` : tuile après le trou) ; objets enterrés (onDig)
+//  - pouvoirs (adv.power) : bulle qui bloque un coup (rechargée en 20 s), armure (dégâts de 2 et plus
+//    divisés par 2), épée de feu (coups doubles), gel (marcher contre la lave la fige : propriété
+//    de tuile `freezable: 'tuile'`)
 //
 // Sprites attendus (planche 'chars') : player_{down|up|side}_{0|1}
 // et (planche 'objects') : sword_{down|up|side}
@@ -36,7 +45,26 @@ export class Hero extends Actor {
   }
 
   applyDamage(amount) {
-    return this.adv.state.damage(amount);
+    // Armure : les gros coups (Morgor, pluie de feu) font moitié moins mal.
+    const a = amount >= 2 && this.adv.power('armor') ? Math.ceil(amount / 2) : amount;
+    return this.adv.state.damage(a);
+  }
+
+  /** Dégâts d'un coup d'épée (épée de feu : double). */
+  get swordDamage() {
+    return this.adv.power('fireSword') ? 2 : 1;
+  }
+
+  /** Bulle des Marées : elle bloque un coup (pas une chute), puis se recharge. */
+  hurt(amount, from, opts) {
+    if (from && this.invuln <= 0 && !this.dead && (this.bubbleWait ?? 0) <= 0 && this.adv.power('bubble')) {
+      this.bubbleWait = 20;
+      this.invuln = this.invulnTime;
+      this.game.audio.play('bubble');
+      this.adv.toast('La bulle des Marées te protège !');
+      return false;
+    }
+    return super.hurt(amount, from, opts);
   }
 
   onHurt() {
@@ -60,6 +88,7 @@ export class Hero extends Actor {
 
   update(dt) {
     const input = this.game.input;
+    if (this.bubbleWait > 0) this.bubbleWait -= dt;
     if (this.updateStatus(dt)) return this.anim.update(dt);
 
     if (this.attack) {
@@ -69,6 +98,8 @@ export class Hero extends Actor {
       return;
     }
 
+    if (this._checkPit(dt)) return;
+    this._current(dt);
     this.toolCooldown -= dt;
     if (input.pressed('item')) {
       input.consume('item');
@@ -94,11 +125,13 @@ export class Hero extends Actor {
       const keep = (this.facing === 'left' && x < 0) || (this.facing === 'right' && x > 0) || (this.facing === 'up' && y < 0) || (this.facing === 'down' && y > 0);
       if (!keep) this.facing = x < 0 ? 'left' : x > 0 ? 'right' : y < 0 ? 'up' : 'down';
       const len = Math.hypot(x, y);
-      const res = this.move((x / len) * this.speed * dt, (y / len) * this.speed * dt, { cornerAssist: 6 });
+      const sp = this.speed * (this.sinking > 0 ? 0.35 : 1) * (this.adv.mapDef.underwater ? 0.85 : 1);
+      const res = this.move((x / len) * sp * dt, (y / len) * sp * dt, { cornerAssist: 6 });
       this.anim.play(`walk_${animDir(this.facing)}`);
       // Contre quelque chose : pousser un bloc ? ouvrir une porte verrouillée ?
       const straight = !x || !y;
       if (straight && (res.hitX || res.hitY) && !res.nudged) {
+        this._tryFreeze(dt);
         const front = this.frontEntity(3);
         if (front?.onBump) front.onBump(this);
         if (front?.tryPush) {
@@ -121,6 +154,92 @@ export class Hero extends Actor {
     }
   }
 
+  /** Trous : mémorise le dernier endroit sûr ; tombe si le centre du héros est au-dessus d'un trou. */
+  _checkPit(dt = 0) {
+    const tm = this.world.tilemap;
+    const ts = tm.tileSize;
+    const tx = Math.floor(this.cx / ts);
+    const ty = Math.floor(this.cy / ts);
+    // sables mouvants : on s'enfonce peu à peu
+    if (tm.propAt(tx, ty, 'quicksand')) this.sinking = (this.sinking ?? 0) + dt;
+    else this.sinking = 0;
+    const sunk = this.sinking > 1.6;
+    if (tm.propAt(tx, ty, 'pit') || sunk) {
+      this.sinking = 0;
+      this.game.audio.play('fall');
+      const back = this.safe ?? this.adv.entry; // dernier endroit sûr, sinon l'entrée de la carte
+      if (back) (this.x = back.x), (this.y = back.y);
+      this.slide = null;
+      this.invuln = 0;
+      this.hurt(1, null, { knockback: 0 });
+      this.adv.toast(sunk ? 'Les sables mouvants t’ont avalé ! Ne reste pas dedans.' : 'Tu es tombé dans un trou !');
+      return true;
+    }
+    let near = false;
+    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) if (tm.propAt(tx + dx, ty + dy, 'pit') || tm.propAt(tx + dx, ty + dy, 'quicksand')) near = true;
+    if (!near) this.safe = { x: this.x, y: this.y };
+    return false;
+  }
+
+  /** Pouvoir « freeze » : contre de la lave (ou de l'eau gelable), on la fige en un instant. */
+  _tryFreeze(dt) {
+    if (!this.adv.power('freeze')) return;
+    const tm = this.world.tilemap;
+    const ts = tm.tileSize;
+    const d = DIRS[this.facing];
+    const tx = Math.floor((this.cx + d.x * 10) / ts);
+    const ty = Math.floor((this.cy + d.y * 10) / ts);
+    const to = tm.propAt(tx, ty, 'freezable');
+    if (!to) return (this.freezeTimer = 0);
+    this.freezeTimer = (this.freezeTimer ?? 0) + dt;
+    if (this.freezeTimer < 0.25) return;
+    this.freezeTimer = 0;
+    this.adv.freezeTile(tx, ty, to);
+    this.game.audio.play('crack');
+    this.world.add(new Effect(tx * ts + 8, ty * ts + 8, { duration: 0.3 }));
+  }
+
+  /** Courants marins : la tuile pousse le héros dans sa direction. */
+  _current(dt) {
+    const tm = this.world.tilemap;
+    const cur = tm.propAt(Math.floor(this.cx / tm.tileSize), Math.floor(this.cy / tm.tileSize), 'current');
+    if (cur) this.move(cur[0] * 70 * dt, cur[1] * 70 * dt); // plus fort que la nage : on ne remonte pas un courant
+  }
+
+  /** Pelle : creuse la case devant le héros. */
+  dig() {
+    if (this.toolCooldown > 0) return false;
+    this.toolCooldown = 0.35;
+    const tm = this.world.tilemap;
+    const ts = tm.tileSize;
+    const d = DIRS[this.facing];
+    const tx = Math.floor((this.cx + d.x * 12) / ts);
+    const ty = Math.floor((this.cy + d.y * 12) / ts);
+    const to = tm.propAt(tx, ty, 'diggable');
+    if (!to) {
+      this.game.audio.play('menu_no');
+      this.adv.toast('Le sol est trop dur ici. On creuse dans le sable !');
+      return true;
+    }
+    tm.set('ground', tx, ty, to);
+    this.game.audio.play('dig');
+    this.world.add(new Effect(tx * ts + 8, ty * ts + 8, { duration: 0.25 }));
+    const found = this.world.query({ x: tx * ts + 2, y: ty * ts + 2, w: ts - 4, h: ts - 4 }, (e) => typeof e.onDig === 'function');
+    if (found.length) found.forEach((e) => e.onDig(this));
+    else if (Math.random() < 0.12) this.adv.spawnPickup('coin', tx * ts, ty * ts);
+    return true;
+  }
+
+  /** Pose une bombe devant soi (une seule à la fois). Renvoie false s'il n'y en a plus. */
+  placeBomb() {
+    if (this.world.entities.some((e) => e instanceof Bomb && !e.dead)) return false;
+    if (!this.adv.state.take('bomb', 1)) return (this.adv.toast('Tu n’as plus de bombes !'), false);
+    const d = DIRS[this.facing];
+    this.world.add(new Bomb(this.cx + d.x * 12, this.cy + d.y * 12));
+    this.game.audio.play('push');
+    return true;
+  }
+
   /** Le héros est-il sur une tuile glissante ? */
   onSlippery() {
     const tm = this.world.tilemap;
@@ -128,12 +247,21 @@ export class Hero extends Actor {
   }
 
   /** Lance un projectile devant soi (bâton de feu, arc...). Renvoie false si l'objet recharge. */
-  shoot(kind = 'fire', { cooldown = 0.45, speed = 150, range = 150, sound = 'fire' } = {}) {
+  shoot(kind = 'fire', { cooldown = 0.45, speed = 150, range = 150, sound = 'fire', cuts = false, damage = 1 } = {}) {
     if (this.toolCooldown > 0) return false;
     this.toolCooldown = cooldown;
     const d = DIRS[this.facing];
-    this.world.add(new Projectile({ x: this.cx + d.x * 9, y: this.cy - 3 + d.y * 9, dir: d, kind, speed, range, owner: this }));
+    this.world.add(new Projectile({ x: this.cx + d.x * 9, y: this.cy - 3 + d.y * 9, dir: d, kind, speed, range, owner: this, cuts, damage }));
     this.game.audio.play(sound);
+    return true;
+  }
+
+  /** Lance le boomerang (un seul à la fois). */
+  throwBoomerang() {
+    if (this.world.entities.some((e) => e instanceof Boomerang && !e.dead)) return false;
+    const d = DIRS[this.facing];
+    this.world.add(new Boomerang({ x: this.cx + d.x * 8, y: this.cy - 3 + d.y * 8, dir: d, owner: this }));
+    this.game.audio.play('throw');
     return true;
   }
 
@@ -229,8 +357,36 @@ export class Hero extends Actor {
       if (dir === 'up') drawSword();
       th.chars.draw(r, `player_${dir}_1`, sx, sy, { flipX });
       if (dir !== 'up') drawSword();
+      if (this.adv.power('fireSword')) {
+        // épée de feu : des flammèches le long de la lame
+        const t = this.game.time * 20;
+        for (let k = 0; k < 4; k++) r.rect(Math.round(sw.x + ((k * 5 + t) % Math.max(1, sw.w))), Math.round(sw.y + ((k * 3 + t * 0.7) % Math.max(1, sw.h))), 2, 2, k % 2 ? '#ffb03a' : '#ff5a1a');
+      }
+      return this._drawBubble(r);
+    }
+    if (this.sinking > 0) {
+      // s'enfonce dans le sable : le bas du corps disparaît
+      const k = Math.min(7, Math.round(this.sinking * 3.5));
+      th.chars.draw(r, this.anim.frame, sx, sy + k, { flipX });
+      r.rect(sx + 1, this.y + 5, 14, 4, '#c8a050');
+      r.rect(sx + 3, this.y + 4, 10, 1, '#e0c070');
       return;
     }
     th.chars.draw(r, this.anim.frame, sx, sy, { flipX });
+    this._drawBubble(r);
+  }
+
+  /** Bulle des Marées prête : un cercle léger autour du héros. */
+  _drawBubble(r) {
+    if ((this.bubbleWait ?? 0) > 0 || !this.adv.power('bubble')) return;
+    const c = r.ctx;
+    c.save();
+    c.globalAlpha = 0.45 + 0.1 * Math.sin(this.game.time * 3);
+    c.strokeStyle = '#a8e0ff';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.ellipse(this.cx, this.cy - 4, 10, 11, 0, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
   }
 }

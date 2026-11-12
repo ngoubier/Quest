@@ -7,10 +7,11 @@ import { Effect } from './Effect.js';
 //  - un objet peut réagir avec onProjectile(p) (brasero, mur de glace, boss) : renvoie true s'il l'arrête ;
 //  - `hostile` : lancé par un monstre, il blesse le héros (un coup d'épée le détruit).
 //
-// Images (planche 'objects') : {kind}_0, {kind}_1
+// Images (planche 'objects') : {kind}_0, {kind}_1 — ou, pour un projectile orienté (flèche),
+// {kind}_side (vers la droite), {kind}_up, {kind}_down
 
 export class Projectile extends Entity {
-  constructor({ x, y, dir, kind = 'fire', speed = 150, hostile = false, damage = 1, range = 150, owner = null }) {
+  constructor({ x, y, dir, kind = 'fire', speed = 150, hostile = false, damage = 1, range = 150, owner = null, cuts = false }) {
     super({ x: x - 3, y: y - 3, w: 6, h: 6, tags: ['projectile'] });
     const len = Math.hypot(dir.x, dir.y) || 1;
     this.vx = (dir.x / len) * speed;
@@ -20,6 +21,7 @@ export class Projectile extends Entity {
     this.damage = damage;
     this.left = range;
     this.owner = owner;
+    this.cuts = cuts; // coupe les tuiles « coupables » qu'il traverse (trident dans les algues)
     this.t = 0;
     this.z = 50;
   }
@@ -50,6 +52,16 @@ export class Projectile extends Entity {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.left -= step;
+    if (this.cuts) {
+      const tm = this.world.tilemap;
+      const tx = Math.floor(this.cx / tm.tileSize);
+      const ty = Math.floor(this.cy / tm.tileSize);
+      if (tm.propAt(tx, ty, 'cuttable')) {
+        tm.set('ground', tx, ty, tm.propAt(tx, ty, 'cutTo') || 'floor');
+        this.world.add(new Effect(tx * tm.tileSize + 8, ty * tm.tileSize + 8));
+        this.world.game.audio.play('cut');
+      }
+    }
     if (this.left <= 0 || this._hitsWall()) return this.stop();
     for (const e of this.world.query(this, (o) => o !== this && o !== this.owner && !o.has('projectile'))) {
       if (typeof e.onProjectile === 'function') {
@@ -75,7 +87,13 @@ export class Projectile extends Entity {
   }
 
   draw(r) {
-    const frame = `${this.kind}_${Math.floor(this.t * 10) % 2}`;
-    this.world.game.themes.current.sprites.objects.draw(r, frame, this.x - 5, this.y - 5);
+    const sheet = this.world.game.themes.current.sprites.objects;
+    // Projectile orienté (flèche) : images {kind}_side (vers la droite), {kind}_up, {kind}_down.
+    if (sheet.has(`${this.kind}_side`)) {
+      const side = Math.abs(this.vx) >= Math.abs(this.vy);
+      const frame = side ? `${this.kind}_side` : this.vy < 0 ? `${this.kind}_up` : `${this.kind}_down`;
+      return sheet.draw(r, frame, this.x - 5, this.y - 5, { flipX: side && this.vx < 0 });
+    }
+    sheet.draw(r, `${this.kind}_${Math.floor(this.t * 10) % 2}`, this.x - 5, this.y - 5);
   }
 }

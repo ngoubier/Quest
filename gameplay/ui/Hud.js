@@ -54,6 +54,13 @@ export function drawHud(r, adv, { height = 16, counters = ['coin', 'key'], objec
     c.clip();
     game.themes.current.sprites.objects.draw(r, adv.itemIcon(tool), heartsEnd + (side - 16) / 2 + 1, (height - 16) / 2);
     c.restore();
+    // Objet qui s'use (bombes) : nombre restant dans le coin.
+    if (adv.itemDef(tool).showCount) {
+      const n = String(st.count(tool));
+      const tw = Math.ceil(r.measure(n, 6, s.font)) + 2;
+      r.rect(heartsEnd + side - tw, height - 8, tw, 7, '#000');
+      r.text(n, heartsEnd + side - tw + 1, height - 8, { color: '#fff', size: 6, font: s.font });
+    }
     heartsEnd += side + 3;
   }
   // Boutons Quêtes et Sac, centrés entre les cœurs et les compteurs.

@@ -654,3 +654,141 @@ export const INTRO_STORY = [
     },
   },
 ];
+
+// ------------------------------------------------------------------ la fin : 3 pages
+export const END_STORY = [
+  {
+    text: 'Le Cœur d’Iris a vaincu Morgor ! Le Seigneur des Cendres s’enfuit pour toujours, et la cage d’Alia s’ouvre.',
+    paint(r, b, t) {
+      const c = r.ctx;
+      const W = b.w;
+      const base = b.y + b.h;
+      sky(c, b, [[0, '#2a0c20'], [0.6, '#6a2030'], [1, '#c8603a']]);
+      // un grand rayon arc-en-ciel qui traverse la scène
+      c.globalAlpha = Math.min(1, t * 0.8);
+      RAINBOW.forEach((col, i) => {
+        c.fillStyle = col;
+        c.fillRect(b.x, b.y + b.h * 0.3 + i * 4, W, 4);
+      });
+      c.globalAlpha = 1;
+      // Morgor qui s'efface en fumée
+      const fade = Math.max(0, 1 - t * 0.35);
+      if (fade > 0) {
+        c.globalAlpha = fade;
+        morgor(c, b.x + W * 0.78, base - 12 - t * 6, 48, t);
+        c.globalAlpha = 1;
+      }
+      for (let i = 0; i < 18; i++) {
+        const k = (t * 0.3 + i / 18) % 1;
+        cloud(c, b.x + W * 0.78 + Math.sin(i * 2.3) * 24 * k, base - 40 - k * 70, 0.3 + k * 0.6, '#3a2a3a', 0.5 * (1 - k));
+      }
+      c.fillStyle = '#1a0c14';
+      c.fillRect(b.x, base - 10, W, 10);
+      // Alia sort de la cage ouverte
+      const cx = b.x + W * 0.3;
+      const out = Math.min(1, t * 0.5);
+      cage(c, cx - 34, base - 66 - out * 40, 62, 52);
+      drawAlia(c, cx, base - 12, 30, t, { grey: false });
+      for (let i = 0; i < 10; i++) {
+        const a = t * 1.2 + (i * TAU) / 10;
+        sparkle(c, cx + Math.cos(a) * 40, base - 40 + Math.sin(a) * 22, 2.2, RAINBOW[i % 6], 0.5 + 0.5 * Math.sin(t * 4 + i));
+      }
+      vignette(c, b, 0.4);
+    },
+  },
+  {
+    text: 'Alia s’envole au-dessus du royaume. Partout où elle passe, les couleurs reviennent !',
+    paint(r, b, t) {
+      const c = r.ctx;
+      const W = b.w;
+      const base = b.y + b.h;
+      // le paysage reprend ses couleurs de gauche à droite, derrière Alia
+      const k = Math.min(1, t * 0.22);
+      const front = b.x + W * k * 1.1;
+      const scene = (grey) => {
+        sky(c, b, grey ? [[0, '#8e969e'], [1, '#cfd5d8']] : [[0, '#4aa8f0'], [0.6, '#a8dcff'], [1, '#e8f6ff']]);
+        mountain(c, b.x + W * 0.2, base - 30, W * 0.34, 56, grey ? '#8a9096' : '#8a9ab8', grey ? '#787e84' : '#6f7f9e', grey ? '#d8dcde' : '#ffffff');
+        mountain(c, b.x + W * 0.75, base - 30, W * 0.3, 46, grey ? '#8a9096' : '#96a6c2', grey ? '#787e84' : '#7888a6', grey ? '#d8dcde' : '#ffffff');
+        hills(c, b, 36, 8, 48, 0.9, grey ? '#8c9a88' : '#58b04a', grey ? '#788674' : '#3f8f3c');
+        [0.12, 0.42, 0.88].forEach((fx) => tree(c, b.x + W * fx, base - 36, 14, grey ? '#8a9884' : '#3f9a3c', grey ? '#74826e' : '#2a7030'));
+        hills(c, b, 18, 5, 36, 2.4, grey ? '#a0ae9a' : '#78cc58', grey ? '#8c9a88' : '#58b04a');
+        cottage(c, b.x + W * 0.3, base - 18, 18, grey ? '#d2cec4' : '#f4e6c8', grey ? '#8f8580' : '#c0573e', !grey);
+        cottage(c, b.x + W * 0.66, base - 16, 16, grey ? '#d2cec4' : '#f4e6c8', grey ? '#7f8894' : '#3f6aa8', !grey);
+      };
+      scene(true);
+      c.save();
+      c.beginPath();
+      c.rect(b.x, b.y, Math.max(0, front - b.x), b.h);
+      c.clip();
+      scene(false);
+      c.restore();
+      // l'arc-en-ciel laissé par Alia
+      RAINBOW.forEach((col, i) => {
+        c.strokeStyle = col;
+        c.lineWidth = 3;
+        c.beginPath();
+        c.moveTo(b.x - 10, b.y + 70 + i * 3);
+        c.quadraticCurveTo((b.x + front) / 2, b.y + 20 + i * 3, front, b.y + 40 + i * 3);
+        c.stroke();
+      });
+      const ax = Math.min(front, b.x + W * 0.82);
+      drawAlia(c, ax, b.y + 52 + Math.sin(t * 3) * 4, 30, t);
+      for (let i = 0; i < 12; i++) sparkle(c, ax - 10 - i * 9, b.y + 46 + Math.sin(t * 5 + i) * 8, 2, RAINBOW[i % 6], 0.8 - i * 0.05);
+    },
+  },
+  {
+    text: 'À Prébois, c’est la fête ! Merci, héros du royaume d’Iris. Tu peux continuer à explorer le royaume.',
+    paint(r, b, t) {
+      const c = r.ctx;
+      const W = b.w;
+      const base = b.y + b.h;
+      sky(c, b, [[0, '#1a1a4a'], [0.7, '#4a3a8a'], [1, '#8a5aa8']]);
+      // feux d'artifice
+      for (let f = 0; f < 4; f++) {
+        const k = (t * 0.6 + f * 0.27) % 1;
+        const fx = b.x + W * (0.18 + f * 0.22);
+        const fy = b.y + 22 + (f % 2) * 14;
+        for (let i = 0; i < 12; i++) {
+          const a = (i * TAU) / 12;
+          c.globalAlpha = 1 - k;
+          c.fillStyle = RAINBOW[(i + f) % 6];
+          c.beginPath();
+          c.arc(fx + Math.cos(a) * k * 22, fy + Math.sin(a) * k * 22 + k * k * 6, 1.4, 0, TAU);
+          c.fill();
+        }
+      }
+      c.globalAlpha = 1;
+      hills(c, b, 24, 6, 40, 1.4, '#3f8f3c', '#2a6a30');
+      cottage(c, b.x + W * 0.16, base - 22, 22, '#f4e6c8', '#c0573e');
+      cottage(c, b.x + W * 0.84, base - 20, 20, '#f4e6c8', '#3f6aa8');
+      // guirlandes de lanternes
+      c.strokeStyle = '#3a2a1a';
+      c.lineWidth = 0.8;
+      c.beginPath();
+      c.moveTo(b.x + W * 0.16, base - 44);
+      c.quadraticCurveTo(b.x + W / 2, base - 20, b.x + W * 0.84, base - 40);
+      c.stroke();
+      for (let i = 1; i < 10; i++) {
+        const u = i / 10;
+        const lx = b.x + W * (0.16 + 0.68 * u);
+        const ly = base - 44 + (1 - (2 * u - 1) ** 2) * 12 + u * 4;
+        glow(c, lx, ly, 6, 'rgba(255,220,120,.6)');
+        c.fillStyle = RAINBOW[i % 6];
+        c.fillRect(lx - 1.5, ly, 3, 4);
+      }
+      // Alia au milieu de la fête, et les habitants qui sautent de joie
+      drawAlia(c, b.x + W / 2, base - 8 + Math.sin(t * 2) * 1.5, 34, t);
+      for (let i = 0; i < 5; i++) {
+        const px = b.x + W * (0.28 + i * 0.11) + (i > 1 ? 30 : -6);
+        const jump = Math.abs(Math.sin(t * 4 + i)) * 4;
+        c.fillStyle = ['#3fa34d', '#c0573e', '#3f6aa8', '#e8a020', '#a84a8a'][i];
+        c.fillRect(px - 3, base - 14 - jump, 6, 8);
+        c.fillStyle = '#f2c49b';
+        c.beginPath();
+        c.arc(px, base - 17 - jump, 3, 0, TAU);
+        c.fill();
+      }
+      vignette(c, b, 0.3);
+    },
+  },
+];
