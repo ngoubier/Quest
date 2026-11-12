@@ -19,6 +19,7 @@ export class World {
     this.viewport = viewport || { x: 0, y: 0, w: camera.width, h: camera.height };
     this.entities = [];
     this.time = 0;
+    this.softShadows = false; // ombres douces : sous les entités (getter `shadow`) et au pied des murs
   }
 
   add(entity) {
@@ -77,14 +78,39 @@ export class World {
     const cam = this.camera;
     const view = cam.view;
     r.pushWorld(cam, this.viewport);
-    this.tilemap.draw(r, view, this.time);
+    this.tilemap.draw(r, view, this.time, { soft: this.softShadows });
     const visible = this.entities
       .filter((e) => e.visible && !e.dead)
       .sort((a, b) => a.sortY - b.sortY);
+    if (this.softShadows) for (const e of visible) this._drawShadow(r, e);
     for (const e of visible) e.draw(r);
     this.tilemap.draw(r, view, this.time, { above: true });
     if (this.game?.debug?.enabled) this._drawDebug(r, view);
     r.popWorld();
+  }
+
+  /**
+   * Ombre douce au sol, un peu décalée vers la droite (soleil en haut à gauche).
+   * L'entité choisit sa taille : `shadow` (demi-largeur en pixels, 0 = pas d'ombre) ;
+   * `shadowY` : décalage vers le bas (créature qui vole : l'ombre est plus loin).
+   */
+  _drawShadow(r, e) {
+    const rx = e.shadow;
+    if (!rx) return;
+    const c = r.ctx;
+    const x = e.cx + 1;
+    const y = e.y + e.h - 1 + (e.shadowY ?? 0);
+    const g = c.createRadialGradient(x, y, 0, x, y, rx);
+    g.addColorStop(0, 'rgba(16,14,40,0.38)');
+    g.addColorStop(0.55, 'rgba(16,14,40,0.24)');
+    g.addColorStop(1, 'rgba(16,14,40,0)');
+    c.save();
+    c.fillStyle = g;
+    c.translate(x, y);
+    c.scale(1, 0.42);
+    c.translate(-x, -y);
+    c.fillRect(x - rx, y - rx, rx * 2, rx * 2);
+    c.restore();
   }
 
   _drawDebug(r, view) {

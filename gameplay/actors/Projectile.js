@@ -13,6 +13,8 @@ import { Effect } from './Effect.js';
 export class Projectile extends Entity {
   constructor({ x, y, dir, kind = 'fire', speed = 150, hostile = false, damage = 1, range = 150, owner = null, cuts = false }) {
     super({ x: x - 3, y: y - 3, w: 6, h: 6, tags: ['projectile'] });
+    this.shadow = 3;
+    this.shadowY = 6; // l'objet vole : son ombre est au sol, plus bas
     const len = Math.hypot(dir.x, dir.y) || 1;
     this.vx = (dir.x / len) * speed;
     this.vy = (dir.y / len) * speed;
@@ -79,6 +81,11 @@ export class Projectile extends Entity {
         return this.stop();
       } else if (e.solid && !e.has('hero')) return this.stop();
     }
+  }
+
+  /** Flammèche : elle éclaire en volant (ambiance). */
+  get light() {
+    return this.kind === 'fire' ? { r: 34, color: '#ff9a3a', flicker: 0.1 } : null;
   }
 
   /** Un coup d'épée détruit un projectile ennemi. */

@@ -146,6 +146,13 @@ export class Boss extends Enemy {
   }
 
   /** Sous le sable : il ne peut pas être touché. */
+  /** Ombre au sol : grande, sauf quand il est sous le sable. */
+  get shadow() {
+    return this.buried ? 0 : 13;
+  }
+
+  set shadow(v) {}
+
   get buried() {
     return this.burrow && this.under > 0;
   }

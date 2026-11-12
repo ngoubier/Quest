@@ -10,7 +10,8 @@
 // seulement l'apparence et la quantité de carte visible.
 //
 // Forcer un profil dans l'adresse : ?mobile, ?pc, ?classic (ou #mobile, #pc, #classic) ;
-// ?hd=0 coupe la haute définition. (?touch, plus ancien, vaut ?mobile.)
+// ?hd=0 coupe la haute définition ; ?fx=0 coupe l'ambiance (lumière, ombres douces, particules),
+// ?fx=1 la met au complet, ?fx=lite en version légère. (?touch, plus ancien, vaut ?mobile.)
 
 export const DISPLAY_PROFILES = {
   classic: {
@@ -25,6 +26,7 @@ export const DISPLAY_PROFILES = {
     saturation: 1,
     shading: false, // ombrage fin et grain (finition HD)
     lowDetail: false, // moins de petits motifs (herbe, mouchetures...)
+    fx: false, // ambiance : lumière, ombres douces, particules ('full', 'lite' ou false)
   },
   mobile: {
     id: 'mobile',
@@ -39,6 +41,7 @@ export const DISPLAY_PROFILES = {
     saturation: 1.22,
     shading: false,
     lowDetail: true,
+    fx: 'lite', // sans rayons de soleil ni ombres de nuages, moitié moins de particules
   },
   pc: {
     id: 'pc',
@@ -52,6 +55,7 @@ export const DISPLAY_PROFILES = {
     saturation: 1,
     shading: true,
     lowDetail: false,
+    fx: 'full',
   },
 };
 
@@ -84,6 +88,7 @@ export function detectDisplay({ search, hash, touch, tablet } = {}) {
   // ?art=1 pour les avoir aussi sur téléphone, ?art=0 pour les enlever.
   if (id === 'mobile' && tablet) p.art = true;
   if (q.has('art') && p.detail > 1) p.art = q.get('art') !== '0';
+  if (q.has('fx')) p.fx = { 0: false, lite: 'lite' }[q.get('fx')] ?? 'full';
   return p;
 }
 

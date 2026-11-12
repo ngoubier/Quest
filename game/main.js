@@ -5,6 +5,7 @@ import { AdventureScene, openParentSpace, PromptScene, MessageScene, StoryScene 
 import { THEME, ROLES } from './themes.js';
 import { MAPS, LEGEND, ITEMS, QUESTS } from './data/index.js';
 import { WORLD_MAP, colorLoss } from './data/worldmap.js';
+import { ambienceFor, TILE_LIGHTS } from './ambience.js';
 import { INTRO_STORY, END_STORY, drawUnicorn } from './data/story.js';
 import { frenchSchoolBank } from '../content/quiz/index.js';
 
@@ -152,6 +153,9 @@ const makeAdventure = () =>
     saveNamespace: 'quete-alia',
     worldMap: WORLD_MAP,
     // Option : le royaume perd ses couleurs tant qu'Alia est prisonnière. Désactivée par défaut.
+    // Lumière et atmosphère de chaque lieu (game/ambience.js) ; ?fx=0 pour comparer sans.
+    ambience: ambienceFor,
+    tileLights: TILE_LIGHTS,
     colorLoss: (adv) => (adv.state.flag('opt_dim_colors') ? colorLoss(adv) : 0),
     menuItems: (adv) => [
       {

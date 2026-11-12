@@ -35,6 +35,7 @@ export class Pickup extends WorldObject {
   /** props : { item, count?, hidden? (caché sous une tuile coupable), persist? } */
   constructor({ x, y, uid, props }) {
     super({ x: x + 3, y: y + 3, w: 10, h: 10, uid, props, tags: ['pickup'] });
+    this.shadow = 4;
     this.t = 0;
     this.phase = Math.random() * 3;
     this.z = -2;
@@ -82,6 +83,7 @@ export class Chest extends WorldObject {
   /** props : { item, count?, appearWhen?: condition, code?: '42' (coffre à code), codeTitle? } */
   constructor({ x, y, uid, props }) {
     super({ x: x + 1, y: y + 4, w: 14, h: 11, uid, props, solid: true, tags: ['chest'] });
+    this.shadow = 8;
     this.wasVisible = null;
   }
 
@@ -152,6 +154,7 @@ export class Npc extends WorldObject {
    */
   constructor({ x, y, uid, props }) {
     super({ x: x + 3, y: y + 8, w: 10, h: 8, uid, props, solid: true, tags: ['npc'] });
+    this.shadow = 6;
     const s = props.sprite ?? 'npc';
     const anims = {};
     for (const d of ['down', 'up', 'side']) {
@@ -303,6 +306,7 @@ export class Sign extends WorldObject {
    *           byAge?: [[âge minimum, texte], ...] — texte adapté à l'âge (calcul plus ou moins dur) } */
   constructor({ x, y, uid, props }) {
     super({ x: x + 1, y: y + 6, w: 14, h: 10, uid, props, solid: true, tags: ['sign'] });
+    this.shadow = 6;
   }
 
   get text() {
@@ -483,6 +487,7 @@ export class Lever extends WorldObject {
   /** props : { flag } — bascule le drapeau quand on le frappe ou qu'on l'actionne */
   constructor({ x, y, uid, props }) {
     super({ x: x + 2, y: y + 6, w: 12, h: 9, uid, props, solid: true, tags: ['lever'] });
+    this.shadow = 5;
     this.cooldown = 0;
   }
 
@@ -547,6 +552,7 @@ export class StrayPet extends WorldObject {
   /** props : { name, text } — lui parler : il te suit (drapeau 'pet_joined') */
   constructor({ x, y, uid, props }) {
     super({ x: x + 3, y: y + 8, w: 10, h: 8, uid, props, solid: true, tags: ['pet'] });
+    this.shadow = 5;
     this.t = 0;
   }
 
@@ -577,6 +583,7 @@ export class Brazier extends WorldObject {
   /** props : { flag? } — allumé par un projectile de feu ; lève le drapeau (par défaut lit:<uid>) et le reste */
   constructor({ x, y, uid, props }) {
     super({ x: x + 2, y: y + 5, w: 12, h: 10, uid, props, solid: true, tags: ['brazier'] });
+    this.shadow = 7;
     this.hint = 0;
   }
 
@@ -586,6 +593,11 @@ export class Brazier extends WorldObject {
 
   get lit() {
     return this.state.flag(this.flag);
+  }
+
+  /** Allumé : il éclaire autour de lui (ambiance). */
+  get light() {
+    return this.lit ? { r: 56, color: '#ffa040', flicker: 0.08, dy: -4 } : null;
   }
 
   update(dt) {
@@ -661,6 +673,7 @@ export class Target extends WorldObject {
    *  Touchée par le bon projectile (ou l'épée si sword), elle lève son drapeau (par défaut hit:<uid>). */
   constructor({ x, y, uid, props }) {
     super({ x: x + 2, y: y + 3, w: 12, h: 12, uid, props, solid: true, tags: ['target'] });
+    this.shadow = 6;
     this.hint = 0;
   }
 
@@ -722,6 +735,7 @@ export class CrystalSwitch extends WorldObject {
    *  Les blocs bleus / rouges sont des grilles : openWhen: flag (rouges) ou { flag, is: false } (bleus). */
   constructor({ x, y, uid, props }) {
     super({ x: x + 2, y: y + 3, w: 12, h: 12, uid, props, solid: true, tags: ['crystal'] });
+    this.shadow = 6;
     this.cooldown = 0;
   }
 
@@ -888,6 +902,7 @@ export class Statue extends WorldObject {
    *  Le drapeau est levé quand elle regarde dans la bonne direction (et baissé sinon). */
   constructor({ x, y, uid, props }) {
     super({ x: x + 1, y: y + 4, w: 14, h: 12, uid, props, solid: true, tags: ['statue'] });
+    this.shadow = 7;
     this.cooldown = 0;
   }
 
@@ -923,6 +938,7 @@ export class Drum extends WorldObject {
    *  ensuite un coup d'épée le fait résonner (drapeau levé). */
   constructor({ x, y, uid, props }) {
     super({ x: x + 2, y: y + 4, w: 12, h: 11, uid, props, tags: ['drum'] });
+    this.shadow = 6;
     this.bounce = 0;
   }
 
@@ -965,6 +981,7 @@ export class Post extends WorldObject {
   /** Un poteau avec une lanterne : on le voit même dans la tempête de sable (tag 'beacon'). */
   constructor({ x, y, uid, props }) {
     super({ x: x + 5, y: y + 10, w: 6, h: 5, uid, props, solid: true, tags: ['beacon'] });
+    this.shadow = 4;
   }
 
   draw(r) {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectDisplay, scale2x, scaleNearest, outlineImage, adjustColors, themeForProfile, detailCount, paintContext, DISPLAY_PROFILES, Tileset } from '../engine/index.js';
+import { detectDisplay, scale2x, scaleNearest, outlineImage, adjustColors, themeForProfile, detailCount, paintContext, DISPLAY_PROFILES, Tileset, Ambience } from '../engine/index.js';
 
 // Petite image {width, height, data} à partir de lignes de caractères ('#' = rouge opaque, '.' = transparent).
 const img = (rows) => {
@@ -92,4 +92,34 @@ test('Tileset HD : image 2 fois plus fine, dessinée à la taille du jeu', () =>
   ts.draw(r, 1, 48, 32);
   const [, sx, sy, sw, sh, dx, dy, dw, dh] = calls[0];
   assert.deepEqual([sx, sy, sw, sh, dx, dy, dw, dh], [0, 32, 32, 32, 48, 32, 16, 16]);
+});
+
+test('Ambiance : complète sur PC, légère sur mobile, absente en classique ; ?fx pour forcer', () => {
+  const d = (search, touch = false) => detectDisplay({ hash: '', search, touch });
+  assert.equal(d('').fx, 'full');
+  assert.equal(d('', true).fx, 'lite');
+  assert.equal(d('?classic').fx, false);
+  assert.equal(d('?fx=0').fx, false, 'coupée');
+  assert.equal(d('?fx=1', true).fx, 'full');
+  assert.equal(d('?fx=lite').fx, 'lite');
+});
+
+test('Ambiance : lumières des tuiles visibles et des entités (brasero allumé...)', () => {
+  const names = { '1,1': 'torch', '9,9': 'torch' }; // la 2e est loin de l'écran
+  const world = {
+    tilemap: { tileSize: 16, width: 20, height: 20, nameAt: (x, y) => names[`${x},${y}`] ?? 'floor' },
+    camera: { view: { x: 0, y: 0, w: 64, h: 64 } },
+    entities: [
+      { cx: 40, cy: 40, visible: true, light: { r: 30, color: '#ff8000' } },
+      { cx: 10, cy: 10, visible: true, light: null },
+      { cx: 20, cy: 20, visible: true, dead: true, light: { r: 30, color: '#ff8000' } },
+    ],
+  };
+  const amb = new Ambience({ tileLights: { torch: { r: 50, color: '#ffb060' } } });
+  const lights = amb.collectLights(world, 0);
+  assert.deepEqual(lights.map((l) => [l.x, l.y, l.r]), [[24, 24, 50], [40, 40, 30]]);
+  assert.equal(amb.enabled, false, 'pas de préréglage : rien à dessiner');
+  amb.set({ tint: ['#ffffff', 0.2] });
+  assert.equal(amb.enabled, true);
+  assert.equal(new Ambience({ level: false, tileLights: {} }).enabled, false);
 });

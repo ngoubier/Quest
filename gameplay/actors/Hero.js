@@ -29,6 +29,7 @@ const animDir = (f) => (f === 'left' || f === 'right' ? 'side' : f);
 export class Hero extends Actor {
   constructor(x, y, facing = 'down') {
     super({ x, y, w: 10, h: 8, tags: ['hero', 'player'], solid: true, facing, invulnTime: 1 });
+    this.shadow = 6;
     this.speed = 72;
     this.attack = null;
     this.attackTime = 0.24;

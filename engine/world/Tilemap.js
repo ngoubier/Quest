@@ -149,8 +149,9 @@ export class Tilemap {
    *  - variantes choisies selon la position ;
    *  - `props.shadow` : ombre portée sur la tuile du dessous ;
    *  - `props.edge`   : liseré de couleur là où la tuile touche une autre tuile (berges...).
+   * `soft` : ombres en dégradé (occlusion au pied des murs) au lieu d'un trait net.
    */
-  draw(r, view, time = 0, { above = false } = {}) {
+  draw(r, view, time = 0, { above = false, soft = false } = {}) {
     const ts = this.tileSize;
     const x0 = Math.max(0, Math.floor(view.x / ts));
     const y0 = Math.max(0, Math.floor(view.y / ts));
@@ -178,10 +179,18 @@ export class Tilemap {
             if (other(tx - 1, ty)) r.rect(tx * ts, ty * ts, 1, ts, c);
             if (other(tx + 1, ty)) r.rect(tx * ts + ts - 1, ty * ts, 1, ts, c);
           }
-          // Ombre portée par la tuile du dessus
-          if (ty > 0 && !def.solid) {
-            const up = this.tileset.def(ground.data[(ty - 1) * this.width + tx]);
-            if (up.props.shadow) {
+          // Ombre portée par la tuile du dessus (et, en ombres douces, par celle de gauche :
+          // le soleil vient d'en haut à gauche)
+          if (!def.solid) {
+            const occ = (nx, ny) => this.inBounds(nx, ny) && !!this.tileset.def(ground.data[ny * this.width + nx]).props.shadow;
+            if (soft && occ(tx, ty - 1)) {
+              // Mur (d'autres obstacles à côté) : bande d'ombre ; obstacle isolé (arbre, rocher) : ombre ronde.
+              const wall = occ(tx - 1, ty - 1) || occ(tx + 1, ty - 1);
+              this._softShadow(r, tx, ty, wall ? 'band' : 'blob');
+            }
+            // Face d'un mur vertical à gauche : ombre portée vers la droite.
+            if (soft && occ(tx - 1, ty) && (occ(tx - 1, ty - 1) || occ(tx - 1, ty + 1))) this._softShadow(r, tx, ty, 'side', occ(tx, ty - 1));
+            if (!soft && occ(tx, ty - 1)) {
               r.rect(tx * ts, ty * ts, ts, 3, 'rgba(0,0,0,0.22)');
               r.rect(tx * ts, ty * ts, ts, 1, 'rgba(0,0,0,0.18)');
             }
@@ -189,5 +198,41 @@ export class Tilemap {
         }
       }
     }
+  }
+
+  /**
+   * Ombre douce sur une case de sol : 'band' sous un mur, 'blob' sous un obstacle isolé,
+   * 'side' à droite d'un mur. Les dégradés sont créés une fois, puis déplacés.
+   */
+  _softShadow(r, tx, ty, kind, underWall = false) {
+    const c = r.ctx;
+    const ts = this.tileSize;
+    if (this._aoCtx !== c) {
+      this._aoCtx = c;
+      const band = c.createLinearGradient(0, 0, 0, 9);
+      band.addColorStop(0, 'rgba(18,14,34,0.4)');
+      band.addColorStop(0.35, 'rgba(18,14,34,0.18)');
+      band.addColorStop(1, 'rgba(18,14,34,0)');
+      const side = c.createLinearGradient(0, 0, 6, 0);
+      side.addColorStop(0, 'rgba(18,14,34,0.24)');
+      side.addColorStop(1, 'rgba(18,14,34,0)');
+      const blob = c.createRadialGradient(0, 0, 0, 0, 0, 7);
+      blob.addColorStop(0, 'rgba(18,14,34,0.38)');
+      blob.addColorStop(0.5, 'rgba(18,14,34,0.18)');
+      blob.addColorStop(1, 'rgba(18,14,34,0)');
+      this._ao = { band, side, blob };
+    }
+    c.save();
+    c.translate(tx * ts, ty * ts);
+    if (kind === 'band') (c.fillStyle = this._ao.band), c.fillRect(0, 0, ts, 9);
+    else if (kind === 'side') (c.fillStyle = this._ao.side), c.fillRect(0, underWall ? 3 : 0, 6, ts - (underWall ? 3 : 0));
+    else {
+      // ombre ronde, un peu à droite (soleil en haut à gauche), aplatie
+      c.translate(ts / 2 + 2, 0);
+      c.scale(1.25, 0.6);
+      c.fillStyle = this._ao.blob;
+      c.fillRect(-7, 0, 14, 7);
+    }
+    c.restore();
   }
 }
