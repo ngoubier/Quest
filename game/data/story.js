@@ -3,7 +3,7 @@
 // Les images sont tracées avec des formes lisses (courbes, dégradés) : elles profitent de toute
 // la finesse de l'écran, sur PC comme sur mobile.
 
-const RAINBOW = ['#ff5a7a', '#ffa23a', '#ffe04a', '#5ad87a', '#5aa8ff', '#a87aff'];
+export const RAINBOW = ['#ff5a7a', '#ffa23a', '#ffe04a', '#5ad87a', '#5aa8ff', '#a87aff'];
 const TAU = Math.PI * 2;
 
 /** Licorne en pixels (16 x 16 cases de taille `s`), tournée vers la droite. Sert à l'écran titre. */
@@ -23,14 +23,14 @@ export function drawUnicorn(r, x, y, s = 1, grey = false) {
 }
 
 // ------------------------------------------------------------------ outils de dessin
-function sky(c, b, stops) {
+export function sky(c, b, stops) {
   const g = c.createLinearGradient(0, b.y, 0, b.y + b.h);
   stops.forEach(([o, col]) => g.addColorStop(o, col));
   c.fillStyle = g;
   c.fillRect(b.x, b.y, b.w, b.h);
 }
 
-function glow(c, x, y, radius, color, alpha = 1) {
+export function glow(c, x, y, radius, color, alpha = 1) {
   const g = c.createRadialGradient(x, y, 0, x, y, radius);
   g.addColorStop(0, color);
   g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -41,7 +41,7 @@ function glow(c, x, y, radius, color, alpha = 1) {
 }
 
 /** Collines : une courbe douce de gauche à droite, remplie jusqu'en bas. */
-function hills(c, b, base, amp, wave, phase, color, shade) {
+export function hills(c, b, base, amp, wave, phase, color, shade) {
   const y0 = b.y + b.h - base;
   c.beginPath();
   c.moveTo(b.x, b.y + b.h);
@@ -55,7 +55,7 @@ function hills(c, b, base, amp, wave, phase, color, shade) {
   c.fill();
 }
 
-function cloud(c, x, y, s, color, alpha = 1) {
+export function cloud(c, x, y, s, color, alpha = 1) {
   c.globalAlpha = alpha;
   c.fillStyle = color;
   c.beginPath();
@@ -64,7 +64,7 @@ function cloud(c, x, y, s, color, alpha = 1) {
   c.globalAlpha = 1;
 }
 
-function mountain(c, x, baseY, w, h, rock, shadow, snow) {
+export function mountain(c, x, baseY, w, h, rock, shadow, snow) {
   c.fillStyle = rock;
   c.beginPath();
   c.moveTo(x - w / 2, baseY);
@@ -89,7 +89,7 @@ function mountain(c, x, baseY, w, h, rock, shadow, snow) {
   c.fill();
 }
 
-function tree(c, x, y, s, leaf, dark) {
+export function tree(c, x, y, s, leaf, dark) {
   c.fillStyle = '#6b4423';
   c.fillRect(x - s * 0.12, y - s * 0.5, s * 0.24, s * 0.5);
   c.fillStyle = dark;
@@ -102,7 +102,7 @@ function tree(c, x, y, s, leaf, dark) {
   c.fill();
 }
 
-function cottage(c, x, y, s, wall, roof, lit = true) {
+export function cottage(c, x, y, s, wall, roof, lit = true) {
   c.fillStyle = 'rgba(0,0,0,.18)';
   c.beginPath();
   c.ellipse(x + s * 0.5, y, s * 0.6, s * 0.08, 0, 0, TAU);
@@ -130,7 +130,7 @@ function cottage(c, x, y, s, wall, roof, lit = true) {
   c.fillRect(x + s * 0.74, y - s * 1.0, s * 0.12, s * 0.3);
 }
 
-function sparkle(c, x, y, s, color, alpha = 1) {
+export function sparkle(c, x, y, s, color, alpha = 1) {
   c.globalAlpha = Math.max(0, alpha);
   c.fillStyle = color;
   c.beginPath();
@@ -251,7 +251,7 @@ export function drawAlia(c, x, y, s, t = 0, { grey = false } = {}) {
   });
 }
 
-function cage(c, x, y, w, h) {
+export function cage(c, x, y, w, h) {
   c.fillStyle = '#3c3c4a';
   c.fillRect(x - 2, y - 3, w + 4, 4);
   c.fillRect(x - 2, y + h - 1, w + 4, 4);
@@ -329,7 +329,7 @@ function morgor(c, x, y, s, t) {
   c.fill();
 }
 
-function vignette(c, b, strength = 0.5) {
+export function vignette(c, b, strength = 0.5) {
   const g = c.createRadialGradient(b.x + b.w / 2, b.y + b.h / 2, b.h * 0.35, b.x + b.w / 2, b.y + b.h / 2, b.w * 0.75);
   g.addColorStop(0, 'rgba(0,0,0,0)');
   g.addColorStop(1, `rgba(0,0,0,${strength})`);

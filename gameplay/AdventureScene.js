@@ -20,6 +20,7 @@ import { ProfileStore, parentSettings } from './profiles.js';
 import { WorldMapScene } from './ui/WorldMapScene.js';
 import { createMinigame } from './minigames/index.js';
 import { StoryScene } from './ui/StoryScene.js';
+import { Boss } from './actors/Boss.js';
 
 // LA SCÈNE D'AVENTURE — le "squelette" réutilisable d'un jeu type Zelda.
 // Un jeu lui fournit uniquement des DONNÉES :
@@ -257,12 +258,14 @@ export class AdventureScene extends Scene {
       return;
     }
 
+    if (this._playStory()) return;
     this.state.playTime += dt;
     this._updateRegen(dt);
     if (this._updateAir(dt)) return;
     this._prevHero = this.hero ? { x: this.hero.x, y: this.hero.y } : null;
     this.world.update(dt);
     this._checkRoomClear();
+    this._checkBossIntro();
     if (this.cfg.endWhen && !this.state.flag('game_finished') && check(this.cfg.endWhen, this.state)) {
       this.state.setFlag('game_finished');
       this.game.audio.play('quest_done');
@@ -324,6 +327,34 @@ export class AdventureScene extends Scene {
   addAir(seconds) {
     if (this.air == null) return;
     this.air = Math.min(this.airMax, this.air + seconds);
+  }
+
+  /**
+   * Histoire en images en attente (fin de niveau, présentation d'un boss) : on la montre dès que
+   * le jeu a la main (après le dialogue du coffre, par exemple). Renvoie true si elle démarre.
+   */
+  _playStory() {
+    if (!this.pendingStory || this.warping || this.world.camera.isTransitioning) return false;
+    const pages = this.pendingStory;
+    this.pendingStory = null;
+    this.game.scenes.push(new StoryScene({ pages, onDone: () => this.game.scenes.pop() }));
+    return true;
+  }
+
+  /** Boss avec `intro` : la première fois qu'on le voit (dans la même salle), une page le présente. */
+  _checkBossIntro() {
+    const cam = this.world.camera;
+    if (cam.isTransitioning || this.pendingStory) return;
+    const seen = (e) => {
+      if (!(e instanceof Boss) || !e.intro || e.dead || e.hidden || this.state.flag(`intro:${e.uid}`)) return false;
+      if (cam.mode !== 'rooms') return true;
+      const room = cam.roomOf(e.cx, e.cy);
+      return room.x === cam.room.x && room.y === cam.room.y;
+    };
+    const boss = this.world.query(cam.view, seen)[0];
+    if (!boss) return;
+    this.state.setFlag(`intro:${boss.uid}`);
+    this.pendingStory = boss.intro;
   }
 
   /** Salles "à vider" : quand tous leurs monstres sont vaincus, un drapeau est levé. */
@@ -518,7 +549,9 @@ export class AdventureScene extends Scene {
     // Nouvel objet à utiliser (bâton de feu, arc...) : il s'équipe tout seul.
     if (def.tool && (!this.state.equipped || !had)) this.state.equipped = item;
     // Objet qui donne un pouvoir (pierre magique) : on le dit.
-    if (def.power && !had) this.toast(`Nouveau pouvoir : ${def.power}`);
+    // Fin de niveau (la pierre) : histoire en images, qui annonce aussi le pouvoir.
+    if (def.story && !had) this.pendingStory = typeof def.story === 'function' ? def.story(this.state) : def.story;
+    else if (def.power && !had) this.toast(`Nouveau pouvoir : ${def.power}`);
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
     return true;
   }

@@ -7,8 +7,17 @@ import { TEMPS_MAPS, TEMPS_ITEMS, TEMPS_QUESTS } from './temps.js';
 import { SOLEIL_MAPS, SOLEIL_ITEMS, SOLEIL_QUESTS } from './soleil.js';
 import { MAREES_MAPS, MAREES_ITEMS, MAREES_QUESTS } from './marees.js';
 import { VOLCAN_MAPS, VOLCAN_ITEMS, VOLCAN_QUESTS } from './volcan.js';
+import { BOSS_INTROS, stoneStory } from './scenes.js';
+import { STONES } from './worldmap.js';
 
 export { LEGEND };
 export const MAPS = { ...PREBOIS_MAPS, ...GIVRE_MAPS, ...SEVE_MAPS, ...AURORE_MAPS, ...TEMPS_MAPS, ...SOLEIL_MAPS, ...MAREES_MAPS, ...VOLCAN_MAPS };
 export const ITEMS = { ...PREBOIS_ITEMS, ...GIVRE_ITEMS, ...SEVE_ITEMS, ...AURORE_ITEMS, ...TEMPS_ITEMS, ...SOLEIL_ITEMS, ...MAREES_ITEMS, ...VOLCAN_ITEMS };
 export const QUESTS = [...PREBOIS_QUESTS, ...GIVRE_QUESTS, ...SEVE_QUESTS, ...AURORE_QUESTS, ...TEMPS_QUESTS, ...SOLEIL_QUESTS, ...MAREES_QUESTS, ...VOLCAN_QUESTS];
+
+// Histoire en images : chaque boss est présenté la première fois qu'on le voit,
+// et chaque pierre trouvée termine son niveau par deux pages (game/data/scenes.js).
+for (const map of Object.values(MAPS)) {
+  for (const o of Object.values(map.objects ?? {})) if (o.type === 'boss' && BOSS_INTROS[o.sprite]) o.intro ??= BOSS_INTROS[o.sprite];
+}
+for (const k of STONES) ITEMS[`stone_${k}`].story ??= stoneStory(k, ITEMS[`stone_${k}`].power);

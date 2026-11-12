@@ -294,6 +294,15 @@ export const paintGivrePerson = (c, who, dir, step) => (who === 'pingo' ? paintP
 export const GIVRE_CHARS = ['granny', 'inuit', 'pingo'];
 
 // ------------------------------------------------------------ le Yéti (32 x 32)
+/** Sa carapace de glace (bouclier) : des plaques translucides, que le feu fait fondre. */
+export function paintYetiShield(c) {
+  for (const [x, y, w, h] of [[6, 12, 8, 9], [14, 10, 8, 10], [21, 12, 7, 9], [8, 20, 8, 8], [17, 20, 8, 8]]) {
+    P(c, x, y, w, h, 'rgba(170,225,255,.55)');
+    P(c, x, y, w, 1, 'rgba(255,255,255,.9)');
+    P(c, x + 2, y + 2, 1, 2, 'rgba(255,255,255,.7)');
+  }
+}
+
 export function paintYeti(c, step) {
   P(c, 5, 29, 22, 2, 'rgba(0,0,0,.3)');
   const y = step;

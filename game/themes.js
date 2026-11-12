@@ -3,18 +3,19 @@
 // (carte du royaume, pierres magiques).
 import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
-import { GIVRE_TILES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti } from './theme-givre.js';
+import { GIVRE_TILES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti, paintYetiShield } from './theme-givre.js';
 import { SEVE_TILES, SEVE_OBJECT_FRAMES, paintSeveObject, SEVE_CHARS, paintSevePerson, paintSevePersonHD, paintRonce } from './theme-seve.js';
 import { MAREES_TILES, MAREES_OBJECT_FRAMES, paintMareesObject, MAREES_CHARS, paintMareesPerson, paintMareesPersonHD, paintKraken } from './theme-marees.js';
 import { SOLEIL_TILES, SOLEIL_OBJECT_FRAMES, paintSoleilObject, SOLEIL_CHARS, paintSoleilPerson, paintSoleilPersonHD, paintWorm } from './theme-soleil.js';
 import { TEMPS_TILES, TEMPS_OBJECT_FRAMES, paintTempsObject, TEMPS_CHARS, paintTempsPerson, paintTempsPersonHD, paintMinotaure } from './theme-temps.js';
 import { VOLCAN_TILES, VOLCAN_OBJECT_FRAMES, paintVolcanObject, VOLCAN_CHARS, paintVolcanPerson, paintVolcanPersonHD, paintMorgor } from './theme-volcan.js';
+import { paintBossHD } from './art/bosses.js';
 import { AURORE_TILES, AURORE_OBJECT_FRAMES, paintAuroreObject, AURORE_CHARS, paintAurorePerson, paintAurorePersonHD, paintMasque } from './theme-aurore.js';
 
 // Dessins propres à chaque niveau : tuiles, objets et monstres, habitants, boss.
 // paintHD : version haute définition (PC) ; sans elle, l'image est agrandie automatiquement.
 const LEVELS = [
-  { tiles: GIVRE_TILES, objects: GIVRE_OBJECT_FRAMES, paintObject: paintGivreObject, chars: GIVRE_CHARS, paintChar: paintGivrePerson, boss: ['yeti_0', 'yeti_1'], paintBoss: (c, name) => paintYeti(c, name === 'yeti_1' ? 1 : 0) },
+  { tiles: GIVRE_TILES, objects: GIVRE_OBJECT_FRAMES, paintObject: paintGivreObject, chars: GIVRE_CHARS, paintChar: paintGivrePerson, boss: ['yeti_0', 'yeti_1', 'yeti_shield'], paintBoss: (c, name) => (name === 'yeti_shield' ? paintYetiShield(c) : paintYeti(c, name === 'yeti_1' ? 1 : 0)) },
   { tiles: SEVE_TILES, objects: SEVE_OBJECT_FRAMES, paintObject: paintSeveObject, chars: SEVE_CHARS, paintChar: paintSevePerson, paintCharHD: paintSevePersonHD, boss: ['ronce_0', 'ronce_1', 'ronce_shield'], paintBoss: paintRonce },
   { tiles: AURORE_TILES, objects: AURORE_OBJECT_FRAMES, paintObject: paintAuroreObject, chars: AURORE_CHARS, paintChar: paintAurorePerson, paintCharHD: paintAurorePersonHD, boss: ['masque_0', 'masque_1', 'masque_shield'], paintBoss: paintMasque },
   { tiles: TEMPS_TILES, objects: TEMPS_OBJECT_FRAMES, paintObject: paintTempsObject, chars: TEMPS_CHARS, paintChar: paintTempsPerson, paintCharHD: paintTempsPersonHD, boss: ['minotaure_0', 'minotaure_1', 'minotaure_shield'], paintBoss: paintMinotaure },
@@ -105,7 +106,8 @@ export const THEME = {
       ...boss,
       frames: [...boss.frames, ...bossLevel.keys()],
       paint: (c, name) => (bossLevel.has(name) ? bossLevel.get(name).paintBoss(c, name) : boss.paint(c, name)),
-      paintHD: (c, name, i, k) => (bossLevel.has(name) || !boss.paintHD ? false : boss.paintHD(c, name, i, k)),
+      // PC : les boss des niveaux en dessins lisses (game/art/bosses.js).
+      paintHD: (c, name, i, k) => (bossLevel.has(name) ? k === 2 && paintBossHD(c, name) : boss.paintHD ? boss.paintHD(c, name, i, k) : false),
     },
   },
 };
