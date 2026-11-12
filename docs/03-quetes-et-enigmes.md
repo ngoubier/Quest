@@ -29,7 +29,8 @@ Si le héros a une **potion** dans son sac, elle le sauve automatiquement au lie
 ### Le joueur
 
 À la création d'une partie, on choisit l'**âge** : 6 ans (CP), 7 ans (CE1), 8 ans (CE2), 9 ans (CM1) ou 10 ans (CM2).
-Il est sauvegardé et modifiable dans le menu pause (pour un parent).
+Il est sauvegardé et modifiable en cours de partie : menu pause → « Classe » (CP à CM2). La difficulté
+automatique repart alors du niveau de la classe choisie. Il reste aussi réglable dans l'Espace parents.
 
 ### Trois formes de questions
 

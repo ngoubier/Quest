@@ -122,3 +122,21 @@ test('Essai 2 : cartes valides et quêtes cohérentes', () => {
   for (const q of QUESTS) assert.ok(q.steps.length && q.steps.every((s) => s.goal && s.done));
   for (const t of THEMES) for (const r of TILE_ROLES) assert.ok(t.tiles[r], `${t.id}.${r}`);
 });
+
+test('Changer de classe en cours de partie : nouvel âge, difficulté automatique remise à zéro', async () => {
+  const { AdventureScene } = await import('../gameplay/index.js');
+  const state = new GameState();
+  state.profile = { id: 'x', name: 'Léa', age: 7 };
+  state.quiz.level = { maths: 1 };
+  state.quiz.recent = { maths: [true, true] };
+  const updates = [];
+  const toasts = [];
+  const fake = { state, profiles: { update: (id, p) => updates.push([id, p]) }, toast: (t) => toasts.push(t) };
+  AdventureScene.prototype.setClass.call(fake, 9);
+  assert.equal(state.profile.age, 9);
+  assert.equal(state.profile.name, 'Léa');
+  assert.equal(state.effectiveAge('maths'), 9);
+  assert.deepEqual(state.quiz.recent, {});
+  assert.deepEqual(updates, [['x', { age: 9 }]]);
+  assert.deepEqual(toasts, ['Questions de CM1']);
+});

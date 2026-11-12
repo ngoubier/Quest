@@ -56,7 +56,12 @@ export class MenuScene extends Scene {
     const lineH = s.fontSize + 6;
     const boxW = Math.min(this.width, r.width - 8);
     const titleLines = this.title ? wrapText(this.title, boxW - 16, (t) => r.measure(t, s.fontSize, s.font, true)) : [];
-    const h = this.items.length * lineH + (this.title ? titleLines.length * (s.fontSize + 3) + lineH - s.fontSize + 3 : 0) + 14;
+    const titleH = this.title ? titleLines.length * (s.fontSize + 3) + lineH - s.fontSize + 3 : 0;
+    // Trop de lignes pour la hauteur de l'écran : la liste défile autour de la ligne choisie.
+    const n = this.items.length;
+    const rows = Math.max(1, Math.min(n, Math.floor((r.height - 4 - titleH - 14) / lineH)));
+    const first = Math.max(0, Math.min(this.index - Math.floor(rows / 2), n - rows));
+    const h = rows * lineH + titleH + 14;
     const width = Math.min(this.width, r.width - 8);
     const x = Math.round((r.width - width) / 2);
     const y = Math.round((r.height - h) / 2);
@@ -69,11 +74,14 @@ export class MenuScene extends Scene {
       ty += (titleLines.length - 1) * (s.fontSize + 3);
       ty += lineH + 6;
     }
-    this.items.forEach((it, i) => {
-      const sel = i === this.index;
+    const arrow = { color: s.dim, size: Math.max(6, s.fontSize - 2), font: s.font, align: 'right' };
+    if (first > 0) r.text('▲', x + width - 8, ty, arrow);
+    if (first + rows < n) r.text('▼', x + width - 8, ty + (rows - 1) * lineH, arrow);
+    this.items.slice(first, first + rows).forEach((it, k) => {
+      const sel = first + k === this.index;
       const color = !this._enabled(it) ? s.dim : sel ? s.accent : s.text;
       if (sel) r.text('▶', x + 8, ty, { color: s.accent, size: s.fontSize, font: s.font });
-      r.fitText(this._label(it), x + 20, ty, width - 28, { color, size: s.fontSize, font: s.font });
+      r.fitText(this._label(it), x + 20, ty, width - 36, { color, size: s.fontSize, font: s.font });
       ty += lineH;
     });
   }
