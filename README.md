@@ -7,6 +7,12 @@ Un jeu d'aventure 2D dans l'esprit du *Zelda* original, construit en trois couch
    - **Contenu éducatif** (`content/quiz/`) — questions du CP au CM2, réutilisables par tous les jeux.
 3. **Le jeu** (`game/`) — *La Quête d'Alia* : délivrer la licorne du royaume d'Iris en réunissant 6 pierres magiques (les 8 niveaux sont jouables, jusqu'à la fin).
 
+## Jouer en ligne
+
+Le jeu est publié sur GitHub Pages à chaque mise à jour de `main` (`.github/workflows/pages.yml` : les tests,
+puis la copie des fichiers ; rien à construire) : **https://ngoubier.github.io/Quest/**.
+Une seule fois, dans le dépôt GitHub : *Settings → Pages → Build and deployment → Source : GitHub Actions*.
+
 ## Lancer les essais
 
 Aucune installation nécessaire hormis [Node.js](https://nodejs.org) :
