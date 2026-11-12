@@ -7,7 +7,8 @@ import { Effect } from './Effect.js';
 //  - un objet peut réagir avec onProjectile(p) (brasero, mur de glace, boss) : renvoie true s'il l'arrête ;
 //  - `hostile` : lancé par un monstre, il blesse le héros (un coup d'épée le détruit).
 //
-// Images (planche 'objects') : {kind}_0, {kind}_1
+// Images (planche 'objects') : {kind}_0, {kind}_1 — ou, pour un projectile orienté (flèche),
+// {kind}_side (vers la droite), {kind}_up, {kind}_down
 
 export class Projectile extends Entity {
   constructor({ x, y, dir, kind = 'fire', speed = 150, hostile = false, damage = 1, range = 150, owner = null }) {
@@ -75,7 +76,13 @@ export class Projectile extends Entity {
   }
 
   draw(r) {
-    const frame = `${this.kind}_${Math.floor(this.t * 10) % 2}`;
-    this.world.game.themes.current.sprites.objects.draw(r, frame, this.x - 5, this.y - 5);
+    const sheet = this.world.game.themes.current.sprites.objects;
+    // Projectile orienté (flèche) : images {kind}_side (vers la droite), {kind}_up, {kind}_down.
+    if (sheet.has(`${this.kind}_side`)) {
+      const side = Math.abs(this.vx) >= Math.abs(this.vy);
+      const frame = side ? `${this.kind}_side` : this.vy < 0 ? `${this.kind}_up` : `${this.kind}_down`;
+      return sheet.draw(r, frame, this.x - 5, this.y - 5, { flipX: side && this.vx < 0 });
+    }
+    sheet.draw(r, `${this.kind}_${Math.floor(this.t * 10) % 2}`, this.x - 5, this.y - 5);
   }
 }

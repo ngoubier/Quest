@@ -276,12 +276,24 @@ export class Sign extends WorldObject {
 
 // ------------------------------------------------------------------ bloc à pousser
 export class PushBlock extends WorldObject {
-  /** props : { once?: bool, slide?: bool, sprite?: 'block' }
-   *  once : ne bouge qu'une fois (classique Zelda) ; slide : glisse jusqu'au prochain obstacle (bloc de glace) */
+  /** props : { once?: bool, slide?: bool, sink?: bool, sprite?: 'block' }
+   *  once : ne bouge qu'une fois (classique Zelda) ; slide : glisse jusqu'au prochain obstacle (bloc de glace) ;
+   *  sink : poussé dans l'eau (tuile avec la propriété `fillable: 'tuile'`), il coule et fait un passage (rondin) */
   constructor({ x, y, uid, props }) {
     super({ x, y, w: 16, h: 16, uid, props, solid: true, tags: ['block', 'heavy'] });
     this.sliding = null;
     this.pushes = 0;
+  }
+
+  added() {
+    if (this.props.sink && this.uid && this.state.flag(`sunk:${this.uid}`)) this.kill();
+  }
+
+  /** Case d'eau (propriété de tuile `fillable`) où un rondin peut couler : renvoie la tuile qui la remplace. */
+  _fillAt(px, py) {
+    if (!this.props.sink) return null;
+    const tm = this.world.tilemap;
+    return tm.propAt(Math.floor(px / tm.tileSize), Math.floor(py / tm.tileSize), 'fillable') ?? null;
   }
 
   tryPush(dir, by = null, carryOn = false) {
@@ -289,9 +301,10 @@ export class PushBlock extends WorldObject {
     const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
     const tx = this.x + d[0] * 16;
     const ty = this.y + d[1] * 16;
-    if (this.world.isBlocked(tx, ty, 16, 16, this)) return;
     if (this.world.query({ x: tx, y: ty, w: 16, h: 16 }, (e) => e !== this && (e.solid || e.has('enemy'))).length) return;
-    this.sliding = { fx: this.x, fy: this.y, tx, ty, t: 0, dir };
+    const fill = this._fillAt(tx + 8, ty + 8);
+    if (!fill && this.world.isBlocked(tx, ty, 16, 16, this)) return;
+    this.sliding = { fx: this.x, fy: this.y, tx, ty, t: 0, dir, fill };
     if (carryOn) return;
     this.pushes++;
     this.world.game.audio.play('push');
@@ -305,8 +318,19 @@ export class PushBlock extends WorldObject {
     this.y = s.fy + (s.ty - s.fy) * s.t;
     if (s.t >= 1) {
       this.sliding = null;
+      if (s.fill) return this._sink(s.fill);
       if (this.props.slide) this.tryPush(s.dir, null, true); // continue tant que la voie est libre
     }
+  }
+
+  /** Le rondin tombe dans l'eau et devient un passage (mémorisé : voir AdventureScene.fillTile). */
+  _sink(tile) {
+    const ts = this.world.tilemap.tileSize;
+    this.adv.fillTile(Math.floor((this.x + 8) / ts), Math.floor((this.y + 8) / ts), tile);
+    if (this.uid) this.state.setFlag(`sunk:${this.uid}`);
+    this.world.game.audio.play('secret');
+    this.world.add(new Effect(this.cx, this.cy));
+    this.kill();
   }
 
   draw(r) {
@@ -341,7 +365,7 @@ export class PressurePlate extends WorldObject {
 
 // ------------------------------------------------------------------ grille (s'ouvre sous condition)
 export class Gate extends WorldObject {
-  /** props : { openWhen: condition } */
+  /** props : { openWhen: condition, sprite?: 'gate' } */
   constructor({ x, y, uid, props }) {
     super({ x, y, w: 16, h: 16, uid, props, solid: true, tags: ['gate'] });
     this.open = null;
@@ -358,7 +382,7 @@ export class Gate extends WorldObject {
   }
 
   draw(r) {
-    if (!this.open) objSheet(this).draw(r, 'gate', this.x, this.y);
+    if (!this.open) objSheet(this).draw(r, this.props.sprite ?? 'gate', this.x, this.y);
   }
 }
 
@@ -563,5 +587,58 @@ export class IceWall extends WorldObject {
 
   draw(r) {
     objSheet(this).draw(r, 'icewall', this.x, this.y);
+  }
+}
+
+// ------------------------------------------------------------------ cible (à toucher avec l'arc)
+export class Target extends WorldObject {
+  /** props : { flag?, hitBy?: 'arrow' } — touchée par le bon projectile, elle lève son drapeau (par défaut hit:<uid>) */
+  constructor({ x, y, uid, props }) {
+    super({ x: x + 2, y: y + 3, w: 12, h: 12, uid, props, solid: true, tags: ['target'] });
+    this.hint = 0;
+  }
+
+  get flag() {
+    return this.props.flag ?? `hit:${this.uid}`;
+  }
+
+  get hit() {
+    return this.state.flag(this.flag);
+  }
+
+  update(dt) {
+    this.hint -= dt;
+  }
+
+  onProjectile(p) {
+    if (p.hostile) return false;
+    if (p.kind === (this.props.hitBy ?? 'arrow') && !this.hit) {
+      this.state.setFlag(this.flag);
+      this.world.game.audio.play('secret');
+      this.world.add(new Effect(this.cx, this.cy));
+    } else if (!this.hit) this._hint();
+    return true;
+  }
+
+  _hint() {
+    if (this.hint > 0) return;
+    this.hint = 2.5;
+    this.adv.toast('Une cible ! Il faut la toucher avec une flèche.');
+  }
+
+  onSwordHit() {
+    if (!this.hit) this._hint();
+  }
+
+  canTalk() {
+    return !this.hit;
+  }
+
+  talk() {
+    this._hint();
+  }
+
+  draw(r) {
+    objSheet(this).draw(r, this.hit ? 'target_hit' : 'target', this.x - 2, this.y - 3);
   }
 }

@@ -102,6 +102,7 @@ const sfx = {
   boss_open: { type: 'square', notes: [[523, 0.06], [659, 0.06], [784, 0.12]], vol: 0.2 },
   fire: { type: 'sawtooth', notes: [[520, 0.04], [320, 0.08]], vol: 0.12 },
   throw: { type: 'triangle', notes: [[300, 0.05], [200, 0.06]], vol: 0.12 },
+  arrow: { type: 'triangle', notes: [[900, 0.03], [500, 0.06]], vol: 0.14, slide: 300 },
   gameover: { type: 'triangle', notes: [[392, 0.2], [330, 0.2], [262, 0.4]], vol: 0.25 },
 };
 for (const [k, v] of Object.entries(sfx)) game.audio.define(k, v);

@@ -107,7 +107,7 @@ tr:last-child td { border-bottom: 0; }
 
 <div class="wrap">
 <header class="hero">
-  <span class="eyebrow">Quest · projet final · niveaux 1 et 2 jouables</span>
+  <span class="eyebrow">Quest · projet final · niveaux 1 à 3 jouables</span>
   <h1>La Quête d'Alia</h1>
   <p class="lead">Alia, la licorne arc-en-ciel, est le cœur du royaume d'Iris. Morgor, le Seigneur des Cendres, l'a enlevée et l'enferme dans son château, au fond du Volcan Noir. Sans elle, le royaume perd ses couleurs et s'éteint peu à peu. Pour la délivrer, le héros doit réunir les 6 pierres magiques cachées aux quatre coins du royaume.</p>
   <div class="story">
@@ -427,15 +427,15 @@ const LEVELS = [
     ['Boss', '<b>Le Yéti Grondeur</b> : il tape le sol et fait tomber des stalactites. Faire fondre sa carapace de glace au bâton de feu, répondre à sa question, puis frapper.'],
    ]},
  { id:'foret', key:'foret', num:'Niveau 3', tag:'Pierre de Sève', name:'La Forêt des Murmures', sub:'Animaux de la forêt et Grand Chêne à visiter', color:'#4cf07a',
-   caption:'En bas, l’arrivée et la rivière. Au milieu, la cabane du bûcheron. En haut, le Grand Chêne : on entre par ses racines et on monte jusqu’à la cime.',
+   caption:'Plan d’origine. En bas, l’arrivée et la cabane du bûcheron. Au milieu, la rivière. En haut, le Grand Chêne : on entre par ses racines et on monte jusqu’à la cime. Le niveau est jouable.',
    sheet:[
     ['Ambiance', 'Forêt dense, rivière, clairières fleuries, cabane du bûcheron, et le <b>Grand Chêne</b> géant, visitable sur 3 étages : racines, tronc, cime.'],
-    ['Habitants', 'Hulotte la chouette, la biche, Gaspard le bûcheron, un renard chapardeur.'],
-    ['Nouvel objet', '<b>Arc</b>, dans les racines du Grand Chêne : toucher des cibles et des monstres de loin.'],
+    ['Habitants', 'Mère Sylve la gardienne, Hulotte la chouette, Sylvain le bûcheron, Basile l’ermite, Noisette et son miel.'],
+    ['Nouvel objet', '<b>Arc</b>, au bout du bois qui tourne en rond : toucher des cibles et des monstres de loin (bouton Objet).'],
     ['Monstres', 'Sangliers (chargent en ligne droite), écureuils lanceurs de glands, guêpes (rapides), champignons sauteurs.'],
     ['Astuces', ['<b>Cibles</b> à toucher à l’arc : elles ouvrent des passages et font monter l’ascenseur à poulie du tronc.','<b>Le bois qui tourne en rond</b> : suivre les champignons rouges pour ne pas revenir au début.','<b>Rondins</b> à pousser dans la rivière pour faire un pont.']],
     ['Mini-jeu', '<b>Memory des animaux</b> avec Hulotte la chouette : retrouver les paires de cartes.'],
-    ['Quêtes', '« Les œufs de Hulotte » (3 œufs tombés du nid) · « Ce que le renard a pris » · « 5 bûches pour Gaspard ».'],
+    ['Quêtes', '« La Pierre de Sève » (quête principale) · « Les œufs de Hulotte » (3 œufs tombés du nid) · « Les 5 bûches de Sylvain » (cachées dans les buissons).'],
     ['Boss', '<b>Ronce-Noire</b>, l’arbre corrompu par Morgor, au sommet du chêne. Viser ses yeux à l’arc, répondre, frapper son cœur. Vaincu, le Grand Chêne refleurit.'],
    ]},
  { id:'village', key:'village', num:'Niveau 4', tag:'Pierre d’Aurore', name:'Bourg-Lanterne', sub:'Une grande ville pleine de maisons, de clés et de coffres', color:'#ffd23f',
@@ -542,7 +542,7 @@ const FINAL = [
 const ROADMAP = [
  ['1 ✓', 'Fondations de l’aventure (fait)', 'Histoire en images, carte du monde, royaume qui se décolore, introduction réécrite (la carte du royaume), Morpion, ambiance médiévale seule.', 'L'],
  ['2 ✓', 'Mont Givré (fait)', 'Thème neige, glace glissante, blocs qui glissent, braseros, bouton Objet et bâton de feu (projectile), Le dernier glaçon, Yéti.', 'L'],
- ['3', 'Forêt des Murmures', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
+ ['3 ✓', 'Forêt des Murmures (fait)', 'Thème forêt, arc et cibles, Grand Chêne sur 3 étages, rondins dans la rivière, Memory, Ronce-Noire.', 'L'],
  ['4', 'Bourg-Lanterne', 'Thème ville, boomerang, clés de couleur, coffres à code, beaucoup d’habitants et de quêtes, Puissance 4, Chef des Masques.', 'L'],
  ['5', 'Labyrinthe', 'Bombes, interrupteurs cristal, portes à horloge, piques, flèches, dalles, plan du labyrinthe, Code secret, Minotaure.', 'L'],
  ['6', 'Désert des Mirages', 'Thème désert, pelle, sables mouvants, tempête, statues, 3 gobelets, Ver des Dunes.', 'M'],
@@ -553,7 +553,7 @@ const ROADMAP = [
 const QUESTIONS = [
  ['Sous l’eau — décidé', 'Une bouteille d’oxygène à temps limité. Si le niveau n’est pas fini à temps, on le recommence.'],
  ['Les ambiances — décidé', 'Seulement le médiéval-fantastique : plus de station spatiale ni de ville.'],
- ['Par où commencer — décidé', 'Lot 1 et Mont Givré faits. Suite : la Forêt des Murmures.'],
+ ['Par où commencer — décidé', 'Lot 1, Mont Givré et Forêt des Murmures faits. Suite : Bourg-Lanterne.'],
  ['Les noms', 'Royaume d’Iris, Morgor, Prébois, Mont Givré, Bourg-Lanterne... Gardés tant que vous ne dites pas le contraire.'],
  ['L’ordre des niveaux', 'Ordre libre après l’introduction, sauf avis contraire.'],
  ['Les pouvoirs', 'Un petit pouvoir dès chaque pierre, sauf avis contraire.'],

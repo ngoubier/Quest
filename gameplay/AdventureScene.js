@@ -51,7 +51,8 @@ import { createMinigame } from './minigames/index.js';
 // (back : où replacer le héros s'il la referme sans voyager).
 //
 // Types d'objets reconnus par défaut : warp, pickup, chest, npc, sign, block, plate,
-// gate, locked, lever, enemy (voir objects/ObjectFactory.js).
+// gate, locked, lever, tileswitch, pet, brazier, icewall, target, boss, enemy (voir objects/ObjectFactory.js).
+// Tuile avec la propriété `fillable: 'autre_tuile'` : un bloc `sink` poussé dessus la comble (rondin dans l'eau).
 
 export class AdventureScene extends Scene {
   constructor(config) {
@@ -138,6 +139,15 @@ export class AdventureScene extends Scene {
     this.mapDef = def;
     this.warps = [];
 
+    // Cases d'eau comblées (rondins coulés...) : mémorisées dans les drapeaux « fill:carte:x,y ».
+    const prefix = `fill:${mapId}:`;
+    for (const f of Object.keys(this.state.flags)) {
+      if (!f.startsWith(prefix)) continue;
+      const [fx, fy] = f.slice(prefix.length).split(',').map(Number);
+      const to = tilemap.propAt(fx, fy, 'fillable');
+      if (to) tilemap.set('ground', fx, fy, to);
+    }
+
     const ts = this.cfg.tileSize;
     let start = null;
     for (const m of markers) {
@@ -175,7 +185,10 @@ export class AdventureScene extends Scene {
     if (w.worldMap) return this.openWorldMap({ from: w });
     this.warping = true;
     this.game.audio.play('door');
-    this.game.scenes.fade(() => this.loadMap(w.to, { tx: w.at[0], ty: w.at[1], facing: w.facing ?? 'down' }));
+    this.game.scenes.fade(() => {
+      this.loadMap(w.to, { tx: w.at[0], ty: w.at[1], facing: w.facing ?? 'down' });
+      if (w.message) this.toast(w.message); // ex. « Tu tournes en rond... »
+    });
   }
 
   // ------------------------------------------------------------------ boucle
@@ -401,10 +414,11 @@ export class AdventureScene extends Scene {
       this.game.audio.play('menu_no');
       return false;
     }
+    const had = this.state.count(item) > 0;
     if (def.instant) def.instant(this, n);
     else this.state.give(item, n, def.max ?? Infinity);
-    // Premier objet à utiliser : il s'équipe tout seul.
-    if (def.tool && !this.state.equipped) this.state.equipped = item;
+    // Nouvel objet à utiliser (bâton de feu, arc...) : il s'équipe tout seul.
+    if (def.tool && (!this.state.equipped || !had)) this.state.equipped = item;
     if (feedback) this.game.audio.play(def.sound ?? 'pickup');
     return true;
   }
@@ -507,6 +521,12 @@ export class AdventureScene extends Scene {
   announce(item, n, next) {
     const text = n > 1 ? `Tu obtiens ${n} ${this.itemName(item, true)} !` : `Tu obtiens : ${this.itemName(item)} !`;
     this.say(text, { onClose: next });
+  }
+
+  /** Comble une case (rondin coulé dans l'eau...) et s'en souvient : la case reste comblée. */
+  fillTile(tx, ty, tile) {
+    this.world.tilemap.set('ground', tx, ty, tile);
+    this.state.setFlag(`fill:${this.mapId}:${tx},${ty}`);
   }
 
   spawnPickup(item, x, y, lifetime = 10) {

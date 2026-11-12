@@ -36,4 +36,6 @@ export { TicTacToeScene } from './minigames/TicTacToeScene.js';
 export * as tictactoe from './minigames/tictactoe.js';
 export { NimScene } from './minigames/NimScene.js';
 export * as nim from './minigames/nim.js';
+export { MemoryScene } from './minigames/MemoryScene.js';
+export * as memory from './minigames/memory.js';
 export { Projectile } from './actors/Projectile.js';

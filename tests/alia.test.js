@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GameState, runActions, check, tictactoe, nim } from '../gameplay/index.js';
+import { GameState, runActions, check, tictactoe, nim, memory } from '../gameplay/index.js';
 import { MAPS, ITEMS, QUESTS } from '../game/data/index.js';
 import { WORLD_NODES, WORLD_MAP, STONES, colorLoss, stoneCount } from '../game/data/worldmap.js';
 
@@ -57,7 +57,7 @@ test('Action « minigame » : la suite dépend du résultat', () => {
   assert.deepEqual(run('quit'), [], 'abandon : rien ne se passe');
 });
 
-test('Carte du monde : 8 lieux, Prébois et le Mont Givré ouverts, le reste fermé pour l’instant', () => {
+test('Carte du monde : 8 lieux, Prébois, le Mont Givré et la Forêt ouverts, le reste fermé pour l’instant', () => {
   assert.equal(WORLD_NODES.length, 8);
   const st = new GameState();
   for (const n of WORLD_NODES) {
@@ -66,7 +66,7 @@ test('Carte du monde : 8 lieux, Prébois et le Mont Givré ouverts, le reste fer
       const row = MAPS[n.mapId].rows[n.at[1]];
       assert.ok(row && row[n.at[0]] !== '#', `${n.id} : arrivée sur une case libre`);
     }
-    assert.equal(check(n.open, st), ['prebois', 'givre'].includes(n.id), n.id);
+    assert.equal(check(n.open, st), ['prebois', 'givre', 'seve'].includes(n.id), n.id);
   }
   assert.equal(WORLD_NODES.filter((n) => n.kind === 'stone').length, 6);
   STONES.forEach((k) => assert.ok(ITEMS[`stone_${k}`], `objet stone_${k}`));
@@ -185,4 +185,163 @@ function GIVRE_OK() {
   // Objets et quêtes du niveau présents, la pierre est dans le coffre du boss.
   const t = MAPS.givre_temple.objects;
   return !!ITEMS.fire_staff?.tool && t.A.item === 'stone_givre' && t.A.appearWhen === t.Y.flag && t.Y.meltWith === 'fire' && QUESTS.some((q) => q.id === 'givre') && QUESTS.some((q) => q.id === 'wool');
+}
+
+// ------------------------------------------------------------------ niveau 3 : la Forêt des Murmures
+const findIn = (rows, ch) => {
+  const y = rows.findIndex((r) => r.includes(ch));
+  return y < 0 ? null : [rows[y].indexOf(ch), y];
+};
+const near = (seen, [x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has([x + dx, y + dy].join()));
+
+test('Memory : paquet de paires, l’habitant retrouve les paires qu’il a retenues', () => {
+  const deck = memory.makeDeck(6, () => 0.3);
+  assert.equal(deck.length, 12);
+  for (let k = 0; k < 6; k++) assert.equal(deck.filter((v) => v === k).length, 2);
+  const found = deck.map(() => null);
+  const mem = new Map();
+  // Il a vu les deux cartes d'une même paire : il la prend.
+  const a = deck.indexOf(4);
+  const b = deck.lastIndexOf(4);
+  memory.remember(mem, a, 4, { skill: 1 });
+  memory.remember(mem, b, 4, { skill: 1 });
+  assert.deepEqual(memory.knownPair(mem, found), [a, b]);
+  assert.equal(memory.aiFirst(found, mem), a);
+  // Il retourne une carte dont il connaît la jumelle : il la retrouve.
+  const c = deck.indexOf(2);
+  const d = deck.lastIndexOf(2);
+  memory.remember(mem, d, 2, { skill: 1 });
+  assert.equal(memory.aiSecond(found, mem, c, 2), d);
+  // skill 0 : il ne retient rien ; sa 2e carte n'est jamais la 1re ni une carte trouvée.
+  memory.remember(mem, 0, deck[0], { skill: 0, rand: () => 0.5 });
+  found[a] = found[b] = 'me';
+  for (let k = 0; k < 20; k++) {
+    const p = memory.aiSecond(found, new Map(), c, 2);
+    assert.ok(p !== c && !found[p]);
+  }
+  assert.equal(memory.result(4, 2), 'win');
+  assert.equal(memory.result(3, 3), 'draw');
+  assert.equal(memory.result(1, 5), 'lose');
+});
+
+/** Pousse les rondins comme le ferait l'enfant : renvoie la carte après le passage. */
+function withLogBridge(rows) {
+  const r = rows.map((l) => [...l]);
+  r[14][5] = 'k';
+  r[13][5] = 'k';
+  for (const ch of ['R', 'Y']) {
+    const [x, y] = findIn(rows, ch);
+    r[y][x] = '.';
+  }
+  return r.map((l) => l.join(''));
+}
+
+test('Forêt : les rondins font un passage, puis tout le niveau est accessible', () => {
+  const m = MAPS.seve;
+  const solid = '#T~@bawreGRY12SWOKXJZf'; // '#' : hors de la carte
+  const start = findIn(m.rows, 'P');
+  // Avant les rondins : le nord-ouest (le bois) est inaccessible, le Grand Chêne aussi (ronces).
+  const before = reach(m, start, { solid, ice: '' });
+  assert.ok(!before.has(findIn(m.rows, 'L').join()), 'pas de bois sans les rondins');
+  assert.ok(!before.has('19,5'), 'porte du chêne fermée par les ronces');
+  // Le rondin de gauche (R) est poussé vers le haut, depuis la case du dessous.
+  const [rx, ry] = findIn(m.rows, 'R');
+  assert.ok(before.has([rx, ry + 1].join()), 'on peut pousser R vers le haut');
+  assert.equal(m.rows[ry - 1][rx], '.', 'la case au-dessus de R est libre');
+  assert.equal(m.rows[ry - 2][rx], '~', 'puis la rivière');
+  // Le second (Y) se pousse vers la gauche jusqu'à la colonne de R.
+  const [yx, yy] = findIn(m.rows, 'Y');
+  assert.equal(yy, ry);
+  assert.ok(before.has([yx + 1, yy].join()));
+  for (let x = rx + 1; x < yx; x++) assert.equal(m.rows[yy][x], '.');
+  // Le bord de la rivière est fermé, sauf à la colonne des rondins.
+  assert.ok([...m.rows[15].slice(1, 9)].every((ch, i) => (i + 1 === rx ? ch === '.' : ch === 'T')));
+  // Après : tout est accessible (la case comblée de la rivière est dans la légende du thème).
+  assert.equal(SEVE_RIVER_FILL(), 'log_bridge');
+  const after = reach({ rows: withLogBridge(m.rows) }, start, { solid: solid.replace('G', ''), ice: '' });
+  for (const ch of ['L', 'V', 'D', 'g', 'h', 'c', 'd']) assert.ok(after.has(findIn(m.rows, ch).join()), `accès à ${ch}`);
+  for (const ch of ['S', 'W', 'O', 'K', 'X', 'J', 'Z']) assert.ok(near(after, findIn(m.rows, ch)), `on peut approcher ${ch}`);
+  // Chaque bûche cachée est dans un buisson qu'on peut atteindre.
+  m.rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'f' && assert.ok(near(after, [x, y]), `bûche ${x},${y}`)));
+  assert.equal(m.rows.join('').split('f').length - 1, 5, '5 bûches');
+});
+
+test('Forêt : les cibles se visent par-dessus l’eau, depuis la rive', () => {
+  const m = MAPS.seve;
+  for (const ch of ['1', '2']) {
+    const [x, y] = findIn(m.rows, ch);
+    // Une ligne droite : herbe, puis eau (les flèches passent au-dessus), puis la cible.
+    const lines = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => m.rows[y + dy][x + dx] === '~' && '.,='.includes(m.rows[y + 2 * dy][x + 2 * dx]));
+    assert.ok(lines.length > 0, `cible ${ch} visible depuis la rive`);
+  }
+});
+
+test('Bois qui tourne en rond : les champignons rouges mènent à la bonne sortie', () => {
+  const steps = [
+    ['seve_bois1', 'N', 'seve_bois2'],
+    ['seve_bois2', 'W', 'seve_bois3'],
+    ['seve_bois3', 'N', 'seve_clairiere'],
+  ];
+  for (const [id, good, next] of steps) {
+    const m = MAPS[id];
+    assert.equal(m.objects[good].to, next, `${id} : ${good} mène à ${next}`);
+    for (const ex of ['N', 'W', 'E', 'S']) if (ex !== good && !(id === 'seve_bois1' && ex === 'S')) assert.equal(m.objects[ex].to, 'seve_bois1', `${id} : ${ex} ramène au début`);
+    // Les champignons sont du côté de la bonne sortie.
+    const shrooms = [];
+    m.rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'm' && shrooms.push([x, y])));
+    assert.ok(shrooms.length >= 3);
+    // ... et le dernier champignon est tout près de la bonne sortie.
+    const exit = findIn(m.rows, good);
+    const d = Math.min(...shrooms.map(([x, y]) => Math.abs(x - exit[0]) + Math.abs(y - exit[1])));
+    assert.ok(d <= 4, `${id} : un champignon près de la sortie ${good}`);
+    for (const ex of ['N', 'W', 'E']) {
+      if (ex === good) continue;
+      const [ox, oy] = findIn(m.rows, ex);
+      assert.ok(Math.min(...shrooms.map(([x, y]) => Math.abs(x - ox) + Math.abs(y - oy))) > d, `${id} : plus loin de ${ex}`);
+    }
+    // On arrive sur une case libre, pas sur une sortie.
+    const [ax, ay] = m.objects[good].at;
+    assert.equal(MAPS[next].rows[ay][ax], '.');
+  }
+  assert.equal(MAPS.seve_clairiere.objects.C.item, 'bow');
+  assert.ok(ITEMS.bow.tool);
+});
+
+test('Grand Chêne : des racines à la cime, en passant par la cible et la nacelle', () => {
+  const m = MAPS.seve_chene;
+  const o = m.objects;
+  const solid = '#%OAGLRx1QT2K';
+  const entry = [7, 31];
+  // Racines : l'échelle (U) est derrière les ronces (G), ouvertes par la cible (1).
+  const roots = reach(m, entry, { solid, ice: '' });
+  assert.ok(!roots.has(findIn(m.rows, 'U').join()), 'échelle fermée par les ronces');
+  assert.ok(roots.has(findIn(m.rows, 'g').join()), 'œuf dans les racines');
+  assert.ok(near(roots, findIn(m.rows, '1')));
+  assert.equal(o.G.openWhen, o[1].flag);
+  // Tronc : de l'échelle d'arrivée, la nacelle (x) ferme le passage jusqu'à la cible (2).
+  const trunk = reach(m, o.U.at, { solid, ice: '' });
+  assert.ok(!trunk.has(findIn(m.rows, 'K').join()) && !near(trunk, findIn(m.rows, 'K')), 'salle de droite fermée');
+  const [tx, ty] = findIn(m.rows, '2');
+  assert.ok([...m.rows[ty].slice(0, tx)].includes('O'), 'trou entre le héros et la cible');
+  assert.ok(trunk.has([tx - 4, ty].join()), 'on peut tirer depuis l’autre bord');
+  assert.equal(o.x.when, o[2].flag);
+  const bridged = reach(m, o.U.at, { solid: solid.replace('x', '').replace('K', ''), ice: '' });
+  assert.ok(near(bridged, findIn(m.rows, 'L')), 'porte à clé accessible');
+  assert.ok(bridged.has(findIn(m.rows, 'K').join()) || near(bridged, findIn(m.rows, 'K')));
+  // Cime : Ronce-Noire et la Pierre de Sève.
+  const top = reach(m, o.V.at, { solid: '#%AR', ice: '' });
+  assert.ok(near(top, findIn(m.rows, 'R')) && near(top, findIn(m.rows, 'A')));
+  assert.equal(o.A.item, 'stone_seve');
+  assert.equal(o.A.appearWhen, o.R.flag);
+  assert.equal(o.R.meltWith, 'arrow');
+  // Les échelles ne déposent jamais le héros sur une autre échelle.
+  for (const k of ['U', 'V', 'n', 'N']) {
+    const [x, y] = o[k].at;
+    assert.ok(!'UVnN#%O'.includes(m.rows[y][x]), `${k} : arrivée sur une case libre`);
+  }
+  assert.ok(QUESTS.some((q) => q.id === 'seve') && QUESTS.some((q) => q.id === 'eggs') && QUESTS.some((q) => q.id === 'firewood'));
+});
+
+function SEVE_RIVER_FILL() {
+  return MAPS.seve.legend['~'] === 'river' ? 'log_bridge' : null;
 }

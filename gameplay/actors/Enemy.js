@@ -55,6 +55,26 @@ export const BEHAVIORS = {
     e.game.audio.play('throw');
   },
 
+  /** Saute vers le héros par petits bonds, avec une pause entre deux bonds (champignon sauteur). */
+  hopper(e, dt) {
+    if (e.hop) {
+      e.hop.t -= dt;
+      e.move(e.hop.vx * dt, e.hop.vy * dt);
+      if (e.hop.t <= 0) (e.hop = null), (e.rest = 0.7 + e.rng() * 0.5);
+      return;
+    }
+    if ((e.rest = (e.rest ?? e.rng()) - dt) > 0) return;
+    const h = e.adv.hero;
+    let dx = h.cx - e.cx;
+    let dy = h.cy - e.cy;
+    const d = Math.hypot(dx, dy);
+    if (d > (e.sight ?? 80) || d < 1) {
+      const a = e.rng() * Math.PI * 2;
+      (dx = Math.cos(a)), (dy = Math.sin(a));
+    } else (dx /= d), (dy /= d);
+    e.hop = { vx: dx * e.speed * 2.5, vy: dy * e.speed * 2.5, t: 0.3 };
+  },
+
   /** Fonce tout droit quand le héros est dans sa ligne ou sa colonne, puis se repose. */
   charger(e, dt) {
     if (e.charge) {

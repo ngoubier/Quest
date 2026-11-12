@@ -1,6 +1,6 @@
 # Étape 4 — Le projet final : La Quête d'Alia
 
-> Statut : **plan validé, niveaux 1 et 2 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
+> Statut : **plan validé, niveaux 1 à 3 réalisés** (jeu : `game/`). Visuels : [`projet-final/visuels.html`](projet-final/visuels.html)
 > (carte du monde, plan dessiné de chaque niveau).
 
 ## 1. L'histoire
@@ -343,7 +343,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 |---|---|---|
 | 1 ✓ | Histoire en images, carte du monde, décoloration, intro réécrite, Morpion, ambiance médiévale seule | L |
 | 2 ✓ | Mont Givré : bouton Objet, glace, blocs glissants, braseros, bâton de feu, Nim, Yéti | L |
-| 3 | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
+| 3 ✓ | Forêt : arc, cibles, Grand Chêne 3 étages, Memory, Ronce-Noire | L |
 | 4 | Bourg-Lanterne : boomerang, clés de couleur, coffres à code, Puissance 4 | L |
 | 5 | Labyrinthe : bombes, cristaux, portes à horloge, pièges, Code secret, Minotaure | L |
 | 6 | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
@@ -356,7 +356,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 |---|---|
 | Sous l'eau | **Bouteille d'oxygène à temps limité** ; temps écoulé = on recommence le niveau |
 | Ambiances | **Médiéval-fantastique seulement** (plus de station spatiale ni de ville) |
-| Démarrage | Lot 1, puis le Mont Givré |
+| Démarrage | Lot 1, puis le Mont Givré, puis la Forêt des Murmures |
 | Noms, ordre libre, pouvoir dès chaque pierre, armure à 300 pièces | retenus par défaut (pas d'objection) |
 
 ## 10. Lot 1 — ce qui est fait
@@ -400,3 +400,35 @@ Données : `game/data/givre.js` · dessins : `game/theme-givre.js`.
 - **Quêtes** : « La Pierre de Givre » (Nanouk), « Les pelotes de Mamie Flocon » (récompense : 20 pièces + 1 cœur).
 - **Habitants** : Nanouk, Mamie Flocon, Pingo, Igor le savant (questions, 2 pièces par bonne réponse), Anouchka (igloo-magasin, chocolat chaud).
 - Le pouvoir de la Pierre de Givre (geler la lave) servira au Volcan Noir.
+
+## 13. Lot 3 — la Forêt des Murmures (fait)
+
+Données : `game/data/seve.js` · dessins : `game/theme-seve.js` (arbres, champignons, rondins, cabane,
+écorce et porte du Grand Chêne, habitants humains : aussi en haute définition sur PC).
+
+- **Rondins** (`block` avec `sink: true`) : poussés dans la rivière (tuile `river`, propriété `fillable`),
+  ils coulent et font un passage. Il en faut deux, l'un derrière l'autre ; la rive n'est ouverte qu'à cet endroit.
+  La case comblée est mémorisée (drapeau `fill:carte:x,y`, appliqué au chargement de la carte).
+- **Le bois qui tourne en rond** : 3 clairières qui se ressemblent (`seve_bois1..3`). La bonne sortie est
+  du côté des champignons rouges (nord, ouest, nord) ; une mauvaise ramène au début (« Tu tournes en rond... »,
+  option `message` des sorties). Au bout : la clairière et le coffre de l'**arc**.
+- **Arc** : flèches orientées (`hero.shoot('arrow')`, images `arrow_side/up/down`). Un nouvel objet à
+  utiliser s'équipe tout seul.
+- **Cibles** (`target`) : touchées par une flèche, elles lèvent leur drapeau. Les deux cibles des étangs ouvrent
+  les ronces devant le Grand Chêne (`gate` avec `sprite: 'bramble'`). Les flèches passent au-dessus de l'eau
+  et des trous (propriété `low`).
+- **Le Grand Chêne** (`seve_chene`, 3 étages de 2 salles, reliés par des échelles) : racines (une cible ouvre
+  les ronces devant l'échelle, un œuf), tronc (une cible fait descendre la **nacelle** au-dessus du trou, salle
+  à vider → clé → porte), cime (Ronce-Noire et la Pierre de Sève).
+- **Monstres** : sangliers (foncent), guêpes (rapides), écureuils (lancent des glands), champignons sauteurs
+  (nouveau comportement `hopper` : petits bonds vers le héros).
+- **Ronce-Noire** : boss immobile (`still: true`) qui lance des épines. Une flèche dans les yeux (`meltWith: 'arrow'`)
+  → question → coups d'épée. Phrases propres (`shieldText`, `resistText`) et bouclier dessiné (`ronce_shield`).
+  Vaincue : coffre de la **Pierre de Sève**, +1 cœur, et la forêt retrouve ses couleurs.
+- **Mini-jeu** : *Memory des animaux* contre Hulotte (`gameplay/minigames/MemoryScene.js`, logique dans
+  `memory.js`) : 6 paires, on rejoue après une paire ; Hulotte retient plus ou moins les cartes selon l'âge.
+- **Quêtes** : « La Pierre de Sève » (Mère Sylve), « Les œufs de Hulotte » (récompense : 10 pièces + 1 cœur),
+  « Les 5 bûches de Sylvain » (cachées dans des buissons ; 25 pièces + 2 indices).
+- **Habitants** : Mère Sylve, Sylvain le bûcheron, Hulotte, Basile l'ermite (questions, 2 pièces par bonne
+  réponse), Noisette (cabane-magasin, miel).
+- Pas encore fait (prévu au plan) : le renard chapardeur, les écureuils perchés à viser.

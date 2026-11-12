@@ -3,9 +3,15 @@
 // (carte du royaume, pierres magiques).
 import { THEMES as ALL, TILE_ROLES } from '../demos/02-gameplay/themes.js';
 import { P } from '../demos/01-moteur/themes.js';
-import { GIVRE_TILES, GIVRE_ROLES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti } from './theme-givre.js';
+import { GIVRE_TILES, GIVRE_OBJECT_FRAMES, paintGivreObject, GIVRE_CHARS, paintGivrePerson, paintYeti } from './theme-givre.js';
+import { SEVE_TILES, SEVE_OBJECT_FRAMES, paintSeveObject, SEVE_CHARS, paintSevePerson, paintSevePersonHD, paintRonce } from './theme-seve.js';
 
-export const ROLES = [...TILE_ROLES, ...GIVRE_ROLES];
+// Dessins propres à chaque niveau : tuiles, objets et monstres, habitants, boss.
+// paintHD : version haute définition (PC) ; sans elle, l'image est agrandie automatiquement.
+const LEVELS = [
+  { tiles: GIVRE_TILES, objects: GIVRE_OBJECT_FRAMES, paintObject: paintGivreObject, chars: GIVRE_CHARS, paintChar: paintGivrePerson, boss: ['yeti_0', 'yeti_1'], paintBoss: (c, name) => paintYeti(c, name === 'yeti_1' ? 1 : 0) },
+  { tiles: SEVE_TILES, objects: SEVE_OBJECT_FRAMES, paintObject: paintSeveObject, chars: SEVE_CHARS, paintChar: paintSevePerson, paintCharHD: paintSevePersonHD, boss: ['ronce_0', 'ronce_1', 'ronce_shield'], paintBoss: paintRonce },
+];
 
 /** Couleurs des 6 pierres : [couleur, reflet, ombre]. */
 export const STONE_COLORS = {
@@ -45,36 +51,49 @@ const chars = base.sprites.chars;
 const boss = base.sprites.boss;
 
 const GAME_FRAMES = new Set(NEW_FRAMES);
-const GIVRE_FRAMES = new Set(GIVRE_OBJECT_FRAMES);
-const NEW_CHARS = GIVRE_CHARS.flatMap((who) => ['down', 'up', 'side'].flatMap((d) => [0, 1].map((st) => `${who}_${d}_${st}`)));
+const objectLevel = new Map(LEVELS.flatMap((l) => l.objects.map((f) => [f, l])));
+const charLevel = new Map(LEVELS.flatMap((l) => l.chars.map((w) => [w, l])));
+const bossLevel = new Map(LEVELS.flatMap((l) => l.boss.map((f) => [f, l])));
+const NEW_CHARS = [...charLevel.keys()].flatMap((who) => ['down', 'up', 'side'].flatMap((d) => [0, 1].map((st) => `${who}_${d}_${st}`)));
+
+// Rivière de la forêt : l'eau du thème, mais on peut y faire couler un rondin (fillable)
+// et les flèches passent au-dessus (low).
+const river = { ...base.tiles.water, props: { ...(base.tiles.water.props ?? {}), low: true, fillable: 'log_bridge' } };
+const LEVEL_TILES = Object.assign({ river }, ...LEVELS.map((l) => l.tiles));
+
+export const ROLES = [...TILE_ROLES, ...Object.keys(LEVEL_TILES)];
 
 export const THEME = {
   ...base,
   name: 'Royaume d’Iris',
-  tiles: { ...base.tiles, ...GIVRE_TILES },
+  tiles: { ...base.tiles, ...LEVEL_TILES },
   sprites: {
     ...base.sprites,
     objects: {
       ...objects,
-      frames: [...objects.frames, ...NEW_FRAMES, ...GIVRE_OBJECT_FRAMES],
-      paint: (c, name, i) => (GAME_FRAMES.has(name) ? paintNew(c, name) : GIVRE_FRAMES.has(name) ? paintGivreObject(c, name) : objects.paint(c, name, i)),
+      frames: [...objects.frames, ...NEW_FRAMES, ...objectLevel.keys()],
+      paint: (c, name, i) => (GAME_FRAMES.has(name) ? paintNew(c, name) : objectLevel.has(name) ? objectLevel.get(name).paintObject(c, name) : objects.paint(c, name, i)),
       // PC : dessins haute définition du thème de base ; les nouvelles images sont agrandies automatiquement.
-      paintHD: (c, name, i, k) => (GAME_FRAMES.has(name) || GIVRE_FRAMES.has(name) || !objects.paintHD ? false : objects.paintHD(c, name, i, k)),
+      paintHD: (c, name, i, k) => (GAME_FRAMES.has(name) || objectLevel.has(name) || !objects.paintHD ? false : objects.paintHD(c, name, i, k)),
     },
     chars: {
       ...chars,
       frames: [...chars.frames, ...NEW_CHARS],
       paint: (c, name, i) => {
         const [who, dir, step] = name.split('_');
-        return GIVRE_CHARS.includes(who) ? paintGivrePerson(c, who, dir, Number(step)) : chars.paint(c, name, i);
+        return charLevel.has(who) ? charLevel.get(who).paintChar(c, who, dir, Number(step)) : chars.paint(c, name, i);
       },
-      paintHD: (c, name, i, k) => (GIVRE_CHARS.includes(name.split('_')[0]) || !chars.paintHD ? false : chars.paintHD(c, name, i, k)),
+      paintHD: (c, name, i, k) => {
+        const [who, dir, step] = name.split('_');
+        if (charLevel.has(who)) return charLevel.get(who).paintCharHD?.(c, who, dir, Number(step)) ?? false;
+        return chars.paintHD ? chars.paintHD(c, name, i, k) : false;
+      },
     },
     boss: {
       ...boss,
-      frames: [...boss.frames, 'yeti_0', 'yeti_1'],
-      paint: (c, name) => (name.startsWith('yeti') ? paintYeti(c, name === 'yeti_1' ? 1 : 0) : boss.paint(c, name)),
-      paintHD: (c, name, i, k) => (name.startsWith('yeti') || !boss.paintHD ? false : boss.paintHD(c, name, i, k)),
+      frames: [...boss.frames, ...bossLevel.keys()],
+      paint: (c, name) => (bossLevel.has(name) ? bossLevel.get(name).paintBoss(c, name) : boss.paint(c, name)),
+      paintHD: (c, name, i, k) => (bossLevel.has(name) || !boss.paintHD ? false : boss.paintHD(c, name, i, k)),
     },
   },
 };
