@@ -112,6 +112,7 @@ export const SEVE_TILES = {
     paintHD: forestTreeHD,
   },
   red_mushroom: {
+    props: { seeThrough: true }, // indice du chemin : une cime d'arbre ne doit pas le cacher
     paint: (c, { rng }) => {
       grass(c, rng, 8);
       P(c, 5, 12, 6, 1, 'rgba(0,0,0,.25)');

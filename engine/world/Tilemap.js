@@ -158,7 +158,8 @@ export class Tilemap {
    *  - `props.edge`   : liseré de couleur là où la tuile touche une autre tuile (berges...).
    * `soft` : ombres en dégradé (occlusion au pied des murs) au lieu d'un trait net.
    * Passe du dessus (`above`) : les cimes des grands éléments (arbres sur 2 cases) ; elles deviennent
-   * transparentes là où passe quelqu'un (`reveal` : rectangles en pixels monde).
+   * transparentes là où passe quelqu'un (`reveal` : rectangles en pixels monde) et au-dessus d'une
+   * tuile importante (`props.seeThrough`).
    */
   draw(r, view, time = 0, { above = false, soft = false, reveal = [] } = {}) {
     const ts = this.tileSize;
@@ -217,7 +218,8 @@ export class Tilemap {
         if (!this.tileset.hasCrown(id)) continue;
         const x = tx * ts;
         const y = (ty - 1) * ts;
-        const behind = reveal.some((q) => q.x < x + ts && q.x + q.w > x && q.y < y + ts && q.y + q.h > y);
+        // transparente si quelqu'un est derrière, ou si la case cachée est importante (props.seeThrough)
+        const behind = this.tileset.def(ground.data[(ty - 1) * this.width + tx]).props.seeThrough || reveal.some((q) => q.x < x + ts && q.x + q.w > x && q.y < y + ts && q.y + q.h > y);
         const draw = () => this.tileset.drawCrown(r, id, x, y, time, variantAt(tx, ty));
         if (behind) r.withAlpha(0.45, draw);
         else draw();

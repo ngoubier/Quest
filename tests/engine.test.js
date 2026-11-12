@@ -176,4 +176,9 @@ test('Grands arbres : la cime est dessinée sur la case du dessus, transparente 
   calls.length = 0;
   tilemap.draw(r, view, 0, { above: true, reveal: [{ x: 18, y: 4, w: 10, h: 8 }] });
   assert.equal(calls[0].alpha, 0.45, 'héros derrière : cime transparente');
+  theme.tiles.floor.props = { seeThrough: true };
+  const { tilemap: m2 } = Tilemap.fromAscii({ rows: ['.', 'T'], legend: { '.': 'floor', T: 'tree' }, tileset: Object.assign(buildTileset(theme, ['floor', 'tree']), { image: {} }) });
+  calls.length = 0;
+  m2.draw(r, view, 0, { above: true });
+  assert.equal(calls[0].alpha, 0.45, 'case importante sous la cime : transparente');
 });
