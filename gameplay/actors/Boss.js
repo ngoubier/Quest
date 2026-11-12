@@ -25,6 +25,7 @@ import { check } from '../script/conditions.js';
 //           burrow: true      — il passe sous le sable (intouchable, une simple bosse qui suit le héros),
 //                               puis ressort quelques secondes.
 //           damage : dégâts au contact (1 par défaut) ;
+//           intro : pages d'histoire en images qui le présentent la première fois qu'on entre dans sa salle ;
 //           phases: [{ above: 8, meltWith, shots, rain, minions, shieldSprite, text }, ...] — le combat change
 //                               quand ses points de vie passent sous `above` (Morgor) :
 //                               rain: true = pluie de feu sur le héros ; minions: { count, enemy: {...} } =
@@ -32,9 +33,10 @@ import { check } from '../script/conditions.js';
 // Sprites attendus (planche 'boss', 32x32) : {sprite}_0, {sprite}_1, et {sprite}_shield ou boss_shield
 
 export class Boss extends Enemy {
-  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false, guardedBy = null, guardText = null, damage = 1, phases = null }) {
+  constructor({ x, y, uid, name = 'Boss', hp = 6, flag = null, sprite = 'boss', seed = 1, meltWith = null, shots = null, still = false, shieldText = null, resistText = null, defeatedText = null, invisible = false, dashSpeed = 95, hiddenUntil = null, burrow = false, guardedBy = null, guardText = null, damage = 1, phases = null, intro = null }) {
     super({ x, y, uid, kind: 'boss', sprite, hp, speed: 18, damage, behavior: 'wander', drops: [], seed });
     this.phases = phases;
+    this.intro = intro; // pages d'histoire qui le présentent, la première fois qu'on le voit
     this.phase = -1;
     this.minions = [];
     this.rainTimer = 1.5;

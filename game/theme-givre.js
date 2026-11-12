@@ -1,5 +1,6 @@
 // LE MONT GIVRÉ — tuiles de neige et de glace, monstres, objets et personnages du niveau 2.
 import { P, speckle, humanoid } from '../demos/01-moteur/themes.js';
+import { characterHD } from '../demos/02-gameplay/hd-people.js';
 
 const SNOW = '#eef4fb';
 const SNOW_D = '#d3e1f0';
@@ -292,8 +293,23 @@ export function paintPingo(c, dir, step) {
 
 export const paintGivrePerson = (c, who, dir, step) => (who === 'pingo' ? paintPingo(c, dir, step) : humanoid(c, dir, step, GIVRE_PEOPLE[who]));
 export const GIVRE_CHARS = ['granny', 'inuit', 'pingo'];
+const GIVRE_LOOKS = {
+  granny: { longHair: true, glasses: '#c8a030', scarf: '#ffffff' },
+  inuit: { scarf: '#e8c040', brows: '#3a2a1a' },
+};
+/** PC : les humains en haute définition (Pingo : voir game/art/folk.js). */
+export const paintGivrePersonHD = (c, who, dir, step) => (who === 'pingo' ? false : (characterHD(c, dir, step, GIVRE_PEOPLE[who], GIVRE_LOOKS[who]), true));
 
 // ------------------------------------------------------------ le Yéti (32 x 32)
+/** Sa carapace de glace (bouclier) : des plaques translucides, que le feu fait fondre. */
+export function paintYetiShield(c) {
+  for (const [x, y, w, h] of [[6, 12, 8, 9], [14, 10, 8, 10], [21, 12, 7, 9], [8, 20, 8, 8], [17, 20, 8, 8]]) {
+    P(c, x, y, w, h, 'rgba(170,225,255,.55)');
+    P(c, x, y, w, 1, 'rgba(255,255,255,.9)');
+    P(c, x + 2, y + 2, 1, 2, 'rgba(255,255,255,.7)');
+  }
+}
+
 export function paintYeti(c, step) {
   P(c, 5, 29, 22, 2, 'rgba(0,0,0,.3)');
   const y = step;
