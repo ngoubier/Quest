@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Tileset, Tilemap, moveAndSlide, Camera, EventBus, Input, wrapText, SaveStore, Animator, createRng } from '../engine/index.js';
+import { Tileset, Tilemap, moveAndSlide, Camera, EventBus, Input, wrapText, SaveStore, Animator, createRng, buildTileset } from '../engine/index.js';
 import { MAPS, LEGEND } from '../demos/01-moteur/maps.js';
 import { TILE_ROLES, THEMES } from '../demos/01-moteur/themes.js';
 
@@ -150,4 +150,30 @@ test('Camera : écran plus large que la salle (PC) => salle centrée', () => {
   free.follow({ cx: 10, cy: 10 });
   assert.equal(free.x, -32, 'carte étroite centrée');
   assert.equal(free.y, 0);
+});
+
+test('Grands arbres : la cime est dessinée sur la case du dessus, transparente si quelqu’un est derrière', () => {
+  const theme = {
+    id: 't',
+    tiles: {
+      floor: { paint: () => {} },
+      tree: { solid: true, paint: () => {}, tall: { ground: () => {}, paint: () => {} } },
+    },
+  };
+  const ts = buildTileset(theme, ['floor', 'tree']);
+  const tree = ts.id('tree');
+  assert.ok(ts.hasCrown(tree));
+  assert.ok(!ts.hasCrown(ts.id('floor')));
+  assert.ok(ts.isSolid(tree), 'seule la case du tronc bloque');
+  const { tilemap } = Tilemap.fromAscii({ rows: ['...', '.T.', '...'], legend: { '.': 'floor', T: 'tree' }, tileset: ts });
+  const calls = [];
+  ts.image = {}; // pas d'image dans les tests : on note seulement ce qui est dessiné
+  let alpha = 1;
+  const r = { image: (img, sx, sy, sw, sh, x, y) => calls.push({ x, y, alpha }), withAlpha: (a, fn) => ((alpha = a), fn(), (alpha = 1)), rect() {} };
+  const view = { x: 0, y: 0, w: 48, h: 48 };
+  tilemap.draw(r, view, 0, { above: true });
+  assert.deepEqual(calls, [{ x: 16, y: 0, alpha: 1 }], 'cime en (1, 0), au-dessus du tronc en (1, 1)');
+  calls.length = 0;
+  tilemap.draw(r, view, 0, { above: true, reveal: [{ x: 18, y: 4, w: 10, h: 8 }] });
+  assert.equal(calls[0].alpha, 0.45, 'héros derrière : cime transparente');
 });

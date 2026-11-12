@@ -84,7 +84,9 @@ export class World {
       .sort((a, b) => a.sortY - b.sortY);
     if (this.softShadows) for (const e of visible) this._drawShadow(r, e);
     for (const e of visible) e.draw(r);
-    this.tilemap.draw(r, view, this.time, { above: true });
+    // Cimes des arbres : transparentes devant les personnages et objets (ceux qui ont une ombre).
+    const reveal = visible.filter((e) => e.shadow).map((e) => ({ x: e.x, y: e.y - 12, w: e.w, h: e.h + 12 }));
+    this.tilemap.draw(r, view, this.time, { above: true, reveal });
     if (this.game?.debug?.enabled) this._drawDebug(r, view);
     r.popWorld();
   }

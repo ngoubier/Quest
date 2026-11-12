@@ -2,6 +2,13 @@
 // Les couches marquées `above: true` sont dessinées PAR-DESSUS les personnages
 // (feuillages, toits, arches de portes...).
 
+/** Variante d'une tuile selon sa position (stable, sans motif visible). */
+function variantAt(tx, ty) {
+  let v = Math.imul(tx + 0x9e37, 0x85ebca6b) ^ Math.imul(ty + 0x7f4a, 0xc2b2ae35);
+  v = Math.imul(v ^ (v >>> 13), 0x27d4eb2d);
+  return ((v ^ (v >>> 15)) >>> 0) % 97;
+}
+
 export class Tilemap {
   /**
    * @param {object} o
@@ -150,8 +157,10 @@ export class Tilemap {
    *  - `props.shadow` : ombre portée sur la tuile du dessous ;
    *  - `props.edge`   : liseré de couleur là où la tuile touche une autre tuile (berges...).
    * `soft` : ombres en dégradé (occlusion au pied des murs) au lieu d'un trait net.
+   * Passe du dessus (`above`) : les cimes des grands éléments (arbres sur 2 cases) ; elles deviennent
+   * transparentes là où passe quelqu'un (`reveal` : rectangles en pixels monde).
    */
-  draw(r, view, time = 0, { above = false, soft = false } = {}) {
+  draw(r, view, time = 0, { above = false, soft = false, reveal = [] } = {}) {
     const ts = this.tileSize;
     const x0 = Math.max(0, Math.floor(view.x / ts));
     const y0 = Math.max(0, Math.floor(view.y / ts));
@@ -164,10 +173,7 @@ export class Tilemap {
         for (let tx = x0; tx <= x1; tx++) {
           const id = layer.data[ty * this.width + tx];
           if (!id) continue;
-          let v = Math.imul(tx + 0x9e37, 0x85ebca6b) ^ Math.imul(ty + 0x7f4a, 0xc2b2ae35);
-          v = Math.imul(v ^ (v >>> 13), 0x27d4eb2d);
-          v = (v ^ (v >>> 15)) >>> 0;
-          this.tileset.draw(r, id, tx * ts, ty * ts, time, v % 97);
+          this.tileset.draw(r, id, tx * ts, ty * ts, time, variantAt(tx, ty));
           if (layer !== ground) continue;
           const def = this.tileset.def(id);
           // Liseré
@@ -196,6 +202,25 @@ export class Tilemap {
             }
           }
         }
+      }
+    }
+    if (above && this.tileset.crowns?.size) this._drawCrowns(r, x0, x1, y0, Math.min(this.height - 1, y1 + 1), time, reveal);
+  }
+
+  /** Cimes des arbres : sur la case au-dessus de l'arbre, semi-transparentes si quelqu'un est derrière. */
+  _drawCrowns(r, x0, x1, y0, y1, time, reveal) {
+    const ts = this.tileSize;
+    const ground = this.layers[0];
+    for (let ty = Math.max(1, y0); ty <= y1; ty++) {
+      for (let tx = x0; tx <= x1; tx++) {
+        const id = ground.data[ty * this.width + tx];
+        if (!this.tileset.hasCrown(id)) continue;
+        const x = tx * ts;
+        const y = (ty - 1) * ts;
+        const behind = reveal.some((q) => q.x < x + ts && q.x + q.w > x && q.y < y + ts && q.y + q.h > y);
+        const draw = () => this.tileset.drawCrown(r, id, x, y, time, variantAt(tx, ty));
+        if (behind) r.withAlpha(0.45, draw);
+        else draw();
       }
     }
   }
