@@ -1,6 +1,7 @@
 import { Scene } from '../../engine/index.js';
 import { aiTake, MAX_TAKE } from './nim.js';
 import { skillForAge } from './tictactoe.js';
+import { drawPanel } from '../../engine/index.js';
 
 // LE DERNIER GLAÇON contre un habitant. 15 glaçons : chacun en prend 1, 2 ou 3.
 // Celui qui prend le dernier a perdu. L'enfant commence.
@@ -89,8 +90,7 @@ export class NimScene extends Scene {
     const s = this.game.style;
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
     const b = this.box;
-    r.rect(b.x, b.y, b.w, b.h, s.box);
-    r.strokeRect(b.x, b.y, b.w, b.h, s.border);
+    drawPanel(r, b.x, b.y, b.w, b.h, s);
     r.fitText(`Le dernier glaçon contre ${this.opponent}`, r.width / 2, b.y + 5, b.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const status = this.result
       ? this.result === 'win'

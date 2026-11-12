@@ -1,5 +1,6 @@
 import { Scene } from '../../engine/index.js';
 import { makeCode, score, settingsForAge } from './mastermind.js';
+import { drawPanel } from '../../engine/index.js';
 
 // CODE SECRET contre un habitant : il cache 3 couleurs, l'enfant a 8 essais pour les trouver.
 // Gauche/Droite : choisir la case · Haut/Bas : changer la couleur · Action : proposer · B : abandonner.
@@ -103,8 +104,7 @@ export class MastermindScene extends Scene {
     const s = this.game.style;
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
     const b = this.box;
-    r.rect(b.x, b.y, b.w, b.h, s.box);
-    r.strokeRect(b.x, b.y, b.w, b.h, s.border);
+    drawPanel(r, b.x, b.y, b.w, b.h, s);
     r.fitText(`Code secret de ${this.opponent}`, r.width / 2, b.y + 4, b.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const left = this.cfg.tries - this.history.length;
     const status = this.result === 'win' ? 'Bravo, tu as trouvé le code !' : this.result === 'lose' ? 'Perdu ! Le code était :' : `${this.cfg.length} couleurs cachées · ${left} essai${left > 1 ? 's' : ''}`;

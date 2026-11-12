@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Tileset, Tilemap, moveAndSlide, Camera, EventBus, Input, wrapText, SaveStore, Animator, createRng, buildTileset, windAt } from '../engine/index.js';
+import { Tileset, Tilemap, moveAndSlide, Camera, EventBus, Input, wrapText, SaveStore, Animator, createRng, buildTileset, windAt, drawPanel } from '../engine/index.js';
 import { _depth, _inPiece } from '../engine/world/TerrainBlend.js';
 import { MAPS, LEGEND } from '../demos/01-moteur/maps.js';
 import { TILE_ROLES, THEMES } from '../demos/01-moteur/themes.js';
@@ -233,4 +233,20 @@ test('Transitions : les bords se raccordent d’une case à l’autre ; le vent 
   // coin intérieur arrondi : le coin est couvert, le centre de la case ne l'est pas
   assert.ok(_inPiece('nwi', 0.5, 0.5, 16, 0) && _inPiece('nwi', 4, 1, 16, 0) && !_inPiece('nwi', 5.5, 5.5, 16, 0) && !_inPiece('nwi', 8, 8, 16, 0));
   for (let t = 0; t < 60; t += 0.37) for (const x of [0, 100, 700]) assert.ok(Math.abs(windAt(x, 50, t)) <= 1.7);
+});
+
+test('Cadre des fenêtres : 9 morceaux (coins fixes), ou fond uni et liseré sans image', () => {
+  const calls = [];
+  const r = { ctx: { drawImage: (...a) => calls.push(a.slice(5)) }, rect: (...a) => calls.push(['rect', ...a]), strokeRect: (...a) => calls.push(['stroke', ...a]) };
+  drawPanel(r, 10, 20, 100, 40, { box: '#000', border: '#fff', panel: { image: {}, corner: 8, detail: 2 } });
+  assert.equal(calls.length, 9);
+  assert.deepEqual(calls[0], [10, 20, 8, 8], 'coin en haut à gauche, taille fixe');
+  assert.deepEqual(calls[4], [18, 28, 84, 24], 'centre étiré');
+  assert.deepEqual(calls[8], [102, 52, 8, 8], 'coin en bas à droite');
+  calls.length = 0;
+  drawPanel(r, 0, 0, 10, 6, { box: '#000', border: '#fff', panel: { image: {}, corner: 8 } });
+  assert.deepEqual(calls[0], [0, 0, 3, 3], 'petite fenêtre : les coins rétrécissent');
+  calls.length = 0;
+  drawPanel(r, 1, 2, 30, 20, { box: '#000', border: '#fff' });
+  assert.deepEqual(calls.map((c) => c[0]), ['rect', 'stroke', 'stroke']);
 });

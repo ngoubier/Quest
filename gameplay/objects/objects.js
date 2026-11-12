@@ -73,8 +73,20 @@ export class Pickup extends WorldObject {
     if (this.hidden) return;
     const lt = this.props.lifetime;
     if (lt && this.t > lt - 2 && Math.floor(this.t * 10) % 2) return; // clignote avant de disparaître
-    const bob = Math.round(Math.sin((this.t + this.phase) * 4));
+    let bob = Math.round(Math.sin((this.t + this.phase) * 4));
+    // butin qui vient de tomber : il saute deux fois avant de se poser
+    const pop = this.props.pop ? 0.55 - this.t : 0;
+    if (pop > 0) bob = -Math.round(Math.abs(Math.sin(this.t * Math.PI * 3.6)) * 9 * (pop / 0.55));
     objSheet(this).draw(r, this.adv.itemIcon(this.props.item), this.x - 3, this.y - 3 + bob);
+    // reflet qui brille de temps en temps (effets activés)
+    if (this.adv.fx && pop <= 0) {
+      const a = Math.max(0, Math.sin((this.t + this.phase) * 2.2)) ** 10;
+      if (a > 0.05) {
+        const x = Math.round(this.x + 8);
+        const y = Math.round(this.y - 2 + bob);
+        r.withAlpha(a, () => (r.rect(x, y - 1, 1, 3, '#ffffff'), r.rect(x - 1, y, 3, 1, '#ffffff')));
+      }
+    }
   }
 }
 

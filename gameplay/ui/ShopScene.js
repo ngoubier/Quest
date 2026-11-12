@@ -1,4 +1,5 @@
 import { Scene } from '../../engine/index.js';
+import { drawPanel } from '../../engine/index.js';
 
 // Magasin : choisir un article (Haut/Bas), la quantité (Gauche/Droite), acheter (Action).
 // Les prix sont affichés en euros : c'est aussi un exercice de calcul !
@@ -101,9 +102,7 @@ export class ShopScene extends Scene {
     const y = 8;
     const w = r.width - 20;
     const h = r.height - 16;
-    r.rect(x, y, w, h, s.box);
-    r.strokeRect(x, y, w, h, s.border);
-    r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
+    drawPanel(r, x, y, w, h, s);
     const bagTxt = `Sac ${adv.bagItems().length}/${adv.bagCapacity()}`;
     r.text(bagTxt, x + w - 10, y + 8, { color: s.dim, size: 7, font: s.font, align: 'right' });
     r.fitText(this.title, x + 10, y + 7, w - 26 - r.measure(bagTxt, 7, s.font), { color: s.accent, size: 9, font: s.font, bold: true });

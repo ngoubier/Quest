@@ -1,5 +1,6 @@
 import { Scene } from '../scene/Scene.js';
 import { wrapText } from './text.js';
+import { drawPanel } from './panel.js';
 
 // Boîte de dialogue : texte qui s'affiche lettre par lettre, plusieurs pages,
 // et éventuellement un choix à la fin (Oui / Non...).
@@ -92,20 +93,21 @@ export class DialogScene extends Scene {
   draw(r) {
     const s = this.game.style;
     const { x, y, w, h } = this.box;
-    r.rect(x, y, w, h, s.box);
-    r.strokeRect(x, y, w, h, s.border);
-    r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
     let ty = y + 8;
     if (this.speaker) {
-      // Onglet bien visible avec le nom de celui qui parle.
+      // Onglet bien visible avec le nom de celui qui parle (avec un cadre : glissé derrière la fenêtre).
       const nw = Math.min(w - 12, Math.ceil(r.measure(this.speaker, s.fontSize + 1, s.font, true)) + 14);
       const th = s.fontSize + 7;
-      r.rect(x + 6, y - th + 2, nw, th, s.box);
-      r.strokeRect(x + 6, y - th + 2, nw, th, s.accent);
-      r.rect(x + 7, y, nw - 2, 2, s.box);
+      if (s.panel) drawPanel(r, x + 6, y - th + 2, nw, th + 4, s);
+      drawPanel(r, x, y, w, h, s);
+      if (!s.panel) {
+        r.rect(x + 6, y - th + 2, nw, th, s.box);
+        r.strokeRect(x + 6, y - th + 2, nw, th, s.accent);
+        r.rect(x + 7, y, nw - 2, 2, s.box);
+      }
       r.fitText(this.speaker, x + 13, y - th + 5, nw - 12, { color: s.accent, size: s.fontSize + 1, font: s.font, bold: true });
       ty += 2;
-    }
+    } else drawPanel(r, x, y, w, h, s);
     let left = Math.floor(this.shown);
     for (const line of this.screens[this.index]) {
       if (left <= 0) break;
@@ -121,8 +123,7 @@ export class DialogScene extends Scene {
       // Au-dessus de l'onglet du nom (s'il y en a un), sans sortir de l'écran.
       const tabH = this.speaker ? s.fontSize + 7 : 0;
       const cy = Math.max(2, y - ch - 4 - tabH);
-      r.rect(cx, cy, cw, ch, s.box);
-      r.strokeRect(cx, cy, cw, ch, s.border);
+      drawPanel(r, cx, cy, cw, ch, s);
       this.choices.forEach((c, i) => {
         const sel = i === this.choice;
         if (sel) r.text('▶', cx + 6, cy + 6 + i * lh, { color: s.accent, size: s.fontSize, font: s.font });

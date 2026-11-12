@@ -1,6 +1,7 @@
 import { Scene } from '../../engine/index.js';
 import { COLS, ROWS, empty, drop, landingRow, winner, winningCells, aiCol } from './connect4.js';
 import { skillForAge } from './tictactoe.js';
+import { drawPanel } from '../../engine/index.js';
 
 // PUISSANCE 4 contre un habitant. L'enfant joue les jetons rouges et commence.
 // Gauche/Droite : choisir la colonne · Action : lâcher le jeton · B : abandonner.
@@ -109,8 +110,7 @@ export class Connect4Scene extends Scene {
     const o = this.origin;
     const bw = Math.min(r.width - 8, 170);
     const box = { x: Math.round((r.width - bw) / 2), y: o.y - 46, w: bw, h: ROWS * CELL + 68 };
-    r.rect(box.x, box.y, box.w, box.h, s.box);
-    r.strokeRect(box.x, box.y, box.w, box.h, s.border);
+    drawPanel(r, box.x, box.y, box.w, box.h, s);
     r.fitText(`Puissance 4 contre ${this.opponent}`, r.width / 2, box.y + 4, box.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const status = this.result
       ? { win: 'Gagné, bravo !', lose: 'Perdu... Rejoue !', draw: 'Égalité !' }[this.result]

@@ -5,6 +5,7 @@ import { parentSettings, setParentSettings } from '../profiles.js';
 import { SUBJECTS } from '../quiz/QuestionBank.js';
 import { PromptScene } from './PromptScene.js';
 import { openExport, openImport } from './transfer.js';
+import { drawPanel } from '../../engine/index.js';
 
 // ESPACE PARENTS : protégé par un code à 4 chiffres choisi par le parent.
 // Pour chaque enfant (profil) : bilan (à la fin du jeu, ou toujours selon la config),
@@ -289,8 +290,7 @@ export class CodeScene extends Scene {
     const y = 36;
     const w = r.width - 24;
     const h = 120;
-    r.rect(x, y, w, h, s.box);
-    r.strokeRect(x, y, w, h, s.border);
+    drawPanel(r, x, y, w, h, s);
     r.fitText('ESPACE PARENTS', r.width / 2, y + 10, w - 16, { color: s.accent, size: 9, font: s.font, bold: true, align: 'center' });
     const msg = this.mode === 'create' ? ['Choisissez un code à 4 chiffres.', 'Il protège le bilan et les réglages.'] : ['Entrez le code parent.'];
     r.textBlock(msg.join(' '), r.width / 2, y + 28, w - 16, { color: s.text, size: 7, font: s.font, align: 'center', lineHeight: 9, maxLines: 4 });
@@ -320,8 +320,7 @@ export class MessageScene extends Scene {
     const lines = wrapText(this.text, r.width - 80, (t) => r.measure(t, 8, s.font));
     const h = lines.length * 12 + 20;
     const y = (r.height - h) / 2;
-    r.rect(30, y, r.width - 60, h, s.box);
-    r.strokeRect(30, y, r.width - 60, h, s.border);
+    drawPanel(r, 30, y, r.width - 60, h, s);
     lines.forEach((l, i) => r.text(l, r.width / 2, y + 10 + i * 12, { color: s.text, size: 8, font: s.font, align: 'center' }));
   }
 }

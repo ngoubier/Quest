@@ -1,4 +1,4 @@
-import { Scene, wrapText } from '../../engine/index.js';
+import { Scene, wrapText, drawPanel } from '../../engine/index.js';
 
 // HISTOIRE EN IMAGES — une suite de pages : une illustration (dessinée par le jeu) et un texte
 // qui s'écrit lettre par lettre. Action : accélérer puis page suivante. Start : passer l'histoire.
@@ -82,8 +82,8 @@ export class StoryScene extends Scene {
     // fondu d'entrée de page
     if (this.t < 0.4) r.withAlpha(1 - this.t / 0.4, () => r.rect(0, 0, r.width, box.h, '#07060f'));
     const ty = box.h;
-    r.rect(0, ty, r.width, this.textH, s.box);
-    r.rect(0, ty, r.width, 1, s.border);
+    if (s.panel) drawPanel(r, -8, ty - 2, r.width + 16, this.textH + 10, s);
+    else (r.rect(0, ty, r.width, this.textH, s.box), r.rect(0, ty, r.width, 1, s.border));
     this.lines = wrapText(p.text, r.width - 16, (str) => r.measure(str, 8, s.font));
     const shown = Math.floor((this.t - this.partStart) * this.speed);
     let left = shown;

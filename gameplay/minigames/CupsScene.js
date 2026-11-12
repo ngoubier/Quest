@@ -1,5 +1,6 @@
 import { Scene } from '../../engine/index.js';
 import { makeSwaps, ballSlot, settingsForAge } from './cups.js';
+import { drawPanel } from '../../engine/index.js';
 
 // LES 3 GOBELETS contre un habitant. Il montre la bille, la cache, mélange les gobelets ;
 // l'enfant choisit (Gauche/Droite + Action, ou toucher le gobelet). B : abandonner.
@@ -113,8 +114,7 @@ export class CupsScene extends Scene {
     const s = this.game.style;
     r.withAlpha(0.7, () => r.rect(0, 0, r.width, r.height, '#000'));
     const b = this.box;
-    r.rect(b.x, b.y, b.w, b.h, s.box);
-    r.strokeRect(b.x, b.y, b.w, b.h, s.border);
+    drawPanel(r, b.x, b.y, b.w, b.h, s);
     r.fitText(`Les 3 gobelets de ${this.opponent}`, r.width / 2, b.y + 5, b.w - 8, { color: s.accent, size: 8, font: s.font, bold: true, align: 'center' });
     const msg = {
       show: 'Regarde bien : la bille est ici !',

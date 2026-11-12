@@ -1,6 +1,7 @@
 import { Animator, DIRS, rectsOverlap } from '../../engine/index.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
+import { dustFx } from './juice.js';
 import { Projectile } from './Projectile.js';
 import { Boomerang } from './Boomerang.js';
 import { Bomb } from './Bomb.js';
@@ -127,8 +128,12 @@ export class Hero extends Actor {
       if (!keep) this.facing = x < 0 ? 'left' : x > 0 ? 'right' : y < 0 ? 'up' : 'down';
       const len = Math.hypot(x, y);
       const sp = this.speed * (this.sinking > 0 ? 0.35 : 1) * (this.adv.mapDef.underwater ? 0.85 : 1);
+      const [ox, oy] = [this.x, this.y];
       const res = this.move((x / len) * sp * dt, (y / len) * sp * dt, { cornerAssist: 6 });
       this.anim.play(`walk_${animDir(this.facing)}`);
+      // petits nuages de poussière sous les pas (pas sous l'eau)
+      this.dustStep = (this.dustStep ?? 0) + Math.hypot(this.x - ox, this.y - oy);
+      if (this.dustStep > 12 && !this.adv.mapDef.underwater) (this.dustStep = 0), dustFx(this.world, this.cx - (x / len) * 3, this.y + this.h);
       // Contre quelque chose : pousser un bloc ? ouvrir une porte verrouillée ?
       const straight = !x || !y;
       if (straight && (res.hitX || res.hitY) && !res.nudged) {

@@ -1,6 +1,7 @@
 import { Scene, TextField, wrapText, createRng, Speech } from '../../engine/index.js';
 import { checkAnswer } from './answers.js';
 import { SUBJECTS } from './QuestionBank.js';
+import { drawPanel } from '../../engine/index.js';
 
 // Écran de questions (énigmes scolaires) : QCM, réponse à écrire, image à nommer.
 // Après chaque réponse : correction bienveillante, avec la bonne réponse si besoin.
@@ -273,9 +274,7 @@ export class QuizScene extends Scene {
     const y = 8;
     const w = W - 16;
     const h = r.height - 16;
-    r.rect(x, y, w, h, s.box);
-    r.strokeRect(x, y, w, h, s.border);
-    r.strokeRect(x + 2, y + 2, w - 4, h - 4, s.border);
+    drawPanel(r, x, y, w, h, s);
 
     if (this.phase === 'summary') {
       const n = this.questions.length;

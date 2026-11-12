@@ -1,6 +1,7 @@
 import { Animator, rectsOverlap, createRng } from '../../engine/index.js';
 import { Actor } from './Actor.js';
 import { Effect } from './Effect.js';
+import { defeatFx, flashOver } from './juice.js';
 import { Projectile } from './Projectile.js';
 
 // MONSTRES. Un monstre = des statistiques + un comportement (fonction réutilisable).
@@ -209,6 +210,7 @@ export class Enemy extends Actor {
     super.die();
     this.game.audio.play('kill');
     this.world.add(new Effect(this.cx, this.cy - 2));
+    defeatFx(this);
     if (this.uid) this.adv.state.setFlag(`killed:${this.uid}`);
     this.adv.state.addCounter(`kills_${this.kind}`);
     this.game.events.emit('enemy:killed', { kind: this.kind, enemy: this });
@@ -225,8 +227,10 @@ export class Enemy extends Actor {
   }
 
   draw(r) {
-    if (this.flashing) return;
-    this.game.themes.current.sprites.objects.draw(r, this.anim.frame, this.x - 2, this.y - 6);
+    if (this.flashing && !(this.hitFlash > 0)) return; // clignote, sauf pendant l'éclair du coup
+    const sprite = () => this.game.themes.current.sprites.objects.draw(r, this.anim.frame, this.x - 2, this.y - 6);
+    sprite();
+    flashOver(r, this, sprite);
     if (this.stunned > 0) {
       // petites étoiles qui tournent au-dessus de la tête
       const t = this.world.time * 6;
