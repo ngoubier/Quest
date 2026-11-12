@@ -349,6 +349,7 @@ Code secret (Labyrinthe) · 3 gobelets (Désert) · Chant des coquillages (Océa
 | 6 ✓ | Désert : pelle, sables mouvants, tempête, gobelets, Ver | M |
 | 7 ✓ | Océan : nage, courants, bouteille d'oxygène, trident, Simon, Kraken | L |
 | 8 ✓ | Volcan, armure, château, Morgor, fin | L |
+| 9 ✓ | Dessins détaillés (boss, monstres, habitants non humains), présentation des boss, fins de niveau en images | M |
 
 ## 9. Décisions
 
@@ -578,3 +579,25 @@ aussi en haute définition sur PC) · histoire de fin : `END_STORY` dans `game/d
 - **La fin** : la cage s'ouvre, Alia remercie le héros (`alia_free`), l'histoire de fin en 3 images (Alia libérée,
   les couleurs qui reviennent, la fête à Prébois), puis les félicitations ; on peut continuer à jouer, et l'Ancien
   parle de la fête.
+
+## 19. Lot 9 — dessins détaillés et scènes en images (fait)
+
+Le système de l'histoire d'ouverture (`StoryScene`) sert maintenant aussi dans les niveaux.
+
+- **Présentation des boss** : la première fois qu'on entre dans la salle d'un boss, une page le montre en grand,
+  dans le décor de sa région, avec son nom et comment le battre (option `intro` du boss, `BOSS_INTROS` dans
+  `game/data/scenes.js`, ajoutée à chaque boss par `game/data/index.js`).
+- **Fins de niveau** : prendre une pierre ouvre 2 pages (option `story` de l'objet, `stoneStory`) : la région
+  reprend ses couleurs autour de la pierre ; puis Alia dans sa cage, les pierres déjà trouvées autour d'elle, le
+  pouvoir gagné et le nombre de pierres qui restent.
+- **Décors des régions** (`BACKDROPS`) : Mont Givré, Forêt, Bourg-Lanterne, Labyrinthe, Désert, Abysses, Volcan.
+- **Textes longs** : sur petit écran, un texte de plus de 4 lignes continue sur un second encadré (même image).
+- **Dessins détaillés (PC)**, en formes lisses, dans `game/art/` :
+  `kit.js` (outils ; un dessin = un repère de 32 ou 16 unités, utilisable à toute taille),
+  `bosses.js` (les 7 boss et leurs boucliers, plus une carapace de glace pour le Yéti),
+  `monsters.js` (les 26 monstres des niveaux 2 à 8 et leurs projectiles),
+  `folk.js` (Pingo, Hulotte, le chat, le gnome, le puits, la sirène, Alia).
+  Les habitants humains du Mont Givré ont aussi leur version haute définition. Le même dessin sert pour le sprite
+  du jeu (64 × 64 pour un boss, 32 × 32 sinon) et pour la grande image de présentation.
+- Sur mobile, le jeu garde les images pixel agrandies (choix du profil d'affichage) ; les scènes en images, elles,
+  sont dessinées en lisse sur tous les appareils.

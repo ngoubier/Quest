@@ -1,5 +1,6 @@
 // LE MONT GIVRÉ — tuiles de neige et de glace, monstres, objets et personnages du niveau 2.
 import { P, speckle, humanoid } from '../demos/01-moteur/themes.js';
+import { characterHD } from '../demos/02-gameplay/hd-people.js';
 
 const SNOW = '#eef4fb';
 const SNOW_D = '#d3e1f0';
@@ -292,6 +293,12 @@ export function paintPingo(c, dir, step) {
 
 export const paintGivrePerson = (c, who, dir, step) => (who === 'pingo' ? paintPingo(c, dir, step) : humanoid(c, dir, step, GIVRE_PEOPLE[who]));
 export const GIVRE_CHARS = ['granny', 'inuit', 'pingo'];
+const GIVRE_LOOKS = {
+  granny: { longHair: true, glasses: '#c8a030', scarf: '#ffffff' },
+  inuit: { scarf: '#e8c040', brows: '#3a2a1a' },
+};
+/** PC : les humains en haute définition (Pingo : voir game/art/folk.js). */
+export const paintGivrePersonHD = (c, who, dir, step) => (who === 'pingo' ? false : (characterHD(c, dir, step, GIVRE_PEOPLE[who], GIVRE_LOOKS[who]), true));
 
 // ------------------------------------------------------------ le Yéti (32 x 32)
 /** Sa carapace de glace (bouclier) : des plaques translucides, que le feu fait fondre. */
